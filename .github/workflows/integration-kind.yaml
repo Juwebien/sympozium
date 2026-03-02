@@ -1,0 +1,87 @@
+name: Integration Tests (Kind)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  integration-kind:
+    name: Kind API integration suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      REGISTRY: ghcr.io/alexsjones/sympozium
+      TAG: latest
+      SYMPOZIUM_NAMESPACE: sympozium-system
+      TEST_NAMESPACE: default
+      CLAUDE_TOKEN: ${{ secrets.CLAUDE_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: sympozium-ci
+          wait: 120s
+
+      - name: Build all Sympozium images
+        run: make docker-build TAG=${TAG}
+
+      - name: Load images into Kind
+        run: |
+          set -euo pipefail
+          for img in controller apiserver ipc-bridge webhook agent-runner \
+                     channel-telegram channel-slack channel-discord channel-whatsapp \
+                     skill-k8s-ops skill-sre-observability skill-github-gitops; do
+            kind load docker-image ${REGISTRY}/${img}:${TAG} --name sympozium-ci
+          done
+
+      - name: Install CRDs, built-ins, and policies
+        run: make install
+
+      - name: Deploy control plane (NATS, RBAC, manager, network, observability)
+        run: |
+          set -euo pipefail
+          kubectl apply -f config/rbac/role.yaml
+          kubectl apply -f config/rbac/service_account.yaml
+          kubectl apply -f config/rbac/role_binding.yaml
+          kubectl apply -f config/nats/nats.yaml
+          kubectl apply -f config/manager/manager.yaml
+          kubectl apply -f config/network/policies.yaml
+          kubectl apply -f config/observability/otel-collector.yaml
+
+      - name: Wait for core deployments
+        run: |
+          set -euo pipefail
+          kubectl rollout status deployment/sympozium-controller-manager -n sympozium-system --timeout=300s
+          kubectl rollout status deployment/sympozium-apiserver -n sympozium-system --timeout=300s
+          kubectl rollout status deployment/sympozium-otel-collector -n sympozium-system --timeout=300s
+
+      - name: Run API integration tests
+        run: make integration-tests
+
+      - name: Dump cluster state on failure
+        if: failure()
+        run: |
+          set +e
+          echo "== Pods =="
+          kubectl get pods -A -o wide
+          echo "== Sympozium system events =="
+          kubectl get events -n sympozium-system --sort-by=.lastTimestamp | tail -200
+          echo "== Controller logs =="
+          kubectl logs -n sympozium-system deploy/sympozium-controller-manager --tail=400
+          echo "== Apiserver logs =="
+          kubectl logs -n sympozium-system deploy/sympozium-apiserver --tail=400
