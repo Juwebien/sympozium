@@ -1388,13 +1388,21 @@ func (r *AgentRunReconciler) buildContainers(
 		}
 	}
 
-	// Add memory volume mount if memory is enabled.
+	// Add memory volume mount if legacy memory is enabled.
 	if memoryEnabled {
 		containers[0].VolumeMounts = append(containers[0].VolumeMounts,
 			corev1.VolumeMount{Name: "memory", MountPath: "/memory", ReadOnly: true},
 		)
 		containers[0].Env = append(containers[0].Env,
 			corev1.EnvVar{Name: "MEMORY_ENABLED", Value: "true"},
+		)
+	}
+
+	// Inject MEMORY_SERVER_URL for the standalone memory server.
+	if agentRunHasMemorySkill(agentRun) {
+		memoryURL := fmt.Sprintf("http://%s-memory.%s.svc:8080", agentRun.Spec.InstanceRef, agentRun.Namespace)
+		containers[0].Env = append(containers[0].Env,
+			corev1.EnvVar{Name: "MEMORY_SERVER_URL", Value: memoryURL},
 		)
 	}
 
@@ -1817,7 +1825,7 @@ func (r *AgentRunReconciler) buildVolumes(agentRun *sympoziumv1alpha1.AgentRun, 
 		})
 	}
 
-	// Add memory ConfigMap volume if memory is enabled.
+	// Add memory ConfigMap volume if legacy memory is enabled.
 	if memoryEnabled {
 		cmName := fmt.Sprintf("%s-memory", agentRun.Spec.InstanceRef)
 		volumes = append(volumes, corev1.Volume{
@@ -1832,6 +1840,8 @@ func (r *AgentRunReconciler) buildVolumes(agentRun *sympoziumv1alpha1.AgentRun, 
 			},
 		})
 	}
+
+	// Note: memory PVC is mounted on the standalone memory Deployment, not agent pods.
 
 	// Add MCP config volume if MCP servers are configured.
 	if len(mcpServers) > 0 {
@@ -1930,6 +1940,16 @@ func hostAccessVolumeName(skillPackName string, index int) string {
 
 // boolPtr returns a pointer to a bool.
 func boolPtr(b bool) *bool { return &b }
+
+// agentRunHasMemorySkill returns true if the AgentRun references the "memory" SkillPack.
+func agentRunHasMemorySkill(agentRun *sympoziumv1alpha1.AgentRun) bool {
+	for _, skill := range agentRun.Spec.Skills {
+		if skill.SkillPackRef == "memory" {
+			return true
+		}
+	}
+	return false
+}
 
 // createInputConfigMap creates a ConfigMap with the agent's task input.
 func (r *AgentRunReconciler) createInputConfigMap(ctx context.Context, agentRun *sympoziumv1alpha1.AgentRun) error {

@@ -1156,6 +1156,7 @@ spec:
 %s%s%s  skills:
     - skillPackRef: k8s-ops
     - skillPackRef: llmfit
+    - skillPackRef: memory
 %s  memory:
     enabled: true
     maxSizeKB: 256
@@ -9998,10 +9999,11 @@ func tuiOnboardApply(ns string, w *wizardState) (string, error) {
 		inst.Spec.PolicyRef = policyName
 	}
 
-	// Default skills: k8s-ops + llmfit.
+	// Default skills: k8s-ops + llmfit + memory.
 	inst.Spec.Skills = []sympoziumv1alpha1.SkillRef{
 		{SkillPackRef: "k8s-ops"},
 		{SkillPackRef: "llmfit"},
+		{SkillPackRef: "memory"},
 	}
 
 	// Add github-gitops skill if a repo was specified.
