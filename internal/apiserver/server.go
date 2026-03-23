@@ -1246,24 +1246,24 @@ func (s *Server) getPersonaPack(w http.ResponseWriter, r *http.Request) {
 
 // PatchPersonaPackRequest represents a partial update to a PersonaPack.
 type PatchPersonaPackRequest struct {
-	Enabled            *bool                        `json:"enabled,omitempty"`
-	Provider           string                       `json:"provider,omitempty"`
-	SecretName         string                       `json:"secretName,omitempty"`
-	APIKey             string                       `json:"apiKey,omitempty"`
-	AWSRegion          string                       `json:"awsRegion,omitempty"`
-	AWSAccessKeyID     string                       `json:"awsAccessKeyId,omitempty"`
-	AWSSecretAccessKey string                       `json:"awsSecretAccessKey,omitempty"`
-	AWSSessionToken    string                       `json:"awsSessionToken,omitempty"`
-	Model              string                       `json:"model,omitempty"`
-	BaseURL            string                       `json:"baseURL,omitempty"`
-	Channels           []string                     `json:"channels,omitempty"`
-	ChannelConfigs     map[string]string            `json:"channelConfigs,omitempty"`
-	PolicyRef          string                       `json:"policyRef,omitempty"`
-	HeartbeatInterval  string                       `json:"heartbeatInterval,omitempty"`
-	SkillParams        map[string]map[string]string `json:"skillParams,omitempty"`
-	GithubToken          string                                                  `json:"githubToken,omitempty"`
-	Personas             []PersonaPatchSpec                                      `json:"personas,omitempty"`
-	ChannelAccessControl map[string]*sympoziumv1alpha1.ChannelAccessControl      `json:"channelAccessControl,omitempty"`
+	Enabled              *bool                                              `json:"enabled,omitempty"`
+	Provider             string                                             `json:"provider,omitempty"`
+	SecretName           string                                             `json:"secretName,omitempty"`
+	APIKey               string                                             `json:"apiKey,omitempty"`
+	AWSRegion            string                                             `json:"awsRegion,omitempty"`
+	AWSAccessKeyID       string                                             `json:"awsAccessKeyId,omitempty"`
+	AWSSecretAccessKey   string                                             `json:"awsSecretAccessKey,omitempty"`
+	AWSSessionToken      string                                             `json:"awsSessionToken,omitempty"`
+	Model                string                                             `json:"model,omitempty"`
+	BaseURL              string                                             `json:"baseURL,omitempty"`
+	Channels             []string                                           `json:"channels,omitempty"`
+	ChannelConfigs       map[string]string                                  `json:"channelConfigs,omitempty"`
+	PolicyRef            string                                             `json:"policyRef,omitempty"`
+	HeartbeatInterval    string                                             `json:"heartbeatInterval,omitempty"`
+	SkillParams          map[string]map[string]string                       `json:"skillParams,omitempty"`
+	GithubToken          string                                             `json:"githubToken,omitempty"`
+	Personas             []PersonaPatchSpec                                 `json:"personas,omitempty"`
+	ChannelAccessControl map[string]*sympoziumv1alpha1.ChannelAccessControl `json:"channelAccessControl,omitempty"`
 }
 
 // PersonaPatchSpec allows partial updates to individual personas by name.

@@ -16,15 +16,15 @@ func TestCheckChannelAccess(t *testing.T) {
 		wantDeny    string
 	}{
 		{
-			name:     "no access control configured",
-			channels: []sympoziumv1alpha1.ChannelSpec{{Type: "telegram"}},
-			msg:      channel.InboundMessage{Channel: "telegram", SenderID: "123", ChatID: "456"},
+			name:        "no access control configured",
+			channels:    []sympoziumv1alpha1.ChannelSpec{{Type: "telegram"}},
+			msg:         channel.InboundMessage{Channel: "telegram", SenderID: "123", ChatID: "456"},
 			wantAllowed: true,
 		},
 		{
-			name:     "channel type not in instance spec",
-			channels: []sympoziumv1alpha1.ChannelSpec{{Type: "slack"}},
-			msg:      channel.InboundMessage{Channel: "telegram", SenderID: "123", ChatID: "456"},
+			name:        "channel type not in instance spec",
+			channels:    []sympoziumv1alpha1.ChannelSpec{{Type: "slack"}},
+			msg:         channel.InboundMessage{Channel: "telegram", SenderID: "123", ChatID: "456"},
 			wantAllowed: true,
 		},
 		{
