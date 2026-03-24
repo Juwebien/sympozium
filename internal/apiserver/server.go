@@ -2396,7 +2396,7 @@ type CapabilitiesResponse struct {
 func (s *Server) getCapabilities(w http.ResponseWriter, r *http.Request) {
 	resp := CapabilitiesResponse{}
 
-	// Check if Agent Sandbox CRDs (apps.kubernetes.io) are installed.
+	// Check if Agent Sandbox CRDs (agents.x-k8s.io) are installed.
 	// We use ServerResourcesForGroupVersion (targeted query) instead of
 	// ServerGroupsAndResources (full scan) because the latter suffers from
 	// partial discovery failures: when ANY unrelated API group is unhealthy
@@ -2406,7 +2406,7 @@ func (s *Server) getCapabilities(w http.ResponseWriter, r *http.Request) {
 	// NOTE: if the Agent Sandbox API group/version changes, update the
 	// string below AND the sandboxGVR in internal/controller/agentrun_sandbox.go.
 	if s.kube != nil {
-		resources, err := s.kube.Discovery().ServerResourcesForGroupVersion("apps.kubernetes.io/v1alpha1")
+		resources, err := s.kube.Discovery().ServerResourcesForGroupVersion("agents.x-k8s.io/v1alpha1")
 		if err == nil {
 			found := false
 			for _, r := range resources.APIResources {
@@ -2420,13 +2420,13 @@ func (s *Server) getCapabilities(w http.ResponseWriter, r *http.Request) {
 			} else {
 				resp.AgentSandbox = CapabilityStatus{
 					Available: false,
-					Reason:    "Agent Sandbox CRDs (apps.kubernetes.io) are not installed. Install kubernetes-sigs/agent-sandbox to enable this feature.",
+					Reason:    "Agent Sandbox CRDs (agents.x-k8s.io) are not installed. Install kubernetes-sigs/agent-sandbox to enable this feature.",
 				}
 			}
 		} else {
 			resp.AgentSandbox = CapabilityStatus{
 				Available: false,
-				Reason:    "Agent Sandbox CRDs (apps.kubernetes.io) are not installed. Install kubernetes-sigs/agent-sandbox to enable this feature.",
+				Reason:    "Agent Sandbox CRDs (agents.x-k8s.io) are not installed. Install kubernetes-sigs/agent-sandbox to enable this feature.",
 			}
 		}
 	} else {

@@ -309,7 +309,7 @@ agentSandbox:
   # Used when no runtimeClass is specified on the AgentRun or policy.
   defaultRuntimeClass: "gvisor"
   # -- Create RBAC rules allowing the controller to manage Sandbox, SandboxClaim,
-  # and SandboxWarmPool CRs (apiGroup: apps.kubernetes.io).
+  # and SandboxWarmPool CRs (apiGroup: agents.x-k8s.io).
   rbac: true
 
 # -- ServiceMonitor for Prometheus (requires prometheus-operator)

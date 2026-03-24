@@ -21,9 +21,9 @@ Agent Sandbox adds an additional layer:
 ```
 AgentRun (agentSandbox.enabled: true)
   │
-  ├─ Controller creates Sandbox CR (apps.kubernetes.io/v1alpha1)
-  │   └─ spec.runtimeClassName: gvisor
-  │   └─ spec.template: same pod spec as a Job (agent + ipc-bridge + sidecars)
+  ├─ Controller creates Sandbox CR (agents.x-k8s.io/v1alpha1)
+  │   └─ spec.podTemplate.spec.runtimeClassName: gvisor
+  │   └─ spec.podTemplate: same pod spec as a Job (agent + ipc-bridge + sidecars)
   │   └─ ownerReference → AgentRun (garbage-collected on deletion)
   │
   └─ OR (if warmPoolRef is set)

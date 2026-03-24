@@ -100,7 +100,7 @@ agentSandbox:
 ```
 
 When `enabled: true`, the controller:
-- Creates RBAC rules for `apps.kubernetes.io` resources (Sandbox, SandboxClaim, SandboxWarmPool)
+- Creates RBAC rules for `agents.x-k8s.io` resources (Sandbox, SandboxClaim, SandboxWarmPool)
 - Checks for agent-sandbox CRDs at startup and enables the feature if found
 - Routes AgentRuns with `agentSandbox.enabled: true` to Sandbox CRs instead of Jobs
 

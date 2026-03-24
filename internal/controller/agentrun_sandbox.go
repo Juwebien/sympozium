@@ -26,19 +26,20 @@ import (
 )
 
 // Agent Sandbox CRD GVRs (kubernetes-sigs/agent-sandbox).
+// The upstream project uses the "agents.x-k8s.io" API group.
 var (
 	sandboxGVR = schema.GroupVersionResource{
-		Group:    "apps.kubernetes.io",
+		Group:    "agents.x-k8s.io",
 		Version:  "v1alpha1",
 		Resource: "sandboxes",
 	}
 	sandboxClaimGVR = schema.GroupVersionResource{
-		Group:    "apps.kubernetes.io",
+		Group:    "agents.x-k8s.io",
 		Version:  "v1alpha1",
 		Resource: "sandboxclaims",
 	}
 	warmPoolGVR = schema.GroupVersionResource{
-		Group:    "apps.kubernetes.io",
+		Group:    "agents.x-k8s.io",
 		Version:  "v1alpha1",
 		Resource: "sandboxwarmpools",
 	}
@@ -244,15 +245,25 @@ func (r *AgentRunReconciler) reconcileRunningAgentSandbox(
 		return ctrl.Result{}, fmt.Errorf("getting sandbox CR: %w", err)
 	}
 
-	// Extract phase from the Sandbox CR status.
-	phase, _, _ := unstructured.NestedString(sandbox.Object, "status", "phase")
-	podName, _, _ := unstructured.NestedString(sandbox.Object, "status", "podName")
-
-	if podName != "" && agentRun.Status.PodName != podName {
-		agentRun.Status.PodName = podName
+	// The upstream agent-sandbox controller creates a pod with the same name
+	// as the Sandbox CR. Update podName on the AgentRun status so that
+	// extractResultFromPod can read logs from it.
+	if agentRun.Status.PodName != sandboxName {
+		agentRun.Status.PodName = sandboxName
 		if err := r.Status().Update(ctx, agentRun); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
+
+	// The upstream Sandbox CRD uses status.conditions (not status.phase).
+	// Derive a phase from the Ready condition and the pod's actual state.
+	phase := sandboxPhaseFromConditions(sandbox.Object)
+	log.V(1).Info("Sandbox phase derived from conditions", "phase", phase)
+
+	// If the conditions don't give us a terminal state, check the pod
+	// directly — the agent-runner is a run-to-completion workload.
+	if phase == "Running" || phase == "" {
+		phase = r.refineSandboxPhaseFromPod(ctx, agentRun.Namespace, sandboxName, phase)
 	}
 
 	switch phase {
@@ -262,7 +273,6 @@ func (r *AgentRunReconciler) reconcileRunningAgentSandbox(
 			elapsed := time.Since(agentRun.Status.StartedAt.Time)
 			if elapsed > agentRun.Spec.Timeout.Duration {
 				log.Info("Agent Sandbox run timed out", "elapsed", elapsed)
-				// Delete the Sandbox CR to stop the agent.
 				_ = r.DynamicClient.Resource(sandboxGVR).Namespace(agentRun.Namespace).Delete(
 					ctx, sandboxName, metav1.DeleteOptions{},
 				)
@@ -281,7 +291,14 @@ func (r *AgentRunReconciler) reconcileRunningAgentSandbox(
 		return r.succeedRun(ctx, agentRun, result, usage)
 
 	case "Failed", "Error":
-		reason, _, _ := unstructured.NestedString(sandbox.Object, "status", "message")
+		// Try to extract the structured result from pod logs first — the
+		// agent-runner writes a detailed error there. Fall back to the
+		// Sandbox condition message if pod logs aren't available.
+		_, resultErr, _ := r.extractResultFromPod(ctx, log, agentRun)
+		if resultErr != "" {
+			return ctrl.Result{}, r.failRun(ctx, agentRun, resultErr)
+		}
+		reason := sandboxConditionMessage(sandbox.Object)
 		if reason == "" {
 			reason = fmt.Sprintf("sandbox CR entered phase %q", phase)
 		}
@@ -352,18 +369,18 @@ func (r *AgentRunReconciler) buildSandboxCR(
 		podSpec["volumes"] = volumeList
 	}
 
+	// Set runtimeClassName if specified (lives inside podTemplate.spec for upstream CRD).
+	if rc := agentRun.Spec.AgentSandbox.RuntimeClass; rc != "" {
+		podSpec["runtimeClassName"] = rc
+	}
+
 	spec := map[string]interface{}{
-		"template": map[string]interface{}{
+		"podTemplate": map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"labels": labels,
 			},
 			"spec": podSpec,
 		},
-	}
-
-	// Set runtimeClassName if specified.
-	if rc := agentRun.Spec.AgentSandbox.RuntimeClass; rc != "" {
-		spec["runtimeClassName"] = rc
 	}
 
 	// Set owner reference for GC.
@@ -380,7 +397,7 @@ func (r *AgentRunReconciler) buildSandboxCR(
 
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "apps.kubernetes.io/v1alpha1",
+			"apiVersion": "agents.x-k8s.io/v1alpha1",
 			"kind":       "Sandbox",
 			"metadata": map[string]interface{}{
 				"name":            fmt.Sprintf("sb-%s", agentRun.Name),
@@ -423,7 +440,7 @@ func (r *AgentRunReconciler) buildSandboxClaimCR(
 
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "apps.kubernetes.io/v1alpha1",
+			"apiVersion": "agents.x-k8s.io/v1alpha1",
 			"kind":       "SandboxClaim",
 			"metadata": map[string]interface{}{
 				"name":            fmt.Sprintf("sbc-%s", agentRun.Name),
@@ -471,7 +488,7 @@ func (r *AgentRunReconciler) EnsureWarmPool(
 	}
 
 	// Build a basic pod template for warm pool sandboxes.
-	spec["template"] = map[string]interface{}{
+	spec["podTemplate"] = map[string]interface{}{
 		"spec": map[string]interface{}{
 			"serviceAccountName": "sympozium-agent",
 			"containers": []interface{}{
@@ -514,7 +531,7 @@ func (r *AgentRunReconciler) EnsureWarmPool(
 
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "apps.kubernetes.io/v1alpha1",
+			"apiVersion": "agents.x-k8s.io/v1alpha1",
 			"kind":       "SandboxWarmPool",
 			"metadata": map[string]interface{}{
 				"name":            poolName,
@@ -552,6 +569,69 @@ func (r *AgentRunReconciler) EnsureWarmPool(
 	}
 	log.Info("Updated SandboxWarmPool", "name", poolName, "size", wp.Size)
 	return nil
+}
+
+// sandboxPhaseFromConditions derives a phase string from the upstream Sandbox
+// CR's status.conditions. The upstream CRD uses a "Ready" condition instead of
+// a top-level phase field.
+func sandboxPhaseFromConditions(obj map[string]interface{}) string {
+	conditions, _, _ := unstructured.NestedSlice(obj, "status", "conditions")
+	for _, c := range conditions {
+		cond, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		condType, _, _ := unstructured.NestedString(cond, "type")
+		if condType != "Ready" {
+			continue
+		}
+		status, _, _ := unstructured.NestedString(cond, "status")
+		if status == "True" {
+			return "Running"
+		}
+		// Ready=False is transient during pod startup (ContainerCreating,
+		// Pending). We don't treat it as a failure here — let the caller
+		// check the pod directly for a terminal phase.
+	}
+	return ""
+}
+
+// sandboxConditionMessage extracts the message from the Ready condition.
+func sandboxConditionMessage(obj map[string]interface{}) string {
+	conditions, _, _ := unstructured.NestedSlice(obj, "status", "conditions")
+	for _, c := range conditions {
+		cond, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		condType, _, _ := unstructured.NestedString(cond, "type")
+		if condType == "Ready" {
+			msg, _, _ := unstructured.NestedString(cond, "message")
+			return msg
+		}
+	}
+	return ""
+}
+
+// refineSandboxPhaseFromPod checks the actual pod state to determine if the
+// agent-runner has completed. The upstream sandbox controller keeps the Sandbox
+// CR "Ready" even after the pod finishes, so we inspect the pod directly.
+func (r *AgentRunReconciler) refineSandboxPhaseFromPod(ctx context.Context, namespace, podName, fallback string) string {
+	if r.Clientset == nil {
+		return fallback
+	}
+	pod, err := r.Clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return fallback
+	}
+	switch pod.Status.Phase {
+	case corev1.PodSucceeded:
+		return "Completed"
+	case corev1.PodFailed:
+		return "Failed"
+	default:
+		return fallback
+	}
 }
 
 // containerToMap converts a corev1.Container to an unstructured map.

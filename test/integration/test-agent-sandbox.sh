@@ -93,13 +93,13 @@ wait_for_field_notempty() {
 info "Running Agent Sandbox integration test in namespace '${NAMESPACE}'"
 
 # Check agent-sandbox CRDs are installed.
-if ! kubectl get crd sandboxes.apps.kubernetes.io >/dev/null 2>&1; then
+if ! kubectl get crd sandboxes.agents.x-k8s.io >/dev/null 2>&1; then
   info "Installing agent-sandbox CRDs from hack/agent-sandbox-crds.yaml..."
   kubectl apply -f "$(git rev-parse --show-toplevel)/hack/agent-sandbox-crds.yaml" >/dev/null 2>&1
 fi
-kubectl get crd sandboxes.apps.kubernetes.io >/dev/null 2>&1 && pass "Sandbox CRD installed" || { fail "Sandbox CRD missing"; exit 1; }
-kubectl get crd sandboxclaims.apps.kubernetes.io >/dev/null 2>&1 && pass "SandboxClaim CRD installed" || { fail "SandboxClaim CRD missing"; exit 1; }
-kubectl get crd sandboxwarmpools.apps.kubernetes.io >/dev/null 2>&1 && pass "SandboxWarmPool CRD installed" || { fail "SandboxWarmPool CRD missing"; exit 1; }
+kubectl get crd sandboxes.agents.x-k8s.io >/dev/null 2>&1 && pass "Sandbox CRD installed" || { fail "Sandbox CRD missing"; exit 1; }
+kubectl get crd sandboxclaims.agents.x-k8s.io >/dev/null 2>&1 && pass "SandboxClaim CRD installed" || { fail "SandboxClaim CRD missing"; exit 1; }
+kubectl get crd sandboxwarmpools.agents.x-k8s.io >/dev/null 2>&1 && pass "SandboxWarmPool CRD installed" || { fail "SandboxWarmPool CRD missing"; exit 1; }
 
 # Check controller has agent-sandbox enabled.
 # The env var must be set AND the controller must have been restarted after
@@ -207,7 +207,7 @@ fi
 
 info "Test 2: Sandbox CR metadata correctness"
 
-sb_runtime="$(kubectl get sandbox "${sb_name}" -n "$NAMESPACE" -o jsonpath='{.spec.runtimeClassName}' 2>/dev/null || true)"
+sb_runtime="$(kubectl get sandbox "${sb_name}" -n "$NAMESPACE" -o jsonpath='{.spec.podTemplate.spec.runtimeClassName}' 2>/dev/null || true)"
 if [[ "$sb_runtime" == "gvisor" ]]; then
   pass "Test 2: runtimeClassName = gvisor"
 else
@@ -239,7 +239,7 @@ fi
 
 info "Test 3: Sandbox CR container spec"
 
-container_names="$(kubectl get sandbox "${sb_name}" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[*].name}' 2>/dev/null || true)"
+container_names="$(kubectl get sandbox "${sb_name}" -n "$NAMESPACE" -o jsonpath='{.spec.podTemplate.spec.containers[*].name}' 2>/dev/null || true)"
 if echo "$container_names" | grep -q "agent"; then
   pass "Test 3: agent container present"
 else
@@ -251,7 +251,7 @@ else
   fail "Test 3: ipc-bridge sidecar missing (got: ${container_names})"
 fi
 
-sa_name="$(kubectl get sandbox "${sb_name}" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.serviceAccountName}' 2>/dev/null || true)"
+sa_name="$(kubectl get sandbox "${sb_name}" -n "$NAMESPACE" -o jsonpath='{.spec.podTemplate.spec.serviceAccountName}' 2>/dev/null || true)"
 if [[ "$sa_name" == "sympozium-agent" ]]; then
   pass "Test 3: serviceAccountName = sympozium-agent"
 else
@@ -330,7 +330,7 @@ else
   fail "Test 5: agentSandbox did not take priority"
 fi
 
-both_rt="$(kubectl get sandbox "${both_sb}" -n "$NAMESPACE" -o jsonpath='{.spec.runtimeClassName}' 2>/dev/null || true)"
+both_rt="$(kubectl get sandbox "${both_sb}" -n "$NAMESPACE" -o jsonpath='{.spec.podTemplate.spec.runtimeClassName}' 2>/dev/null || true)"
 if [[ "$both_rt" == "kata" ]]; then
   pass "Test 5: runtimeClassName = kata"
 else
