@@ -67,6 +67,9 @@ export function InstancesPage() {
             : undefined,
         })),
         heartbeatInterval: result.heartbeatInterval || undefined,
+        agentSandbox: result.agentSandboxEnabled
+          ? { enabled: true, runtimeClass: result.agentSandboxRuntimeClass || "gvisor" }
+          : undefined,
       },
       {
         onSuccess: () => {

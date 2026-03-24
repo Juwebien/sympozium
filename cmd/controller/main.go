@@ -101,17 +101,20 @@ func main() {
 	}
 
 	// Initialize dynamic client for Agent Sandbox CRD support.
+	// Auto-detect CRDs unless explicitly disabled via AGENT_SANDBOX_ENABLED=false.
 	var dynamicClient dynamic.Interface
-	if os.Getenv("AGENT_SANDBOX_ENABLED") == "true" {
+	if os.Getenv("AGENT_SANDBOX_ENABLED") != "false" {
 		dc, err := dynamic.NewForConfig(mgr.GetConfig())
 		if err != nil {
 			setupLog.Error(err, "unable to create dynamic client for agent-sandbox")
 		} else if controller.CheckAgentSandboxCRDs(dc) {
 			dynamicClient = dc
-			setupLog.Info("Agent Sandbox CRD support enabled")
+			setupLog.Info("Agent Sandbox CRD support enabled (auto-detected)")
 		} else {
 			setupLog.Info("Agent Sandbox CRDs not found in cluster, feature disabled")
 		}
+	} else {
+		setupLog.Info("Agent Sandbox explicitly disabled via AGENT_SANDBOX_ENABLED=false")
 	}
 
 	if err := (&controller.AgentRunReconciler{
