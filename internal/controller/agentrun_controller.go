@@ -389,13 +389,28 @@ func (r *AgentRunReconciler) reconcilePending(ctx context.Context, log logr.Logg
 	}
 
 	// Create RBAC resources for skill sidecars that need them.
+	// This is fatal: without RBAC the agent pod will run but every kubectl/API
+	// call inside the skill sidecar will fail with "forbidden". Common causes:
+	//   - Expired ServiceAccount tokens (check kube-apiserver logs for
+	//     "service account token has expired")
+	//   - Clock skew between cluster nodes (`date` on each node vs NTP)
+	//   - Controller ClusterRole missing RBAC delegation permissions
+	//     (re-run `helm upgrade` to sync the latest chart RBAC)
 	if err := r.ensureSkillRBAC(ctx, log, agentRun, sidecars); err != nil {
-		log.Error(err, "Failed to create skill RBAC, continuing without")
+		return ctrl.Result{}, r.failRun(ctx, agentRun,
+			fmt.Sprintf("failed to create skill RBAC — the agent would run without Kubernetes permissions. "+
+				"Check controller logs and kube-apiserver for authentication errors. "+
+				"Common causes: expired ServiceAccount tokens, clock skew between nodes, "+
+				"or missing RBAC permissions on the controller ClusterRole (re-run helm upgrade). "+
+				"Underlying error: %v", err))
 	}
 
 	// Create RBAC for lifecycle hook containers if needed.
 	if err := r.ensureLifecycleRBAC(ctx, log, agentRun); err != nil {
-		log.Error(err, "Failed to create lifecycle RBAC, continuing without")
+		return ctrl.Result{}, r.failRun(ctx, agentRun,
+			fmt.Sprintf("failed to create lifecycle RBAC — hook containers would lack Kubernetes permissions. "+
+				"Check controller logs and kube-apiserver for authentication errors. "+
+				"Underlying error: %v", err))
 	}
 
 	// Create a workspace PVC when postRun lifecycle hooks are defined,
@@ -779,9 +794,14 @@ func (r *AgentRunReconciler) reconcilePendingServer(ctx context.Context, log log
 		return ctrl.Result{}, fmt.Errorf("ensuring agent service account: %w", err)
 	}
 
-	// Create RBAC for sidecars.
+	// Create RBAC for sidecars — fatal if it fails (see reconcilePending for details).
 	if err := r.ensureSkillRBAC(ctx, log, agentRun, sidecars); err != nil {
-		log.Error(err, "Failed to create skill RBAC, continuing without")
+		return ctrl.Result{}, r.failRun(ctx, agentRun,
+			fmt.Sprintf("failed to create skill RBAC — the server would run without Kubernetes permissions. "+
+				"Check controller logs and kube-apiserver for authentication errors. "+
+				"Common causes: expired ServiceAccount tokens, clock skew between nodes, "+
+				"or missing RBAC permissions on the controller ClusterRole (re-run helm upgrade). "+
+				"Underlying error: %v", err))
 	}
 
 	// Find the server sidecar (first one with RequiresServer=true).

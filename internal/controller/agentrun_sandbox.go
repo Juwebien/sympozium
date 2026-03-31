@@ -169,13 +169,24 @@ func (r *AgentRunReconciler) reconcilePendingAgentSandbox(
 	if err := r.mirrorSkillConfigMaps(ctx, log, agentRun); err != nil {
 		log.Error(err, "Failed to mirror skill ConfigMaps")
 	}
+	// RBAC creation is fatal: without it the agent sandbox will run but every
+	// kubectl/API call inside skill sidecars will fail with "forbidden".
+	// See reconcilePending in agentrun_controller.go for common causes.
 	if err := r.ensureSkillRBAC(ctx, log, agentRun, taskSidecars); err != nil {
-		log.Error(err, "Failed to create skill RBAC")
+		return ctrl.Result{}, r.failRun(ctx, agentRun,
+			fmt.Sprintf("failed to create skill RBAC — the agent sandbox would run without Kubernetes permissions. "+
+				"Check controller logs and kube-apiserver for authentication errors. "+
+				"Common causes: expired ServiceAccount tokens, clock skew between nodes, "+
+				"or missing RBAC permissions on the controller ClusterRole (re-run helm upgrade). "+
+				"Underlying error: %v", err))
 	}
 
 	// Create RBAC for lifecycle hook containers if needed.
 	if err := r.ensureLifecycleRBAC(ctx, log, agentRun); err != nil {
-		log.Error(err, "Failed to create lifecycle RBAC")
+		return ctrl.Result{}, r.failRun(ctx, agentRun,
+			fmt.Sprintf("failed to create lifecycle RBAC — hook containers would lack Kubernetes permissions. "+
+				"Check controller logs and kube-apiserver for authentication errors. "+
+				"Underlying error: %v", err))
 	}
 
 	// Create workspace PVC when postRun lifecycle hooks are defined.
