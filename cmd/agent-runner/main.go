@@ -195,11 +195,28 @@ func main() {
 	if memoryTools := initMemoryTools(); len(memoryTools) > 0 {
 		tools = append(tools, memoryTools...)
 
+		// Auto-inject relevant memory context so the agent has immediate
+		// awareness of past findings without relying on it to call memory_search.
+		var memoryContextBlock string
+		if memCtx := queryMemoryContext(task, 3); memCtx != "" {
+			memoryContextBlock = "\n\n## Relevant Past Context (auto-retrieved)\n\n" +
+				"The following memories were automatically retrieved based on your current task:\n\n" +
+				memCtx
+			log.Printf("auto-injected %d bytes of memory context", len(memCtx))
+		}
+
 		systemPrompt += "\n\n## Persistent Memory\n\n" +
-			"You have access to persistent memory tools that survive across runs.\n" +
-			"**Before starting any investigation**, call `memory_search` with relevant keywords " +
-			"to check if similar issues have been diagnosed before.\n" +
-			"**After completing your task**, call `memory_store` to save key findings, " +
+			"You have access to persistent memory tools that survive across runs.\n"
+
+		if memoryContextBlock != "" {
+			systemPrompt += memoryContextBlock + "\n\n" +
+				"Use `memory_search` for additional lookups beyond what was auto-loaded above.\n"
+		} else {
+			systemPrompt += "**Before starting any investigation**, call `memory_search` with relevant keywords " +
+				"to check if similar issues have been diagnosed before.\n"
+		}
+
+		systemPrompt += "**After completing your task**, call `memory_store` to save key findings, " +
 			"root causes, and resolution steps for future reference.\n" +
 			"Be specific in stored content — include service names, namespaces, error messages, and timestamps."
 

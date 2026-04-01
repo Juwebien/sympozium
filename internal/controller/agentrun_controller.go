@@ -535,6 +535,8 @@ func (r *AgentRunReconciler) reconcileRunning(ctx context.Context, log logr.Logg
 		if podErr != "" {
 			errMsg = podErr
 		}
+		r.extractAndPersistMemory(ctx, log, agentRun)
+		r.persistFailureMemory(ctx, log, agentRun, errMsg)
 		if hasPostRunHooks {
 			return r.startPostRun(ctx, log, agentRun, 1, errMsg, nil)
 		}
@@ -570,6 +572,8 @@ func (r *AgentRunReconciler) reconcileRunning(ctx context.Context, log logr.Logg
 			if _, logErr, _ := r.extractResultFromPod(ctx, log, agentRun); logErr != "" {
 				errMsg = logErr
 			}
+			r.extractAndPersistMemory(ctx, log, agentRun)
+			r.persistFailureMemory(ctx, log, agentRun, errMsg)
 			_ = r.Delete(ctx, job, client.PropagationPolicy(metav1.DeletePropagationBackground))
 			if hasPostRunHooks {
 				return r.startPostRun(ctx, log, agentRun, 1, errMsg, nil)
@@ -587,6 +591,8 @@ func (r *AgentRunReconciler) reconcileRunning(ctx context.Context, log logr.Logg
 		}
 		if elapsed > timeout {
 			log.Info("AgentRun timed out", "elapsed", elapsed, "timeout", timeout)
+			r.extractAndPersistMemory(ctx, log, agentRun)
+			r.persistFailureMemory(ctx, log, agentRun, "timeout")
 			// Delete the Job to kill the pod
 			_ = r.Delete(ctx, job, client.PropagationPolicy(metav1.DeletePropagationForeground))
 			return ctrl.Result{}, r.failRun(ctx, agentRun, "timeout")

@@ -254,6 +254,75 @@ func formatMemoryContent(raw json.RawMessage) string {
 	return string(raw)
 }
 
+// memoryContextMaxChars caps the auto-injected memory context to avoid
+// bloating the system prompt. ~2000 chars ≈ 500 tokens.
+const memoryContextMaxChars = 2000
+
+// queryMemoryContext queries the memory server for entries related to the
+// current task and returns pre-formatted context for injection into the
+// system prompt. Returns empty string on any error or if no results match.
+func queryMemoryContext(task string, maxResults int) string {
+	if memoryServerURL == "" {
+		return ""
+	}
+
+	// Use the first 200 chars of the task as the search query —
+	// FTS5 tokenizes natural language well enough.
+	query := task
+	if len(query) > 200 {
+		query = query[:200]
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	body, _ := json.Marshal(map[string]any{
+		"query": query,
+		"top_k": maxResults,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, "POST", memoryServerURL+"/search", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("memory context: failed to build request: %v", err)
+		return ""
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := memoryHTTPClient.Do(req)
+	if err != nil {
+		log.Printf("memory context: server unreachable: %v", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("memory context: server returned %d", resp.StatusCode)
+		return ""
+	}
+
+	var apiResp memoryAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil || !apiResp.Success {
+		return ""
+	}
+
+	formatted := formatMemoryContent(apiResp.Content)
+	if formatted == "(no results)" || formatted == "[]" {
+		return ""
+	}
+
+	// Truncate at the last complete entry boundary to stay within budget.
+	if len(formatted) > memoryContextMaxChars {
+		cut := strings.LastIndex(formatted[:memoryContextMaxChars], "\n---\n")
+		if cut > 0 {
+			formatted = formatted[:cut]
+		} else {
+			formatted = formatted[:memoryContextMaxChars]
+		}
+	}
+
+	return formatted
+}
+
 func initMemoryTools() []ToolDef {
 	memoryServerURL = os.Getenv("MEMORY_SERVER_URL")
 	if memoryServerURL == "" {
