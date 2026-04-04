@@ -27,8 +27,31 @@ declare global {
       wizardBack(): Chainable<void>;
       /** Delete an instance by name via API (cleanup helper). */
       deleteInstance(name: string): Chainable<void>;
+      /** Create a minimal LM Studio SympoziumInstance via API. */
+      createLMStudioInstance(name: string): Chainable<void>;
+      /** Dispatch an ad-hoc run against an instance via API. Returns the created run name. */
+      dispatchRun(
+        instanceRef: string,
+        task: string,
+        opts?: { name?: string },
+      ): Chainable<string>;
+      /** Poll status.phase of an AgentRun until it reaches a terminal phase. */
+      waitForRunTerminal(runName: string, timeoutMs?: number): Chainable<string>;
+      /** Delete an AgentRun by name (cleanup helper). */
+      deleteRun(name: string): Chainable<void>;
+      /** Delete a PersonaPack by name (cleanup helper). */
+      deletePersonaPack(name: string): Chainable<void>;
+      /** Delete a SympoziumSchedule by name (cleanup helper). */
+      deleteSchedule(name: string): Chainable<void>;
     }
   }
+}
+
+function authHeaders(): Record<string, string> {
+  const token = Cypress.env("API_TOKEN");
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) h["Authorization"] = `Bearer ${token}`;
+  return h;
 }
 
 Cypress.Commands.add("wizardNext", () => {
@@ -40,13 +63,110 @@ Cypress.Commands.add("wizardBack", () => {
 });
 
 Cypress.Commands.add("deleteInstance", (name: string) => {
-  const token = Cypress.env("API_TOKEN");
   cy.request({
     method: "DELETE",
     url: `/api/v1/instances/${name}?namespace=default`,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: authHeaders(),
     failOnStatusCode: false,
   });
+});
+
+Cypress.Commands.add("deleteRun", (name: string) => {
+  cy.request({
+    method: "DELETE",
+    url: `/api/v1/runs/${name}?namespace=default`,
+    headers: authHeaders(),
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("deletePersonaPack", (name: string) => {
+  cy.request({
+    method: "DELETE",
+    url: `/api/v1/personapacks/${name}?namespace=default`,
+    headers: authHeaders(),
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("deleteSchedule", (name: string) => {
+  cy.request({
+    method: "DELETE",
+    url: `/api/v1/schedules/${name}?namespace=default`,
+    headers: authHeaders(),
+    failOnStatusCode: false,
+  });
+});
+
+Cypress.Commands.add("createLMStudioInstance", (name: string) => {
+  cy.request({
+    method: "POST",
+    url: "/api/v1/instances?namespace=default",
+    headers: authHeaders(),
+    body: {
+      name,
+      agents: {
+        default: {
+          model: "qwen/qwen3.5-9b",
+          baseURL: "http://host.docker.internal:1234/v1",
+        },
+      },
+      authRefs: [{ provider: "lm-studio", secret: "" }],
+    },
+    failOnStatusCode: false,
+  }).then((resp) => {
+    if (resp.status >= 400 && resp.status !== 409) {
+      throw new Error(
+        `createLMStudioInstance failed (${resp.status}): ${JSON.stringify(resp.body)}`,
+      );
+    }
+  });
+});
+
+Cypress.Commands.add("dispatchRun", (instanceRef: string, task: string, opts) => {
+  return cy
+    .request({
+      method: "POST",
+      url: "/api/v1/runs?namespace=default",
+      headers: authHeaders(),
+      body: {
+        instanceRef,
+        task,
+        ...(opts?.name ? { name: opts.name } : {}),
+      },
+    })
+    .then((resp) => {
+      expect(resp.status).to.be.oneOf([200, 201]);
+      const name = resp.body?.metadata?.name as string;
+      expect(name).to.be.a("string").and.not.be.empty;
+      return cy.wrap(name);
+    });
+});
+
+Cypress.Commands.add("waitForRunTerminal", (runName: string, timeoutMs = 180000) => {
+  const started = Date.now();
+  const poll = (): Cypress.Chainable<string> => {
+    return cy
+      .request({
+        url: `/api/v1/runs/${runName}?namespace=default`,
+        headers: authHeaders(),
+        failOnStatusCode: false,
+      })
+      .then((resp) => {
+        const phase = resp.body?.status?.phase as string | undefined;
+        if (phase === "Succeeded" || phase === "Failed") {
+          return cy.wrap(phase);
+        }
+        if (Date.now() - started > timeoutMs) {
+          throw new Error(
+            `waitForRunTerminal(${runName}) timed out; last phase=${phase ?? "none"}`,
+          );
+        }
+        cy.wait(2000, { log: false });
+        return poll();
+      });
+  };
+  return poll();
 });
 
 export {};
