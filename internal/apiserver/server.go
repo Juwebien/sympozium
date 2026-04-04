@@ -568,7 +568,9 @@ func (s *Server) createInstance(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	secretAutoCreated := false
 	if req.Provider != "" && req.APIKey != "" && req.SecretName == "" {
+		secretAutoCreated = true
 		req.SecretName = defaultProviderSecretName(req.Name, req.Provider)
 		envKey := providerEnvKey(req.Provider)
 		secret := &corev1.Secret{
@@ -604,7 +606,7 @@ func (s *Server) createInstance(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if req.Provider != "" && req.SecretName != "" {
+	if req.Provider != "" && req.SecretName != "" && !secretAutoCreated {
 		existing := &corev1.Secret{}
 		if err := s.client.Get(r.Context(), types.NamespacedName{Name: req.SecretName, Namespace: ns}, existing); err != nil {
 			if k8serrors.IsNotFound(err) {
