@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { useSchedules, useDeleteSchedule, useCreateSchedule, useInstances } from "@/hooks/use-api";
+import {
+  useSchedules,
+  useDeleteSchedule,
+  useCreateSchedule,
+  useInstances,
+} from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
 import {
   Table,
@@ -50,9 +55,7 @@ export function SchedulesPage() {
   });
 
   const filtered = (data || [])
-    .filter((s) =>
-      s.metadata.name.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((s) => s.metadata.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
   const handleCreate = () => {
@@ -228,9 +231,7 @@ export function SchedulesPage() {
                 <TableCell>
                   <StatusBadge
                     phase={
-                      sched.spec.suspend
-                        ? "Suspended"
-                        : sched.status?.phase
+                      sched.spec.suspend ? "Suspended" : sched.status?.phase
                     }
                   />
                 </TableCell>
@@ -246,9 +247,7 @@ export function SchedulesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() =>
-                      deleteSchedule.mutate(sched.metadata.name)
-                    }
+                    onClick={() => deleteSchedule.mutate(sched.metadata.name)}
                     disabled={deleteSchedule.isPending}
                     title="Delete"
                   >

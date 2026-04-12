@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMcpServer } from "@/hooks/use-api";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -43,7 +38,10 @@ export function McpServerDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/mcp-servers" className="text-muted-foreground hover:text-foreground">
+        <Link
+          to="/mcp-servers"
+          className="text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -51,9 +49,13 @@ export function McpServerDetailPage() {
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             Created {formatAge(mcp.metadata.creationTimestamp)} ago
             {mcp.status?.ready ? (
-              <Badge variant="default" className="text-xs">Ready</Badge>
+              <Badge variant="default" className="text-xs">
+                Ready
+              </Badge>
             ) : (
-              <Badge variant="secondary" className="text-xs">Not Ready</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Not Ready
+              </Badge>
             )}
           </p>
         </div>
@@ -75,8 +77,14 @@ export function McpServerDetailPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Row label="Ready" value={mcp.status?.ready ? "Yes" : "No"} />
-                <Row label="URL" value={mcp.status?.url || mcp.spec.url || "—"} />
-                <Row label="Tools Discovered" value={String(mcp.status?.toolCount ?? 0)} />
+                <Row
+                  label="URL"
+                  value={mcp.status?.url || mcp.spec.url || "—"}
+                />
+                <Row
+                  label="Tools Discovered"
+                  value={String(mcp.status?.toolCount ?? 0)}
+                />
                 <Row label="Transport" value={mcp.spec.transportType} />
               </CardContent>
             </Card>
@@ -89,15 +97,25 @@ export function McpServerDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <Row label="Image" value={mcp.spec.deployment.image} />
-                  <Row label="Port" value={String(mcp.spec.deployment.port ?? 8080)} />
+                  <Row
+                    label="Port"
+                    value={String(mcp.spec.deployment.port ?? 8080)}
+                  />
                   {mcp.spec.deployment.cmd && (
                     <Row label="Command" value={mcp.spec.deployment.cmd} />
                   )}
-                  {mcp.spec.deployment.args && mcp.spec.deployment.args.length > 0 && (
-                    <Row label="Args" value={mcp.spec.deployment.args.join(" ")} />
-                  )}
+                  {mcp.spec.deployment.args &&
+                    mcp.spec.deployment.args.length > 0 && (
+                      <Row
+                        label="Args"
+                        value={mcp.spec.deployment.args.join(" ")}
+                      />
+                    )}
                   {mcp.spec.deployment.serviceAccountName && (
-                    <Row label="Service Account" value={mcp.spec.deployment.serviceAccountName} />
+                    <Row
+                      label="Service Account"
+                      value={mcp.spec.deployment.serviceAccountName}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -118,7 +136,9 @@ export function McpServerDetailPage() {
                       >
                         {c.type}
                       </Badge>
-                      <span className="text-muted-foreground truncate">{c.message}</span>
+                      <span className="text-muted-foreground truncate">
+                        {c.message}
+                      </span>
                     </div>
                   ))}
                 </CardContent>
@@ -143,7 +163,11 @@ export function McpServerDetailPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {mcp.status.tools.map((tool) => (
-                    <Badge key={tool} variant="outline" className="font-mono text-xs">
+                    <Badge
+                      key={tool}
+                      variant="outline"
+                      className="font-mono text-xs"
+                    >
                       {tool}
                     </Badge>
                   ))}
@@ -154,7 +178,8 @@ export function McpServerDetailPage() {
             <div className="py-12 text-center">
               <p className="text-muted-foreground">No tools discovered yet</p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Tools will appear here once the MCP server is ready and has been probed
+                Tools will appear here once the MCP server is ready and has been
+                probed
               </p>
             </div>
           )}
@@ -180,20 +205,36 @@ export function McpServerDetailPage() {
               <CardContent className="space-y-3">
                 {mcp.spec.toolsAllow && mcp.spec.toolsAllow.length > 0 && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Allow list</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Allow list
+                    </p>
                     <div className="flex flex-wrap gap-1">
                       {mcp.spec.toolsAllow.map((t) => (
-                        <Badge key={t} variant="outline" className="text-xs font-mono">{t}</Badge>
+                        <Badge
+                          key={t}
+                          variant="outline"
+                          className="text-xs font-mono"
+                        >
+                          {t}
+                        </Badge>
                       ))}
                     </div>
                   </div>
                 )}
                 {mcp.spec.toolsDeny && mcp.spec.toolsDeny.length > 0 && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Deny list</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Deny list
+                    </p>
                     <div className="flex flex-wrap gap-1">
                       {mcp.spec.toolsDeny.map((t) => (
-                        <Badge key={t} variant="destructive" className="text-xs font-mono">{t}</Badge>
+                        <Badge
+                          key={t}
+                          variant="destructive"
+                          className="text-xs font-mono"
+                        >
+                          {t}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -202,22 +243,27 @@ export function McpServerDetailPage() {
             </Card>
           )}
 
-          {mcp.spec.deployment?.secretRefs && mcp.spec.deployment.secretRefs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Secret References</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {mcp.spec.deployment.secretRefs.map((s) => (
-                    <Badge key={s.name} variant="secondary" className="text-xs font-mono">
-                      {s.name}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {mcp.spec.deployment?.secretRefs &&
+            mcp.spec.deployment.secretRefs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Secret References</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {mcp.spec.deployment.secretRefs.map((s) => (
+                      <Badge
+                        key={s.name}
+                        variant="secondary"
+                        className="text-xs font-mono"
+                      >
+                        {s.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
         </TabsContent>
       </Tabs>
     </div>

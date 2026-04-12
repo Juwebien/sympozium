@@ -48,14 +48,54 @@ import {
 // ── Shared constants ─────────────────────────────────────────────────────────
 
 export const PROVIDERS = [
-  { value: "openai", label: "OpenAI", defaultModel: "gpt-4o", defaultBaseURL: "" },
-  { value: "anthropic", label: "Anthropic", defaultModel: "claude-sonnet-4-20250514", defaultBaseURL: "" },
-  { value: "azure-openai", label: "Azure OpenAI", defaultModel: "gpt-4o", defaultBaseURL: "" },
-  { value: "ollama", label: "Ollama", defaultModel: "llama3", defaultBaseURL: "http://ollama.default.svc:11434/v1" },
-  { value: "lm-studio", label: "LM Studio", defaultModel: "", defaultBaseURL: "http://localhost:1234/v1" },
-  { value: "llama-server", label: "llama-server", defaultModel: "", defaultBaseURL: "http://localhost:8080/v1" },
-  { value: "unsloth", label: "Unsloth", defaultModel: "", defaultBaseURL: "http://localhost:8080/v1" },
-  { value: "bedrock", label: "AWS Bedrock", defaultModel: "anthropic.claude-sonnet-4-20250514-v1:0", defaultBaseURL: "" },
+  {
+    value: "openai",
+    label: "OpenAI",
+    defaultModel: "gpt-4o",
+    defaultBaseURL: "",
+  },
+  {
+    value: "anthropic",
+    label: "Anthropic",
+    defaultModel: "claude-sonnet-4-20250514",
+    defaultBaseURL: "",
+  },
+  {
+    value: "azure-openai",
+    label: "Azure OpenAI",
+    defaultModel: "gpt-4o",
+    defaultBaseURL: "",
+  },
+  {
+    value: "ollama",
+    label: "Ollama",
+    defaultModel: "llama3",
+    defaultBaseURL: "http://ollama.default.svc:11434/v1",
+  },
+  {
+    value: "lm-studio",
+    label: "LM Studio",
+    defaultModel: "",
+    defaultBaseURL: "http://localhost:1234/v1",
+  },
+  {
+    value: "llama-server",
+    label: "llama-server",
+    defaultModel: "",
+    defaultBaseURL: "http://localhost:8080/v1",
+  },
+  {
+    value: "unsloth",
+    label: "Unsloth",
+    defaultModel: "",
+    defaultBaseURL: "http://localhost:8080/v1",
+  },
+  {
+    value: "bedrock",
+    label: "AWS Bedrock",
+    defaultModel: "anthropic.claude-sonnet-4-20250514-v1:0",
+    defaultBaseURL: "",
+  },
   { value: "custom", label: "Custom", defaultModel: "", defaultBaseURL: "" },
 ];
 
@@ -139,18 +179,52 @@ interface OnboardingWizardProps {
 
 // ── Steps ────────────────────────────────────────────────────────────────────
 
-type WizardStep = "name" | "provider" | "apikey" | "model" | "skills" | "heartbeat" | "channels" | "confirm" | "channelAction";
+type WizardStep =
+  | "name"
+  | "provider"
+  | "apikey"
+  | "model"
+  | "skills"
+  | "heartbeat"
+  | "channels"
+  | "confirm"
+  | "channelAction";
 
 function stepsForMode(mode: "instance" | "persona"): WizardStep[] {
   if (mode === "instance") {
-    return ["name", "provider", "apikey", "model", "skills", "heartbeat", "channels", "confirm", "channelAction"];
+    return [
+      "name",
+      "provider",
+      "apikey",
+      "model",
+      "skills",
+      "heartbeat",
+      "channels",
+      "confirm",
+      "channelAction",
+    ];
   }
-  return ["provider", "apikey", "model", "skills", "heartbeat", "channels", "confirm", "channelAction"];
+  return [
+    "provider",
+    "apikey",
+    "model",
+    "skills",
+    "heartbeat",
+    "channels",
+    "confirm",
+    "channelAction",
+  ];
 }
 
 // ── Step indicator ───────────────────────────────────────────────────────────
 
-function StepIndicator({ steps, current }: { steps: WizardStep[]; current: WizardStep }) {
+function StepIndicator({
+  steps,
+  current,
+}: {
+  steps: WizardStep[];
+  current: WizardStep;
+}) {
   const labels: Record<WizardStep, string> = {
     name: "Name",
     provider: "Provider",
@@ -185,8 +259,8 @@ function StepIndicator({ steps, current }: { steps: WizardStep[]; current: Wizar
               i < idx
                 ? "bg-blue-500/20 text-blue-400"
                 : i === idx
-                ? "bg-blue-500 text-white"
-                : "bg-muted text-muted-foreground"
+                  ? "bg-blue-500 text-white"
+                  : "bg-muted text-muted-foreground",
             )}
           >
             {i < idx ? <Check className="h-3 w-3" /> : icons[step]}
@@ -218,11 +292,16 @@ function ModelSelector({
   onChange: (v: string) => void;
   bedrockCredentials?: import("@/hooks/use-model-list").BedrockCredentials;
 }) {
-  const { models, isLoading, isLive } = useModelList(provider, apiKey, baseURL, bedrockCredentials);
+  const { models, isLoading, isLive } = useModelList(
+    provider,
+    apiKey,
+    baseURL,
+    bedrockCredentials,
+  );
   const [search, setSearch] = useState("");
 
   const filtered = models.filter((m) =>
-    m.toLowerCase().includes(search.toLowerCase())
+    m.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -262,7 +341,7 @@ function ModelSelector({
                     "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-mono transition-colors text-left",
                     m === value
                       ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                      : "text-foreground hover:bg-white/5 border border-transparent"
+                      : "text-foreground hover:bg-white/5 border border-transparent",
                   )}
                 >
                   {m === value && <Check className="h-3 w-3 shrink-0" />}
@@ -337,19 +416,30 @@ export function OnboardingWizard({
     awsSecretAccessKey: defaults?.awsSecretAccessKey || "",
     awsSessionToken: defaults?.awsSessionToken || "",
   });
-  const [inferenceMode, setInferenceMode] = useState<"workload" | "node">("workload");
+  const [inferenceMode, setInferenceMode] = useState<"workload" | "node">(
+    "workload",
+  );
   const [channelActionIdx, setChannelActionIdx] = useState(0);
   const [showYaml, setShowYaml] = useState(false);
   const { data: capabilities } = useCapabilities();
 
-  const isLocalProvider = form.provider === "ollama" || form.provider === "lm-studio" || form.provider === "llama-server" || form.provider === "unsloth" || form.provider === "custom";
+  const isLocalProvider =
+    form.provider === "ollama" ||
+    form.provider === "lm-studio" ||
+    form.provider === "llama-server" ||
+    form.provider === "unsloth" ||
+    form.provider === "custom";
   // Unsloth is served via llama.cpp's llama-server or vLLM, both of which
   // are already probed by node-probe under their own target names. When the
   // user picks "unsloth" in the UI, match nodes that expose either of those.
   const nodeProviderMatches = (probeName: string) => {
     if (form.provider === "custom") return true;
     if (form.provider === "unsloth") {
-      return probeName === "unsloth" || probeName === "llama-cpp" || probeName === "vllm";
+      return (
+        probeName === "unsloth" ||
+        probeName === "llama-cpp" ||
+        probeName === "vllm"
+      );
     }
     if (form.provider === "llama-server") {
       return probeName === "llama-cpp";
@@ -357,7 +447,7 @@ export function OnboardingWizard({
     return probeName === form.provider;
   };
   const { data: providerNodes, isLoading: nodesLoading } = useProviderNodes(
-    isLocalProvider && inferenceMode === "node"
+    isLocalProvider && inferenceMode === "node",
   );
 
   const stepIdx = steps.indexOf(step);
@@ -369,8 +459,15 @@ export function OnboardingWizard({
       case "provider":
         return !!form.provider;
       case "apikey":
-        if (form.provider === "ollama" || form.provider === "lm-studio" || form.provider === "llama-server" || form.provider === "unsloth") return true;
-        if (form.provider === "bedrock") return !!form.secretName || !!form.awsRegion;
+        if (
+          form.provider === "ollama" ||
+          form.provider === "lm-studio" ||
+          form.provider === "llama-server" ||
+          form.provider === "unsloth"
+        )
+          return true;
+        if (form.provider === "bedrock")
+          return !!form.secretName || !!form.awsRegion;
         return !!form.secretName || !!form.apiKey;
       case "model":
         return !!form.model;
@@ -385,7 +482,7 @@ export function OnboardingWizard({
 
   const actionChannels = useMemo(
     () => form.channels.filter((c) => c !== "whatsapp"),
-    [form.channels]
+    [form.channels],
   );
   const hasActionChannels = actionChannels.length > 0;
 
@@ -474,9 +571,7 @@ export function OnboardingWizard({
       <Sparkles className="h-5 w-5 text-blue-400" />
     );
   const titleText =
-    mode === "instance"
-      ? "Create Instance"
-      : `Enable ${targetName || "Pack"}`;
+    mode === "instance" ? "Create Instance" : `Enable ${targetName || "Pack"}`;
   const completeLabel = mode === "instance" ? "Create" : "Activate";
   const completeIcon =
     mode === "instance" ? (
@@ -507,7 +602,10 @@ export function OnboardingWizard({
           </DialogDescription>
         </DialogHeader>
 
-        <StepIndicator steps={steps.filter((s) => s !== "channelAction")} current={step === "channelAction" ? "confirm" : step} />
+        <StepIndicator
+          steps={steps.filter((s) => s !== "channelAction")}
+          current={step === "channelAction" ? "confirm" : step}
+        />
 
         {/* ── Name step (instance only) ─────────────────────────────── */}
         {step === "name" && (
@@ -568,7 +666,7 @@ export function OnboardingWizard({
                       "flex-1 flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs transition-colors",
                       inferenceMode === "workload"
                         ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
-                        : "border-border/50 hover:bg-white/5"
+                        : "border-border/50 hover:bg-white/5",
                     )}
                   >
                     <Server className="h-3.5 w-3.5" /> In-cluster service
@@ -580,7 +678,7 @@ export function OnboardingWizard({
                       "flex-1 flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs transition-colors",
                       inferenceMode === "node"
                         ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
-                        : "border-border/50 hover:bg-white/5"
+                        : "border-border/50 hover:bg-white/5",
                     )}
                   >
                     <Cpu className="h-3.5 w-3.5" /> Installed on node
@@ -590,20 +688,23 @@ export function OnboardingWizard({
             )}
 
             {/* In-cluster service: manual Base URL input */}
-            {(form.provider === "azure-openai" || (isLocalProvider && inferenceMode === "workload")) && (
+            {(form.provider === "azure-openai" ||
+              (isLocalProvider && inferenceMode === "workload")) && (
               <div className="space-y-2">
                 <Label>Base URL</Label>
                 <Input
                   value={form.baseURL}
-                  onChange={(e) => setForm({ ...form, baseURL: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, baseURL: e.target.value })
+                  }
                   placeholder={
                     form.provider === "ollama"
                       ? "http://ollama.default.svc:11434/v1"
                       : form.provider === "lm-studio"
-                      ? "http://localhost:1234/v1"
-                      : form.provider === "unsloth"
-                      ? "http://localhost:8080/v1"
-                      : "https://your-endpoint.openai.azure.com/v1"
+                        ? "http://localhost:1234/v1"
+                        : form.provider === "unsloth"
+                          ? "http://localhost:8080/v1"
+                          : "https://your-endpoint.openai.azure.com/v1"
                   }
                 />
               </div>
@@ -618,8 +719,9 @@ export function OnboardingWizard({
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Discovering nodes...
                   </div>
-                ) : !providerNodes || providerNodes.filter((n) =>
-                    n.providers.some((p) => nodeProviderMatches(p.name))
+                ) : !providerNodes ||
+                  providerNodes.filter((n) =>
+                    n.providers.some((p) => nodeProviderMatches(p.name)),
                   ).length === 0 ? (
                   <div className="rounded-md border border-border/50 bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
                     {providerNodes && providerNodes.length > 0
@@ -631,55 +733,76 @@ export function OnboardingWizard({
                     <div className="p-1 space-y-0.5">
                       {providerNodes
                         .filter((node) =>
-                          node.providers.some((p) => nodeProviderMatches(p.name))
+                          node.providers.some((p) =>
+                            nodeProviderMatches(p.name),
+                          ),
                         )
                         .map((node) => {
-                        const isSelected = form.nodeSelector?.["kubernetes.io/hostname"] === node.nodeName;
-                        const nodeProviders = node.providers
-                          .filter((p) => !form.provider || nodeProviderMatches(p.name))
-                          .map((p) => p.name);
-                        const nodeModels = node.providers
-                          .filter((p) => !form.provider || nodeProviderMatches(p.name))
-                          .flatMap((p) => p.models);
-                        const providerInfo = node.providers.find((p) => nodeProviderMatches(p.name)) || node.providers[0];
+                          const isSelected =
+                            form.nodeSelector?.["kubernetes.io/hostname"] ===
+                            node.nodeName;
+                          const nodeProviders = node.providers
+                            .filter(
+                              (p) =>
+                                !form.provider || nodeProviderMatches(p.name),
+                            )
+                            .map((p) => p.name);
+                          const nodeModels = node.providers
+                            .filter(
+                              (p) =>
+                                !form.provider || nodeProviderMatches(p.name),
+                            )
+                            .flatMap((p) => p.models);
+                          const providerInfo =
+                            node.providers.find((p) =>
+                              nodeProviderMatches(p.name),
+                            ) || node.providers[0];
 
-                        return (
-                          <button
-                            key={node.nodeName}
-                            type="button"
-                            onClick={() => {
-                              if (providerInfo) {
-                                // Use the node-probe reverse proxy when available,
-                                // so the cluster can reach host-installed providers.
-                                const base = providerInfo.proxyPort
-                                  ? `http://${node.nodeIP}:${providerInfo.proxyPort}/proxy/${providerInfo.name}/v1`
-                                  : `http://${node.nodeIP}:${providerInfo.port}/v1`;
-                                setForm({
-                                  ...form,
-                                  baseURL: base,
-                                  nodeSelector: { "kubernetes.io/hostname": node.nodeName },
-                                });
-                              }
-                            }}
-                            className={cn(
-                              "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left text-xs transition-colors",
-                              isSelected
-                                ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                                : "text-foreground hover:bg-white/5 border border-transparent"
-                            )}
-                          >
-                            <Cpu className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                            <div className="min-w-0">
-                              <div className="font-mono truncate">{node.nodeName}</div>
-                              <div className="text-[10px] text-muted-foreground">
-                                {node.nodeIP} &middot; {nodeProviders.join(", ")}
-                                {nodeModels.length > 0 && ` · ${nodeModels.length} model${nodeModels.length === 1 ? "" : "s"}`}
+                          return (
+                            <button
+                              key={node.nodeName}
+                              type="button"
+                              onClick={() => {
+                                if (providerInfo) {
+                                  // Use the node-probe reverse proxy when available,
+                                  // so the cluster can reach host-installed providers.
+                                  const base = providerInfo.proxyPort
+                                    ? `http://${node.nodeIP}:${providerInfo.proxyPort}/proxy/${providerInfo.name}/v1`
+                                    : `http://${node.nodeIP}:${providerInfo.port}/v1`;
+                                  setForm({
+                                    ...form,
+                                    baseURL: base,
+                                    nodeSelector: {
+                                      "kubernetes.io/hostname": node.nodeName,
+                                    },
+                                  });
+                                }
+                              }}
+                              className={cn(
+                                "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left text-xs transition-colors",
+                                isSelected
+                                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                  : "text-foreground hover:bg-white/5 border border-transparent",
+                              )}
+                            >
+                              <Cpu className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <div className="min-w-0">
+                                <div className="font-mono truncate">
+                                  {node.nodeName}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {node.nodeIP} &middot;{" "}
+                                  {nodeProviders.join(", ")}
+                                  {nodeModels.length > 0 &&
+                                    ` · ${nodeModels.length} model${nodeModels.length === 1 ? "" : "s"}`}
+                                </div>
                               </div>
-                            </div>
-                            {isSelected && <Check className="h-3 w-3 shrink-0 mt-0.5 ml-auto" />}
-                          </button>
-                        );
-                      })}
+                              {isSelected && (
+                                <Check className="h-3 w-3 shrink-0 mt-0.5 ml-auto" />
+                              )}
+                            </button>
+                          );
+                        })}
                     </div>
                   </ScrollArea>
                 )}
@@ -691,98 +814,108 @@ export function OnboardingWizard({
         {/* ── Auth step ─────────────────────────────────────────────── */}
         {step === "apikey" && (
           <ScrollArea className="max-h-[60vh]">
-          <div className="space-y-4">
-            {form.provider !== "bedrock" &&
-              form.provider !== "ollama" &&
-              form.provider !== "lm-studio" &&
-              form.provider !== "llama-server" &&
-              form.provider !== "unsloth" && (
+            <div className="space-y-4">
+              {form.provider !== "bedrock" &&
+                form.provider !== "ollama" &&
+                form.provider !== "lm-studio" &&
+                form.provider !== "llama-server" &&
+                form.provider !== "unsloth" && (
+                  <div className="space-y-2">
+                    <Label>API Key</Label>
+                    <Input
+                      type="password"
+                      value={form.apiKey}
+                      onChange={(e) =>
+                        setForm({ ...form, apiKey: e.target.value })
+                      }
+                      placeholder="sk-…"
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      A Kubernetes Secret will be created automatically from
+                      this key. Also used to fetch available models.
+                    </p>
+                  </div>
+                )}
+              {form.provider === "bedrock" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>AWS Region</Label>
+                    <Input
+                      value={form.awsRegion}
+                      onChange={(e) =>
+                        setForm({ ...form, awsRegion: e.target.value })
+                      }
+                      placeholder="us-east-1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>AWS Access Key ID</Label>
+                    <Input
+                      value={form.awsAccessKeyId}
+                      onChange={(e) =>
+                        setForm({ ...form, awsAccessKeyId: e.target.value })
+                      }
+                      placeholder="AKIA…"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>AWS Secret Access Key</Label>
+                    <Input
+                      type="password"
+                      value={form.awsSecretAccessKey}
+                      onChange={(e) =>
+                        setForm({ ...form, awsSecretAccessKey: e.target.value })
+                      }
+                      placeholder="wJalr…"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>
+                      AWS Session Token{" "}
+                      <span className="text-muted-foreground font-normal">
+                        (optional)
+                      </span>
+                    </Label>
+                    <Input
+                      type="password"
+                      value={form.awsSessionToken}
+                      onChange={(e) =>
+                        setForm({ ...form, awsSessionToken: e.target.value })
+                      }
+                      placeholder="For temporary credentials"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    A Kubernetes Secret with your AWS credentials will be
+                    created automatically. For EKS with IRSA, provide only the
+                    region and use a pre-existing secret.
+                  </p>
+                </>
+              )}
               <div className="space-y-2">
-                <Label>API Key</Label>
+                <Label>
+                  K8s Secret Name{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (optional if credentials provided)
+                  </span>
+                </Label>
                 <Input
-                  type="password"
-                  value={form.apiKey}
+                  value={form.secretName}
                   onChange={(e) =>
-                    setForm({ ...form, apiKey: e.target.value })
+                    setForm({ ...form, secretName: e.target.value })
                   }
-                  placeholder="sk-…"
-                  autoComplete="off"
+                  placeholder="my-provider-api-key"
                 />
                 <p className="text-xs text-muted-foreground">
-                  A Kubernetes Secret will be created automatically from this
-                  key. Also used to fetch available models.
+                  Use an existing Kubernetes Secret, or leave blank to
+                  auto-create one from the credentials above.
                 </p>
               </div>
-            )}
-            {form.provider === "bedrock" && (
-              <>
-                <div className="space-y-2">
-                  <Label>AWS Region</Label>
-                  <Input
-                    value={form.awsRegion}
-                    onChange={(e) =>
-                      setForm({ ...form, awsRegion: e.target.value })
-                    }
-                    placeholder="us-east-1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>AWS Access Key ID</Label>
-                  <Input
-                    value={form.awsAccessKeyId}
-                    onChange={(e) =>
-                      setForm({ ...form, awsAccessKeyId: e.target.value })
-                    }
-                    placeholder="AKIA…"
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>AWS Secret Access Key</Label>
-                  <Input
-                    type="password"
-                    value={form.awsSecretAccessKey}
-                    onChange={(e) =>
-                      setForm({ ...form, awsSecretAccessKey: e.target.value })
-                    }
-                    placeholder="wJalr…"
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>AWS Session Token <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                  <Input
-                    type="password"
-                    value={form.awsSessionToken}
-                    onChange={(e) =>
-                      setForm({ ...form, awsSessionToken: e.target.value })
-                    }
-                    placeholder="For temporary credentials"
-                    autoComplete="off"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  A Kubernetes Secret with your AWS credentials will be created
-                  automatically. For EKS with IRSA, provide only the region and
-                  use a pre-existing secret.
-                </p>
-              </>
-            )}
-            <div className="space-y-2">
-              <Label>K8s Secret Name <span className="text-muted-foreground font-normal">(optional if credentials provided)</span></Label>
-              <Input
-                value={form.secretName}
-                onChange={(e) =>
-                  setForm({ ...form, secretName: e.target.value })
-                }
-                placeholder="my-provider-api-key"
-              />
-              <p className="text-xs text-muted-foreground">
-                Use an existing Kubernetes Secret, or leave blank to
-                auto-create one from the credentials above.
-              </p>
             </div>
-          </div>
           </ScrollArea>
         )}
 
@@ -809,8 +942,7 @@ export function OnboardingWizard({
             {mode === "persona" && personaCount !== undefined && (
               <p className="text-xs text-muted-foreground">
                 Applied to all{" "}
-                <span className="text-blue-400">{personaCount}</span>{" "}
-                personas.
+                <span className="text-blue-400">{personaCount}</span> personas.
               </p>
             )}
           </div>
@@ -819,229 +951,292 @@ export function OnboardingWizard({
         {/* ── Skills step ───────────────────────────────────────────── */}
         {step === "skills" && (
           <ScrollArea className="max-h-[60vh]">
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Select SkillPacks to attach.
-            </p>
-            {availableSkills.length === 0 ? (
-              <p className="rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                No SkillPacks found in cluster.
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Select SkillPacks to attach.
               </p>
-            ) : (
-              <ScrollArea className="h-52 rounded-md border border-border/50">
-                <div className="p-1 space-y-1">
-                  {[...availableSkills].sort((a, b) => a.localeCompare(b)).map((skill) => {
-                    const selected = form.skills.includes(skill);
-                    const locked = skill === "memory";
-                    return (
-                      <button
-                        key={skill}
-                        type="button"
-                        disabled={locked}
-                        onClick={() => {
-                          if (locked) return;
-                          const next = selected
-                            ? form.skills.filter((s) => s !== skill)
-                            : [...form.skills, skill];
-                          setForm({ ...form, skills: next });
-                        }}
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
-                          locked
-                            ? "border-blue-500/40 bg-blue-500/15 text-blue-300 opacity-70 cursor-not-allowed"
-                            : selected
-                              ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
-                              : "border-transparent hover:border-border/60 hover:bg-white/5"
-                        )}
-                      >
-                        <span className="font-mono">{skill}</span>
-                        <span className="text-[10px]">{locked ? "Required" : selected ? "Selected" : "Select"}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {form.skills.length > 0
-                ? `${form.skills.length} skill${form.skills.length === 1 ? "" : "s"} selected`
-                : "No skills selected"}
-            </p>
-
-            {/* Web endpoint inline config */}
-            {form.skills.includes("web-endpoint") && (
-              <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
-                <p className="text-xs font-medium text-blue-400">Web Endpoint Config</p>
-                <div className="space-y-1">
-                  <Label className="text-xs">Rate Limit (req/min)</Label>
-                  <Input
-                    type="number"
-                    value={form.webEndpointRPM || "60"}
-                    onChange={(e) => setForm({ ...form, webEndpointRPM: e.target.value })}
-                    className="h-7 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Custom Hostname <span className="text-muted-foreground">(optional)</span></Label>
-                  <Input
-                    value={form.webEndpointHostname || ""}
-                    onChange={(e) => setForm({ ...form, webEndpointHostname: e.target.value })}
-                    placeholder="auto from gateway"
-                    className="h-7 text-xs"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* GitHub GitOps inline config */}
-            {form.skills.includes("github-gitops") && (
-              <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
-                <p className="text-xs font-medium text-blue-400">GitHub GitOps Config</p>
-                <div className="space-y-1">
-                  <Label className="text-xs">Repository</Label>
-                  <Input
-                    value={form.githubRepo || ""}
-                    onChange={(e) => setForm({ ...form, githubRepo: e.target.value })}
-                    placeholder="owner/repo"
-                    className="h-7 text-xs font-mono"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    The GitHub repository this team will target for issues and PRs.
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Personal Access Token</Label>
-                  <Input
-                    type="password"
-                    value={form.githubToken || ""}
-                    onChange={(e) => setForm({ ...form, githubToken: e.target.value })}
-                    placeholder="github_pat_..."
-                    autoComplete="off"
-                    className="h-7 text-xs font-mono"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    A token with repo access. Stored as a cluster secret.
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Team Instructions <span className="text-muted-foreground">(optional)</span></Label>
-                  <Textarea
-                    value={form.githubTeamInstructions || ""}
-                    onChange={(e) => setForm({ ...form, githubTeamInstructions: e.target.value })}
-                    placeholder="Describe the project goals, coding standards, architecture decisions, or any context each instance should know…"
-                    rows={4}
-                    className="text-xs resize-y"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Shared instructions propagated into every instance's memory. Each instance will use these alongside its role.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Agent Sandbox toggle */}
-            <div className={cn(
-              "rounded-md border p-3 space-y-2",
-              capabilities?.agentSandbox?.available
-                ? form.agentSandboxEnabled
-                  ? "border-blue-500/20 bg-blue-500/5"
-                  : "border-border/50"
-                : "border-border/30 opacity-60"
-            )}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium">Agent Sandbox</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Kernel-level isolation via gVisor/Kata
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={!capabilities?.agentSandbox?.available}
-                  onClick={() => setForm({ ...form, agentSandboxEnabled: !form.agentSandboxEnabled })}
-                  className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    form.agentSandboxEnabled && capabilities?.agentSandbox?.available
-                      ? "bg-blue-500"
-                      : "bg-muted",
-                    !capabilities?.agentSandbox?.available && "cursor-not-allowed"
-                  )}
-                >
-                  <span className={cn(
-                    "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform",
-                    form.agentSandboxEnabled && capabilities?.agentSandbox?.available
-                      ? "translate-x-4"
-                      : "translate-x-0"
-                  )} />
-                </button>
-              </div>
-              {!capabilities?.agentSandbox?.available && (
-                <p className="text-[10px] text-yellow-500">
-                  {capabilities?.agentSandbox?.reason || "Agent Sandbox CRDs not installed"}
+              {availableSkills.length === 0 ? (
+                <p className="rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                  No SkillPacks found in cluster.
                 </p>
+              ) : (
+                <ScrollArea className="h-52 rounded-md border border-border/50">
+                  <div className="p-1 space-y-1">
+                    {[...availableSkills]
+                      .sort((a, b) => a.localeCompare(b))
+                      .map((skill) => {
+                        const selected = form.skills.includes(skill);
+                        const locked = skill === "memory";
+                        return (
+                          <button
+                            key={skill}
+                            type="button"
+                            disabled={locked}
+                            onClick={() => {
+                              if (locked) return;
+                              const next = selected
+                                ? form.skills.filter((s) => s !== skill)
+                                : [...form.skills, skill];
+                              setForm({ ...form, skills: next });
+                            }}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-md border px-2.5 py-2 text-left text-xs transition-colors",
+                              locked
+                                ? "border-blue-500/40 bg-blue-500/15 text-blue-300 opacity-70 cursor-not-allowed"
+                                : selected
+                                  ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
+                                  : "border-transparent hover:border-border/60 hover:bg-white/5",
+                            )}
+                          >
+                            <span className="font-mono">{skill}</span>
+                            <span className="text-[10px]">
+                              {locked
+                                ? "Required"
+                                : selected
+                                  ? "Selected"
+                                  : "Select"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </ScrollArea>
               )}
-              {form.agentSandboxEnabled && capabilities?.agentSandbox?.available && (
-                <div className="space-y-1">
-                  <Label className="text-xs">Runtime Class</Label>
-                  <Select
-                    value={form.agentSandboxRuntimeClass || "gvisor"}
-                    onValueChange={(v) => setForm({ ...form, agentSandboxRuntimeClass: v })}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gvisor">gVisor</SelectItem>
-                      <SelectItem value="kata">Kata Containers</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <p className="text-xs text-muted-foreground">
+                {form.skills.length > 0
+                  ? `${form.skills.length} skill${form.skills.length === 1 ? "" : "s"} selected`
+                  : "No skills selected"}
+              </p>
+
+              {/* Web endpoint inline config */}
+              {form.skills.includes("web-endpoint") && (
+                <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
+                  <p className="text-xs font-medium text-blue-400">
+                    Web Endpoint Config
+                  </p>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Rate Limit (req/min)</Label>
+                    <Input
+                      type="number"
+                      value={form.webEndpointRPM || "60"}
+                      onChange={(e) =>
+                        setForm({ ...form, webEndpointRPM: e.target.value })
+                      }
+                      className="h-7 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      Custom Hostname{" "}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      value={form.webEndpointHostname || ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          webEndpointHostname: e.target.value,
+                        })
+                      }
+                      placeholder="auto from gateway"
+                      className="h-7 text-xs"
+                    />
+                  </div>
                 </div>
               )}
-            </div>
 
-            {/* Run Timeout */}
-            <div className="rounded-md border border-border/50 p-3 space-y-2">
-              <div>
-                <p className="text-xs font-medium">Run Timeout</p>
-                <p className="text-[10px] text-muted-foreground">
-                  Max duration per agent run. Local models (Ollama, LM Studio) default to 30m, cloud to 10m.
-                </p>
-              </div>
-              <Select
-                value={form.runTimeout || "default"}
-                onValueChange={(v) => setForm({ ...form, runTimeout: v === "default" ? "" : v })}
+              {/* GitHub GitOps inline config */}
+              {form.skills.includes("github-gitops") && (
+                <div className="rounded-md border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
+                  <p className="text-xs font-medium text-blue-400">
+                    GitHub GitOps Config
+                  </p>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Repository</Label>
+                    <Input
+                      value={form.githubRepo || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, githubRepo: e.target.value })
+                      }
+                      placeholder="owner/repo"
+                      className="h-7 text-xs font-mono"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      The GitHub repository this team will target for issues and
+                      PRs.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Personal Access Token</Label>
+                    <Input
+                      type="password"
+                      value={form.githubToken || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, githubToken: e.target.value })
+                      }
+                      placeholder="github_pat_..."
+                      autoComplete="off"
+                      className="h-7 text-xs font-mono"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      A token with repo access. Stored as a cluster secret.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      Team Instructions{" "}
+                      <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Textarea
+                      value={form.githubTeamInstructions || ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          githubTeamInstructions: e.target.value,
+                        })
+                      }
+                      placeholder="Describe the project goals, coding standards, architecture decisions, or any context each instance should know…"
+                      rows={4}
+                      className="text-xs resize-y"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Shared instructions propagated into every instance's
+                      memory. Each instance will use these alongside its role.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Agent Sandbox toggle */}
+              <div
+                className={cn(
+                  "rounded-md border p-3 space-y-2",
+                  capabilities?.agentSandbox?.available
+                    ? form.agentSandboxEnabled
+                      ? "border-blue-500/20 bg-blue-500/5"
+                      : "border-border/50"
+                    : "border-border/30 opacity-60",
+                )}
               >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="Provider default" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Provider default</SelectItem>
-                  <SelectItem value="10m">10 minutes</SelectItem>
-                  <SelectItem value="30m">30 minutes</SelectItem>
-                  <SelectItem value="1h">1 hour</SelectItem>
-                  <SelectItem value="2h">2 hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium">Agent Sandbox</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Kernel-level isolation via gVisor/Kata
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!capabilities?.agentSandbox?.available}
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        agentSandboxEnabled: !form.agentSandboxEnabled,
+                      })
+                    }
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      form.agentSandboxEnabled &&
+                        capabilities?.agentSandbox?.available
+                        ? "bg-blue-500"
+                        : "bg-muted",
+                      !capabilities?.agentSandbox?.available &&
+                        "cursor-not-allowed",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform",
+                        form.agentSandboxEnabled &&
+                          capabilities?.agentSandbox?.available
+                          ? "translate-x-4"
+                          : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                </div>
+                {!capabilities?.agentSandbox?.available && (
+                  <p className="text-[10px] text-yellow-500">
+                    {capabilities?.agentSandbox?.reason ||
+                      "Agent Sandbox CRDs not installed"}
+                  </p>
+                )}
+                {form.agentSandboxEnabled &&
+                  capabilities?.agentSandbox?.available && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Runtime Class</Label>
+                      <Select
+                        value={form.agentSandboxRuntimeClass || "gvisor"}
+                        onValueChange={(v) =>
+                          setForm({ ...form, agentSandboxRuntimeClass: v })
+                        }
+                      >
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gvisor">gVisor</SelectItem>
+                          <SelectItem value="kata">Kata Containers</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+              </div>
 
-            {/* Require Approval */}
-            <div className="rounded-md border border-border/50 p-3">
-              <label className="flex items-start gap-3 cursor-pointer" data-testid="require-approval-checkbox">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-border accent-amber-500"
-                  checked={form.requireApproval ?? false}
-                  onChange={(e) => setForm({ ...form, requireApproval: e.target.checked })}
-                />
+              {/* Run Timeout */}
+              <div className="rounded-md border border-border/50 p-3 space-y-2">
                 <div>
-                  <p className="text-xs font-medium">Require manual approval</p>
+                  <p className="text-xs font-medium">Run Timeout</p>
                   <p className="text-[10px] text-muted-foreground">
-                    Hold agent responses until an operator approves or rejects them via the UI or API.
+                    Max duration per agent run. Local models (Ollama, LM Studio)
+                    default to 30m, cloud to 10m.
                   </p>
                 </div>
-              </label>
+                <Select
+                  value={form.runTimeout || "default"}
+                  onValueChange={(v) =>
+                    setForm({ ...form, runTimeout: v === "default" ? "" : v })
+                  }
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="Provider default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Provider default</SelectItem>
+                    <SelectItem value="10m">10 minutes</SelectItem>
+                    <SelectItem value="30m">30 minutes</SelectItem>
+                    <SelectItem value="1h">1 hour</SelectItem>
+                    <SelectItem value="2h">2 hours</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Require Approval */}
+              <div className="rounded-md border border-border/50 p-3">
+                <label
+                  className="flex items-start gap-3 cursor-pointer"
+                  data-testid="require-approval-checkbox"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-border accent-amber-500"
+                    checked={form.requireApproval ?? false}
+                    onChange={(e) =>
+                      setForm({ ...form, requireApproval: e.target.checked })
+                    }
+                  />
+                  <div>
+                    <p className="text-xs font-medium">
+                      Require manual approval
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Hold agent responses until an operator approves or rejects
+                      them via the UI or API.
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
-          </div>
           </ScrollArea>
         )}
 
@@ -1057,16 +1252,20 @@ export function OnboardingWizard({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setForm({ ...form, heartbeatInterval: opt.value })}
+                onClick={() =>
+                  setForm({ ...form, heartbeatInterval: opt.value })
+                }
                 className={cn(
                   "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors",
                   form.heartbeatInterval === opt.value
                     ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
-                    : "border-border/50 hover:bg-white/5"
+                    : "border-border/50 hover:bg-white/5",
                 )}
               >
                 <span>{opt.label}</span>
-                <span className="text-xs">{form.heartbeatInterval === opt.value ? "Selected" : "Select"}</span>
+                <span className="text-xs">
+                  {form.heartbeatInterval === opt.value ? "Selected" : "Select"}
+                </span>
               </button>
             ))}
           </div>
@@ -1076,7 +1275,8 @@ export function OnboardingWizard({
         {step === "channels" && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Select channels to bind. Channel-specific setup happens after confirmation.
+              Select channels to bind. Channel-specific setup happens after
+              confirmation.
             </p>
             {CHANNELS.map((ch) => (
               <button
@@ -1091,22 +1291,29 @@ export function OnboardingWizard({
                   if (selected) {
                     delete nextConfigs[ch.value];
                   }
-                  setForm({ ...form, channels: nextChannels, channelConfigs: nextConfigs });
+                  setForm({
+                    ...form,
+                    channels: nextChannels,
+                    channelConfigs: nextConfigs,
+                  });
                 }}
                 className={cn(
                   "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors",
                   form.channels.includes(ch.value)
                     ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
-                    : "border-border/50 hover:bg-white/5"
+                    : "border-border/50 hover:bg-white/5",
                 )}
               >
                 <span>{ch.label}</span>
-                <span className="text-xs">{form.channels.includes(ch.value) ? "Selected" : "Select"}</span>
+                <span className="text-xs">
+                  {form.channels.includes(ch.value) ? "Selected" : "Select"}
+                </span>
               </button>
             ))}
             {form.channels.includes("whatsapp") && (
               <p className="text-xs text-muted-foreground">
-                WhatsApp setup will open a QR pairing modal after creation/activation.
+                WhatsApp setup will open a QR pairing modal after
+                creation/activation.
               </p>
             )}
           </div>
@@ -1172,7 +1379,9 @@ export function OnboardingWizard({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Heartbeat</span>
                   <span>
-                    {HEARTBEAT_INTERVALS.find((o) => o.value === form.heartbeatInterval)?.label || form.heartbeatInterval}
+                    {HEARTBEAT_INTERVALS.find(
+                      (o) => o.value === form.heartbeatInterval,
+                    )?.label || form.heartbeatInterval}
                   </span>
                 </div>
               )}
@@ -1187,7 +1396,9 @@ export function OnboardingWizard({
                   <span className="text-muted-foreground">Web Endpoint</span>
                   <span className="text-xs">
                     {form.webEndpointRPM || "60"} rpm
-                    {form.webEndpointHostname ? `, ${form.webEndpointHostname}` : ""}
+                    {form.webEndpointHostname
+                      ? `, ${form.webEndpointHostname}`
+                      : ""}
                   </span>
                 </div>
               )}
@@ -1203,16 +1414,21 @@ export function OnboardingWizard({
                   <span className="text-xs text-emerald-400">provided</span>
                 </div>
               )}
-              {form.skills.includes("github-gitops") && form.githubTeamInstructions && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Team Instructions</span>
-                  <span className="text-xs text-emerald-400">provided</span>
-                </div>
-              )}
+              {form.skills.includes("github-gitops") &&
+                form.githubTeamInstructions && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Team Instructions
+                    </span>
+                    <span className="text-xs text-emerald-400">provided</span>
+                  </div>
+                )}
               {form.agentSandboxEnabled && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Agent Sandbox</span>
-                  <span className="text-xs">{form.agentSandboxRuntimeClass || "gvisor"}</span>
+                  <span className="text-xs">
+                    {form.agentSandboxRuntimeClass || "gvisor"}
+                  </span>
                 </div>
               )}
               {form.runTimeout && (
@@ -1223,7 +1439,9 @@ export function OnboardingWizard({
               )}
               {form.requireApproval && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Require Approval</span>
+                  <span className="text-muted-foreground">
+                    Require Approval
+                  </span>
                   <span className="text-xs text-amber-400">Enabled</span>
                 </div>
               )}
@@ -1250,7 +1468,11 @@ export function OnboardingWizard({
               yaml={
                 mode === "instance"
                   ? instanceYamlFromWizard(form)
-                  : personaPackYamlFromWizard(targetName || "<pack-name>", form, personaCount)
+                  : personaPackYamlFromWizard(
+                      targetName || "<pack-name>",
+                      form,
+                      personaCount,
+                    )
               }
               title={
                 mode === "instance"
@@ -1271,14 +1493,16 @@ export function OnboardingWizard({
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Channel-specific setup ({channelActionIdx + 1}/{actionChannels.length})
+                  Channel-specific setup ({channelActionIdx + 1}/
+                  {actionChannels.length})
                 </p>
                 <div className="space-y-2">
-                  <Label>
-                    {actionChannels[channelActionIdx]} Secret Name
-                  </Label>
+                  <Label>{actionChannels[channelActionIdx]} Secret Name</Label>
                   <Input
-                    value={form.channelConfigs[actionChannels[channelActionIdx]] || ""}
+                    value={
+                      form.channelConfigs[actionChannels[channelActionIdx]] ||
+                      ""
+                    }
                     onChange={(e) => {
                       const ch = actionChannels[channelActionIdx];
                       const configs = { ...form.channelConfigs };
@@ -1325,7 +1549,8 @@ export function OnboardingWizard({
                 "Working…"
               ) : (
                 <>
-                  {step === "channelAction" && channelActionIdx < actionChannels.length - 1 ? (
+                  {step === "channelAction" &&
+                  channelActionIdx < actionChannels.length - 1 ? (
                     <>
                       Next Channel <ChevronRight className="h-4 w-4" />
                     </>

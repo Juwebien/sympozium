@@ -1,5 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { useGatewayConfig, usePatchGatewayConfig, useCreateGatewayConfig, useInstances, useGatewayMetrics } from "@/hooks/use-api";
+import {
+  useGatewayConfig,
+  usePatchGatewayConfig,
+  useCreateGatewayConfig,
+  useInstances,
+  useGatewayMetrics,
+} from "@/hooks/use-api";
 import {
   Card,
   CardHeader,
@@ -171,7 +177,8 @@ export function GatewayPage() {
                   onChange={(e) => update({ baseDomain: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Instances will be available at &lt;name&gt;.{form.baseDomain || "<baseDomain>"}
+                  Instances will be available at &lt;name&gt;.
+                  {form.baseDomain || "<baseDomain>"}
                 </p>
               </div>
 
@@ -181,7 +188,9 @@ export function GatewayPage() {
                   <Input
                     id="gw-className"
                     value={form.gatewayClassName}
-                    onChange={(e) => update({ gatewayClassName: e.target.value })}
+                    onChange={(e) =>
+                      update({ gatewayClassName: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -229,7 +238,9 @@ export function GatewayPage() {
               {form.tlsEnabled && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="gw-issuer">cert-manager ClusterIssuer</Label>
+                    <Label htmlFor="gw-issuer">
+                      cert-manager ClusterIssuer
+                    </Label>
                     <Input
                       id="gw-issuer"
                       placeholder="letsencrypt-prod"
@@ -244,7 +255,9 @@ export function GatewayPage() {
                     <Input
                       id="gw-secretName"
                       value={form.tlsSecretName}
-                      onChange={(e) => update({ tlsSecretName: e.target.value })}
+                      onChange={(e) =>
+                        update({ tlsSecretName: e.target.value })
+                      }
                     />
                   </div>
                 </>
@@ -262,7 +275,9 @@ export function GatewayPage() {
         <div className="flex justify-end">
           <Button
             onClick={handleSave}
-            disabled={!dirty || patchMutation.isPending || createMutation.isPending}
+            disabled={
+              !dirty || patchMutation.isPending || createMutation.isPending
+            }
           >
             {patchMutation.isPending || createMutation.isPending
               ? "Saving..."
@@ -286,7 +301,8 @@ function GatewayMetricsCard() {
   const avgDurationSec = metrics?.avgDurationSec ?? 0;
   const uptimeSec = metrics?.uptimeSec ?? 0;
   const servingInstances = metrics?.servingInstances ?? 0;
-  const successRate = totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
+  const successRate =
+    totalRequests > 0 ? (successCount / totalRequests) * 100 : 0;
 
   const chartW = 760;
   const chartH = 220;
@@ -296,19 +312,40 @@ function GatewayMetricsCard() {
   const innerH = chartH - padY * 2;
   const maxRequests = Math.max(1, ...buckets.map((b) => b.requests));
   const maxDuration = Math.max(0.1, ...buckets.map((b) => b.avgDurationSec));
-  const barW = Math.max(3, Math.min(14, (buckets.length > 0 ? innerW / buckets.length : 8) * 0.7));
+  const barW = Math.max(
+    3,
+    Math.min(14, (buckets.length > 0 ? innerW / buckets.length : 8) * 0.7),
+  );
   const xFor = (idx: number) =>
-    padX + (buckets.length <= 1 ? innerW / 2 : (idx / (buckets.length - 1)) * innerW);
-  const yForRequests = (value: number) => padY + innerH - (value / maxRequests) * innerH;
-  const yForDuration = (value: number) => padY + innerH - (value / maxDuration) * innerH;
-  const durationPoints = buckets.map((b, i) => ({ x: xFor(i), y: yForDuration(b.avgDurationSec) }));
+    padX +
+    (buckets.length <= 1 ? innerW / 2 : (idx / (buckets.length - 1)) * innerW);
+  const yForRequests = (value: number) =>
+    padY + innerH - (value / maxRequests) * innerH;
+  const yForDuration = (value: number) =>
+    padY + innerH - (value / maxDuration) * innerH;
+  const durationPoints = buckets.map((b, i) => ({
+    x: xFor(i),
+    y: yForDuration(b.avgDurationSec),
+  }));
   const activePoint = hoverIdx !== null ? buckets[hoverIdx] : null;
   const activeX = hoverIdx !== null ? xFor(hoverIdx) : null;
 
   const stats = [
-    { label: "Total Requests", value: totalRequests.toLocaleString(), color: "text-blue-400" },
-    { label: "Success Rate", value: totalRequests > 0 ? `${successRate.toFixed(1)}%` : "—", color: "text-emerald-400" },
-    { label: "Errors", value: errorCount.toLocaleString(), color: errorCount > 0 ? "text-red-400" : "text-muted-foreground" },
+    {
+      label: "Total Requests",
+      value: totalRequests.toLocaleString(),
+      color: "text-blue-400",
+    },
+    {
+      label: "Success Rate",
+      value: totalRequests > 0 ? `${successRate.toFixed(1)}%` : "—",
+      color: "text-emerald-400",
+    },
+    {
+      label: "Errors",
+      value: errorCount.toLocaleString(),
+      color: errorCount > 0 ? "text-red-400" : "text-muted-foreground",
+    },
     { label: "Uptime", value: formatUptime(uptimeSec), color: "text-cyan-400" },
   ];
 
@@ -339,12 +376,19 @@ function GatewayMetricsCard() {
         {/* Stats row */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-lg border border-border/50 bg-background/40 px-3 py-2">
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
+            <div
+              key={s.label}
+              className="rounded-lg border border-border/50 bg-background/40 px-3 py-2"
+            >
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                {s.label}
+              </div>
               {isLoading ? (
                 <Skeleton className="mt-1 h-6 w-12" />
               ) : (
-                <div className={`text-xl font-bold leading-tight ${s.color}`}>{s.value}</div>
+                <div className={`text-xl font-bold leading-tight ${s.color}`}>
+                  {s.value}
+                </div>
               )}
             </div>
           ))}
@@ -365,7 +409,9 @@ function GatewayMetricsCard() {
           <Skeleton className="h-[220px] w-full" />
         ) : buckets.length === 0 ? (
           <div className="flex h-[220px] items-center justify-center rounded-lg border border-border/50 bg-background/40">
-            <p className="text-sm text-muted-foreground">No web endpoint data yet</p>
+            <p className="text-sm text-muted-foreground">
+              No web endpoint data yet
+            </p>
           </div>
         ) : (
           <div className="relative h-[220px] w-full rounded-lg border border-border/50 bg-background/40 p-2">
@@ -407,7 +453,8 @@ function GatewayMetricsCard() {
 
               {/* Request bars */}
               {buckets.map((b, i) => {
-                const successH = ((b.requests - b.errors) / maxRequests) * innerH;
+                const successH =
+                  ((b.requests - b.errors) / maxRequests) * innerH;
                 const errorH = (b.errors / maxRequests) * innerH;
                 return (
                   <g key={b.ts}>
@@ -484,7 +531,10 @@ function GatewayMetricsCard() {
                     className="fill-foreground text-[10px]"
                   >
                     {new Date(activePoint.ts).toLocaleString(undefined, {
-                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </text>
                   <text
@@ -512,18 +562,54 @@ function GatewayMetricsCard() {
               )}
 
               {/* Y-axis labels */}
-              <text x={padX - 4} y={padY + 4} textAnchor="end" className="fill-muted-foreground text-[9px]">
+              <text
+                x={padX - 4}
+                y={padY + 4}
+                textAnchor="end"
+                className="fill-muted-foreground text-[9px]"
+              >
                 {maxRequests}
               </text>
-              <text x={padX - 4} y={padY + innerH + 4} textAnchor="end" className="fill-muted-foreground text-[9px]">
+              <text
+                x={padX - 4}
+                y={padY + innerH + 4}
+                textAnchor="end"
+                className="fill-muted-foreground text-[9px]"
+              >
                 0
               </text>
 
               {/* Legend */}
-              <rect x={chartW - padX - 120} y={padY - 2} width={8} height={8} rx={1} className="fill-emerald-400/70" />
-              <text x={chartW - padX - 108} y={padY + 6} className="fill-muted-foreground text-[9px]">requests</text>
-              <rect x={chartW - padX - 60} y={padY - 2} width={8} height={8} rx={1} className="fill-blue-400" />
-              <text x={chartW - padX - 48} y={padY + 6} className="fill-muted-foreground text-[9px]">latency</text>
+              <rect
+                x={chartW - padX - 120}
+                y={padY - 2}
+                width={8}
+                height={8}
+                rx={1}
+                className="fill-emerald-400/70"
+              />
+              <text
+                x={chartW - padX - 108}
+                y={padY + 6}
+                className="fill-muted-foreground text-[9px]"
+              >
+                requests
+              </text>
+              <rect
+                x={chartW - padX - 60}
+                y={padY - 2}
+                width={8}
+                height={8}
+                rx={1}
+                className="fill-blue-400"
+              />
+              <text
+                x={chartW - padX - 48}
+                y={padY + 6}
+                className="fill-muted-foreground text-[9px]"
+              >
+                latency
+              </text>
             </svg>
           </div>
         )}
@@ -532,7 +618,10 @@ function GatewayMetricsCard() {
         {!isLoading && totalRequests > 0 && (
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <span className="text-muted-foreground">
-              Total: <span className="text-foreground font-semibold">{totalRequests}</span>
+              Total:{" "}
+              <span className="text-foreground font-semibold">
+                {totalRequests}
+              </span>
             </span>
             <span className="text-emerald-400">
               Success: <span className="font-semibold">{successCount}</span>
@@ -541,7 +630,10 @@ function GatewayMetricsCard() {
               Errors: <span className="font-semibold">{errorCount}</span>
             </span>
             <span className="text-blue-400">
-              Avg latency: <span className="font-semibold">{avgDurationSec.toFixed(1)}s</span>
+              Avg latency:{" "}
+              <span className="font-semibold">
+                {avgDurationSec.toFixed(1)}s
+              </span>
             </span>
           </div>
         )}
@@ -557,7 +649,9 @@ function RoutesCard({ baseDomain }: { baseDomain: string }) {
     if (!instances) return [];
     return instances.filter((i) =>
       i.spec.skills?.some(
-        (s) => s.skillPackRef === "web-endpoint" || s.skillPackRef === "skillpack-web-endpoint",
+        (s) =>
+          s.skillPackRef === "web-endpoint" ||
+          s.skillPackRef === "skillpack-web-endpoint",
       ),
     );
   }, [instances]);
@@ -590,7 +684,9 @@ function RoutesCard({ baseDomain }: { baseDomain: string }) {
             </div>
             {routes.map((inst) => {
               const webSkill = inst.spec.skills?.find(
-                (s) => s.skillPackRef === "web-endpoint" || s.skillPackRef === "skillpack-web-endpoint",
+                (s) =>
+                  s.skillPackRef === "web-endpoint" ||
+                  s.skillPackRef === "skillpack-web-endpoint",
               );
               const hostname =
                 webSkill?.params?.hostname ||
@@ -603,9 +699,7 @@ function RoutesCard({ baseDomain }: { baseDomain: string }) {
                   <span className="font-medium truncate">
                     {inst.metadata.name}
                   </span>
-                  <span className="font-mono text-xs truncate">
-                    {hostname}
-                  </span>
+                  <span className="font-mono text-xs truncate">{hostname}</span>
                   <Badge variant="secondary" className="w-fit">
                     Skill
                   </Badge>

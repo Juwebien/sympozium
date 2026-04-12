@@ -100,7 +100,10 @@ export function WhatsAppQRModal({
 
         const logRes = await api.pods.logs(pod.name);
         const logs = logRes.logs || "";
-        if (logs.includes("linked successfully") || logs.includes("connected with existing session")) {
+        if (
+          logs.includes("linked successfully") ||
+          logs.includes("connected with existing session")
+        ) {
           if (!cancelled) {
             setState("linked");
             setStatus("WhatsApp linked successfully.");
@@ -128,7 +131,11 @@ export function WhatsAppQRModal({
       } catch (err) {
         if (!cancelled) {
           setState("error");
-          setError(err instanceof Error ? err.message : "Failed to poll WhatsApp status");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to poll WhatsApp status",
+          );
           setStatus("Retrying…");
         }
       }
@@ -165,8 +172,8 @@ export function WhatsAppQRModal({
             WhatsApp Pairing
           </DialogTitle>
           <DialogDescription>
-            Finalize channel setup for {targetLabel}. Open WhatsApp on your phone:
-            Settings → Linked Devices → Link a Device.
+            Finalize channel setup for {targetLabel}. Open WhatsApp on your
+            phone: Settings → Linked Devices → Link a Device.
           </DialogDescription>
         </DialogHeader>
 
@@ -182,9 +189,7 @@ export function WhatsAppQRModal({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>{status}</span>
               </div>
-              {error && (
-                <p className="mt-2 text-xs text-red-400">{error}</p>
-              )}
+              {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
             </div>
           )}
           {state === "scanning" && qrLines.length > 0 && (

@@ -17,12 +17,14 @@ describe("Run Detail — response visibility", () => {
   });
 
   it("shows status.result text on the Result tab when populated", () => {
-    cy.dispatchRun(INSTANCE, "Reply with exactly: RESPONSE_VISIBLE_OK").then((name) => {
-      RUN_NAME = name;
-      cy.waitForRunTerminal(name).then((phase) => {
-        expect(phase).to.eq("Succeeded");
-      });
-    });
+    cy.dispatchRun(INSTANCE, "Reply with exactly: RESPONSE_VISIBLE_OK").then(
+      (name) => {
+        RUN_NAME = name;
+        cy.waitForRunTerminal(name).then((phase) => {
+          expect(phase).to.eq("Succeeded");
+        });
+      },
+    );
 
     // Navigate to the run detail.
     cy.then(() => {

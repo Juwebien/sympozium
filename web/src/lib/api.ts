@@ -678,11 +678,18 @@ export const api = {
       apiFetch<SympoziumInstance>(`/api/v1/instances/${name}`),
     delete: (name: string) =>
       apiFetch<void>(`/api/v1/instances/${name}`, { method: "DELETE" }),
-    patch: (name: string, data: {
-      webEndpoint?: { enabled?: boolean; hostname?: string; rateLimit?: { requestsPerMinute?: number } };
-      lifecycle?: LifecycleHooks | null;
-      requireApproval?: boolean;
-    }) =>
+    patch: (
+      name: string,
+      data: {
+        webEndpoint?: {
+          enabled?: boolean;
+          hostname?: string;
+          rateLimit?: { requestsPerMinute?: number };
+        };
+        lifecycle?: LifecycleHooks | null;
+        requireApproval?: boolean;
+      },
+    ) =>
       apiFetch<SympoziumInstance>(`/api/v1/instances/${name}`, {
         method: "PATCH",
         body: JSON.stringify(data),
@@ -793,7 +800,7 @@ export const api = {
           skills?: string[];
         }>;
         agentSandbox?: { enabled: boolean; runtimeClass?: string };
-      }
+      },
     ) =>
       apiFetch<PersonaPack>(`/api/v1/personapacks/${name}`, {
         method: "PATCH",
@@ -804,7 +811,7 @@ export const api = {
         "/api/v1/personapacks/install-defaults",
         {
           method: "POST",
-        }
+        },
       ),
   },
 
@@ -836,7 +843,7 @@ export const api = {
         timeout?: number;
         toolsAllow?: string[];
         toolsDeny?: string[];
-      }
+      },
     ) =>
       apiFetch<MCPServer>(`/api/v1/mcpservers/${name}`, {
         method: "PATCH",
@@ -879,8 +886,7 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
-    delete: () =>
-      apiFetch<void>("/api/v1/gateway", { method: "DELETE" }),
+    delete: () => apiFetch<void>("/api/v1/gateway", { method: "DELETE" }),
     metrics: (range?: string) =>
       apiFetch<GatewayMetricsResponse>(
         `/api/v1/gateway/metrics${range ? `?range=${range}` : ""}`,
@@ -908,10 +914,13 @@ export const api = {
 
   githubAuth: {
     setToken: (token: string) =>
-      apiFetch<GithubAuthStatusResponse>("/api/v1/skills/github-gitops/auth/token", {
-        method: "POST",
-        body: JSON.stringify({ token }),
-      }),
+      apiFetch<GithubAuthStatusResponse>(
+        "/api/v1/skills/github-gitops/auth/token",
+        {
+          method: "POST",
+          body: JSON.stringify({ token }),
+        },
+      ),
     status: () =>
       apiFetch<GithubAuthStatusResponse>(
         "/api/v1/skills/github-gitops/auth/status",

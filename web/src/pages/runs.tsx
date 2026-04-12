@@ -37,7 +37,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, ExternalLink, ShieldAlert, Check, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  ExternalLink,
+  ShieldAlert,
+  Check,
+  X,
+} from "lucide-react";
 import { formatAge, truncate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRunsSeen } from "@/hooks/use-runs-seen";
@@ -79,14 +86,14 @@ export function RunsPage() {
   const sorted = (data || []).sort(
     (a, b) =>
       new Date(b.metadata.creationTimestamp || "").getTime() -
-      new Date(a.metadata.creationTimestamp || "").getTime()
+      new Date(a.metadata.creationTimestamp || "").getTime(),
   );
 
   const filtered = sorted.filter(
     (r) =>
       r.metadata.name.toLowerCase().includes(search.toLowerCase()) ||
       r.spec.instanceRef.toLowerCase().includes(search.toLowerCase()) ||
-      r.spec.task.toLowerCase().includes(search.toLowerCase())
+      r.spec.task.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleCreate = () => {
@@ -109,7 +116,10 @@ export function RunsPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0">
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+            >
               <Plus className="mr-2 h-4 w-4" /> New Run
             </Button>
           </DialogTrigger>
@@ -125,9 +135,7 @@ export function RunsPage() {
                 <Label>Instance</Label>
                 <Select
                   value={form.instanceRef}
-                  onValueChange={(v) =>
-                    setForm({ ...form, instanceRef: v })
-                  }
+                  onValueChange={(v) => setForm({ ...form, instanceRef: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select instance" />
@@ -199,20 +207,28 @@ export function RunsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Collector</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Collector
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xl font-semibold">
-              {observability.data?.collectorReachable ? "Connected" : "Unavailable"}
+              {observability.data?.collectorReachable
+                ? "Connected"
+                : "Unavailable"}
             </p>
             {observability.data?.collectorError && (
-              <p className="mt-1 text-xs text-destructive">{observability.data.collectorError}</p>
+              <p className="mt-1 text-xs text-destructive">
+                {observability.data.collectorError}
+              </p>
             )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Agent Runs</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Agent Runs
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xl font-semibold">
@@ -222,18 +238,23 @@ export function RunsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Token Usage</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Token Usage
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm font-mono">
-              {(observability.data?.inputTokensTotal || 0).toLocaleString()} in /{" "}
-              {(observability.data?.outputTokensTotal || 0).toLocaleString()} out
+              {(observability.data?.inputTokensTotal || 0).toLocaleString()} in
+              / {(observability.data?.outputTokensTotal || 0).toLocaleString()}{" "}
+              out
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Tool Calls</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              Tool Calls
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xl font-semibold">
@@ -251,9 +272,10 @@ export function RunsPage() {
           <CardContent>
             <div className="grid gap-2 md:grid-cols-2">
               {observability.data.inputByModel.slice(0, 6).map((row) => {
-                const out = observability.data?.outputByModel?.find(
-                  (x) => x.label === row.label
-                )?.value || 0;
+                const out =
+                  observability.data?.outputByModel?.find(
+                    (x) => x.label === row.label,
+                  )?.value || 0;
                 return (
                   <div key={row.label} className="rounded border p-3">
                     <p className="text-xs text-muted-foreground">{row.label}</p>
@@ -283,8 +305,20 @@ export function RunsPage() {
           {!search && (
             <p className="text-sm text-muted-foreground">
               Runs are created when you dispatch a task to an{" "}
-              <Link to="/instances" className="text-blue-400 hover:text-blue-300">Instance</Link>, or automatically via a{" "}
-              <Link to="/schedules" className="text-blue-400 hover:text-blue-300">Schedule</Link>.
+              <Link
+                to="/instances"
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Instance
+              </Link>
+              , or automatically via a{" "}
+              <Link
+                to="/schedules"
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Schedule
+              </Link>
+              .
             </p>
           )}
         </div>
@@ -310,14 +344,20 @@ export function RunsPage() {
                     className="hover:text-primary flex items-center gap-1"
                   >
                     {isUnseen(run) && (
-                      <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" title="New" />
+                      <span
+                        className="h-2 w-2 rounded-full bg-blue-500 shrink-0"
+                        title="New"
+                      />
                     )}
                     {truncate(run.metadata.name, 32)}
                     <ExternalLink className="h-3 w-3 opacity-50" />
                   </Link>
                 </TableCell>
                 <TableCell className="text-sm">
-                  <Link to={`/instances/${run.spec.instanceRef}`} className="hover:text-primary">
+                  <Link
+                    to={`/instances/${run.spec.instanceRef}`}
+                    className="hover:text-primary"
+                  >
                     {run.spec.instanceRef}
                   </Link>
                 </TableCell>
@@ -358,7 +398,10 @@ export function RunsPage() {
                           onClick={() =>
                             gateVerdict.mutate({
                               name: run.metadata.name,
-                              data: { action: "approve", reason: "manual-approval" },
+                              data: {
+                                action: "approve",
+                                reason: "manual-approval",
+                              },
                             })
                           }
                           disabled={gateVerdict.isPending}

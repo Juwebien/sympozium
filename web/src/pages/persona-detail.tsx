@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { usePersonaPack, useActivatePersonaPack, useSkills } from "@/hooks/use-api";
+import {
+  usePersonaPack,
+  useActivatePersonaPack,
+  useSkills,
+} from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
 import {
   Card,
@@ -14,10 +18,22 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, Wrench, MessageSquare, Brain, Shield, Pencil, X, Check } from "lucide-react";
+import {
+  Clock,
+  Wrench,
+  MessageSquare,
+  Brain,
+  Shield,
+  Pencil,
+  X,
+  Check,
+} from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { formatAge } from "@/lib/utils";
-import { YamlButton, personaPackYamlFromResource } from "@/components/yaml-panel";
+import {
+  YamlButton,
+  personaPackYamlFromResource,
+} from "@/components/yaml-panel";
 
 interface PersonaEditState {
   systemPrompt: string;
@@ -32,14 +48,21 @@ export function PersonaDetailPage() {
 
   // Track which persona is being edited (by name), and its draft state
   const [editingPersona, setEditingPersona] = useState<string | null>(null);
-  const [editState, setEditState] = useState<PersonaEditState>({ systemPrompt: "", skills: [] });
+  const [editState, setEditState] = useState<PersonaEditState>({
+    systemPrompt: "",
+    skills: [],
+  });
 
   // Reset edit state when pack data changes
   useEffect(() => {
     setEditingPersona(null);
   }, [pack?.metadata.name]);
 
-  const startEditing = (persona: { name: string; systemPrompt: string; skills?: string[] }) => {
+  const startEditing = (persona: {
+    name: string;
+    systemPrompt: string;
+    skills?: string[];
+  }) => {
     setEditingPersona(persona.name);
     setEditState({
       systemPrompt: persona.systemPrompt,
@@ -64,7 +87,7 @@ export function PersonaDetailPage() {
           },
         ],
       },
-      { onSuccess: () => setEditingPersona(null) }
+      { onSuccess: () => setEditingPersona(null) },
     );
   };
 
@@ -96,15 +119,15 @@ export function PersonaDetailPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <Breadcrumbs items={[
-          { label: "Persona Packs", to: "/personas" },
-          { label: pack.metadata.name },
-        ]} />
+        <Breadcrumbs
+          items={[
+            { label: "Persona Packs", to: "/personas" },
+            { label: pack.metadata.name },
+          ]}
+        />
         <h1 className="text-2xl font-bold font-mono">{pack.metadata.name}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {pack.spec.description && (
-            <span>{pack.spec.description}</span>
-          )}
+          {pack.spec.description && <span>{pack.spec.description}</span>}
           <StatusBadge phase={pack.status?.phase} />
           {pack.spec.category && (
             <Badge variant="outline" className="capitalize">
@@ -162,37 +185,42 @@ export function PersonaDetailPage() {
       </div>
 
       {/* Installed Instances */}
-      {pack.status?.installedPersonas && pack.status.installedPersonas.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Installed Instances</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pack.status.installedPersonas.map((ip) => (
-                <Link
-                  key={ip.instanceName}
-                  to={`/instances/${ip.instanceName}`}
-                  className="flex items-center justify-between rounded-lg border p-3 hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm">{ip.instanceName}</span>
-                    <Badge variant="outline" className="text-xs">{ip.name}</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {ip.scheduleName && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {ip.scheduleName}
+      {pack.status?.installedPersonas &&
+        pack.status.installedPersonas.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Installed Instances</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {pack.status.installedPersonas.map((ip) => (
+                  <Link
+                    key={ip.instanceName}
+                    to={`/instances/${ip.instanceName}`}
+                    className="flex items-center justify-between rounded-lg border p-3 hover:bg-white/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm">
+                        {ip.instanceName}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {ip.name}
                       </Badge>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {ip.scheduleName && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {ip.scheduleName}
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Auth refs */}
       {pack.spec.authRefs && pack.spec.authRefs.length > 0 && (
@@ -219,7 +247,7 @@ export function PersonaDetailPage() {
         </h2>
         {pack.spec.personas?.map((persona, i) => {
           const installed = pack.status?.installedPersonas?.some(
-            (ip) => ip.name === persona.name
+            (ip) => ip.name === persona.name,
           );
           const isEditing = editingPersona === persona.name;
           return (
@@ -285,7 +313,10 @@ export function PersonaDetailPage() {
                     <Textarea
                       value={editState.systemPrompt}
                       onChange={(e) =>
-                        setEditState((prev) => ({ ...prev, systemPrompt: e.target.value }))
+                        setEditState((prev) => ({
+                          ...prev,
+                          systemPrompt: e.target.value,
+                        }))
                       }
                       className="font-mono text-xs min-h-[120px]"
                     />
@@ -312,7 +343,8 @@ export function PersonaDetailPage() {
                             className="text-xs cursor-pointer select-none"
                             onClick={() => toggleSkill(sk)}
                           >
-                            {active ? "- " : "+ "}{sk}
+                            {active ? "- " : "+ "}
+                            {sk}
                           </Badge>
                         );
                       })}
@@ -333,12 +365,18 @@ export function PersonaDetailPage() {
                     <div className="flex flex-wrap gap-1">
                       {persona.skills && persona.skills.length > 0 ? (
                         persona.skills.map((sk) => (
-                          <Badge key={sk} variant="secondary" className="text-xs">
+                          <Badge
+                            key={sk}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {sk}
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-xs text-muted-foreground">(no skills)</span>
+                        <span className="text-xs text-muted-foreground">
+                          (no skills)
+                        </span>
                       )}
                     </div>
                   )}
@@ -354,12 +392,20 @@ export function PersonaDetailPage() {
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {persona.toolPolicy.allow?.map((t) => (
-                          <Badge key={t} variant="secondary" className="text-xs font-mono">
+                          <Badge
+                            key={t}
+                            variant="secondary"
+                            className="text-xs font-mono"
+                          >
                             ✓ {t}
                           </Badge>
                         ))}
                         {persona.toolPolicy.deny?.map((t) => (
-                          <Badge key={t} variant="destructive" className="text-xs font-mono">
+                          <Badge
+                            key={t}
+                            variant="destructive"
+                            className="text-xs font-mono"
+                          >
                             ✗ {t}
                           </Badge>
                         ))}
@@ -449,9 +495,7 @@ export function PersonaDetailPage() {
                 >
                   <div className="flex items-center gap-2">
                     <Badge
-                      variant={
-                        cond.status === "True" ? "default" : "secondary"
-                      }
+                      variant={cond.status === "True" ? "default" : "secondary"}
                       className="text-xs"
                     >
                       {cond.type}

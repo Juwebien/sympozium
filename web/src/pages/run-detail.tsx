@@ -4,18 +4,24 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRun, useGateVerdict } from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Clock, Cpu, Zap, AlertTriangle, ShieldCheck, ShieldX, Pencil, ShieldAlert, Check, X } from "lucide-react";
+import {
+  Clock,
+  Cpu,
+  Zap,
+  AlertTriangle,
+  ShieldCheck,
+  ShieldX,
+  Pencil,
+  ShieldAlert,
+  Check,
+  X,
+} from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { useRunsSeen } from "@/hooks/use-runs-seen";
 import { formatAge } from "@/lib/utils";
@@ -59,11 +65,16 @@ export function RunDetailPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <Breadcrumbs items={[
-          { label: "Persona Packs", to: "/personas" },
-          { label: run.spec.instanceRef, to: `/instances/${run.spec.instanceRef}` },
-          { label: run.metadata.name },
-        ]} />
+        <Breadcrumbs
+          items={[
+            { label: "Persona Packs", to: "/personas" },
+            {
+              label: run.spec.instanceRef,
+              to: `/instances/${run.spec.instanceRef}`,
+            },
+            { label: run.metadata.name },
+          ]}
+        />
         <h1 className="text-xl font-bold font-mono">{run.metadata.name}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <StatusBadge phase={run.status?.phase} />
@@ -123,7 +134,9 @@ export function RunDetailPage() {
         <div className="flex items-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/5 p-3">
           <Clock className="h-4 w-4 text-orange-400 animate-spin" />
           <div className="text-sm">
-            <span className="font-medium text-orange-400">Post-run hooks executing</span>
+            <span className="font-medium text-orange-400">
+              Post-run hooks executing
+            </span>
             {run.status.postRunJobName && (
               <span className="text-muted-foreground ml-2 font-mono">
                 Job: {run.status.postRunJobName}
@@ -142,9 +155,12 @@ export function RunDetailPage() {
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-amber-400" />
             <div>
-              <p className="text-sm font-medium text-amber-400">Approval required</p>
+              <p className="text-sm font-medium text-amber-400">
+                Approval required
+              </p>
               <p className="text-xs text-muted-foreground">
-                This run's response is being held by a gate hook. Review and approve or reject.
+                This run's response is being held by a gate hook. Review and
+                approve or reject.
               </p>
             </div>
           </div>
@@ -189,7 +205,9 @@ export function RunDetailPage() {
       )}
 
       {/* PostRunFailed condition */}
-      {run.status?.conditions?.some(c => c.type === "PostRunFailed" && c.status === "True") && (
+      {run.status?.conditions?.some(
+        (c) => c.type === "PostRunFailed" && c.status === "True",
+      ) && (
         <div className="flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
           <AlertTriangle className="h-4 w-4 text-yellow-500" />
           <span className="text-sm text-yellow-500">
@@ -203,14 +221,16 @@ export function RunDetailPage() {
         <div
           data-testid="gate-verdict-banner"
           className={`flex items-center gap-2 rounded-lg border p-3 ${
-            run.status.gateVerdict === "approved" || run.status.gateVerdict === "allowed-by-default"
+            run.status.gateVerdict === "approved" ||
+            run.status.gateVerdict === "allowed-by-default"
               ? "border-green-500/30 bg-green-500/5"
               : run.status.gateVerdict === "rewritten"
                 ? "border-blue-500/30 bg-blue-500/5"
                 : "border-red-500/30 bg-red-500/5"
           }`}
         >
-          {run.status.gateVerdict === "approved" || run.status.gateVerdict === "allowed-by-default" ? (
+          {run.status.gateVerdict === "approved" ||
+          run.status.gateVerdict === "allowed-by-default" ? (
             <ShieldCheck className="h-4 w-4 text-green-400" />
           ) : run.status.gateVerdict === "rewritten" ? (
             <Pencil className="h-4 w-4 text-blue-400" />
@@ -221,7 +241,8 @@ export function RunDetailPage() {
           )}
           <span
             className={`text-sm ${
-              run.status.gateVerdict === "approved" || run.status.gateVerdict === "allowed-by-default"
+              run.status.gateVerdict === "approved" ||
+              run.status.gateVerdict === "allowed-by-default"
                 ? "text-green-400"
                 : run.status.gateVerdict === "rewritten"
                   ? "text-blue-400"
@@ -253,7 +274,9 @@ export function RunDetailPage() {
             <CardContent className="pt-6">
               {run.status?.result ? (
                 <div className="prose prose-sm prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{run.status.result}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {run.status.result}
+                  </ReactMarkdown>
                 </div>
               ) : run.status?.error ? (
                 <div className="space-y-2">

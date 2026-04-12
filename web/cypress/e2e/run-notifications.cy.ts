@@ -30,7 +30,8 @@ describe("Run Notifications & Watermark", () => {
     // Verify the watermark was seeded in localStorage.
     cy.window().then((win) => {
       const watermark = win.localStorage.getItem("sympozium_runs_last_seen");
-      expect(watermark, "watermark should be seeded").to.be.a("string").and.not.be.empty;
+      expect(watermark, "watermark should be seeded").to.be.a("string").and.not
+        .be.empty;
     });
 
     // ── Step 2: Create a run via API (after watermark is set) ──────
@@ -107,9 +108,9 @@ describe("Run Notifications & Watermark", () => {
     });
 
     // Wait for poll to pick it up with the backdated watermark.
-    cy.get("aside", { timeout: 15000 }).find(
-      "span.bg-blue-500, span.bg-red-500",
-    ).should("exist");
+    cy.get("aside", { timeout: 15000 })
+      .find("span.bg-blue-500, span.bg-red-500")
+      .should("exist");
   });
 });
 

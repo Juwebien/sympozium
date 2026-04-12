@@ -22,9 +22,15 @@ function quote(s: string): string {
   return needsQuoting(s) ? JSON.stringify(s) : s;
 }
 
-function filteredEntries(obj: Record<string, YamlValue>): [string, YamlValue][] {
+function filteredEntries(
+  obj: Record<string, YamlValue>,
+): [string, YamlValue][] {
   return Object.entries(obj).filter(
-    ([, v]) => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0),
+    ([, v]) =>
+      v !== undefined &&
+      v !== null &&
+      v !== "" &&
+      !(Array.isArray(v) && v.length === 0),
   );
 }
 
@@ -37,7 +43,12 @@ function isScalar(val: YamlValue): boolean {
  * `prefix` is the string that goes before this value on the first line (e.g. "  key: " or "- ").
  * `depth` is the indentation depth for subsequent lines of this value.
  */
-function emit(out: string[], val: YamlValue, prefix: string, depth: number): void {
+function emit(
+  out: string[],
+  val: YamlValue,
+  prefix: string,
+  depth: number,
+): void {
   const pad = "  ".repeat(depth);
 
   if (val === null || val === undefined) {
@@ -109,7 +120,13 @@ function emit(out: string[], val: YamlValue, prefix: string, depth: number): voi
   }
 }
 
-function emitKeyValue(out: string[], key: string, val: YamlValue, linePrefix: string, depth: number): void {
+function emitKeyValue(
+  out: string[],
+  key: string,
+  val: YamlValue,
+  linePrefix: string,
+  depth: number,
+): void {
   if (isScalar(val)) {
     emit(out, val, linePrefix + key + ": ", depth);
   } else {

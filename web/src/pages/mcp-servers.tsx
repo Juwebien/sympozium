@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useMcpServers, useCreateMcpServer, useDeleteMcpServer } from "@/hooks/use-api";
+import {
+  useMcpServers,
+  useCreateMcpServer,
+  useDeleteMcpServer,
+} from "@/hooks/use-api";
 import {
   Table,
   TableHeader,
@@ -48,9 +52,7 @@ export function McpServersPage() {
   });
 
   const filtered = (data || [])
-    .filter((s) =>
-      s.metadata.name.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((s) => s.metadata.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
   const handleCreate = () => {
@@ -66,9 +68,16 @@ export function McpServersPage() {
       {
         onSuccess: () => {
           setDialogOpen(false);
-          setForm({ name: "", transportType: "http", toolsPrefix: "", url: "", image: "", timeout: "30" });
+          setForm({
+            name: "",
+            transportType: "http",
+            toolsPrefix: "",
+            url: "",
+            image: "",
+            timeout: "30",
+          });
         },
-      }
+      },
     );
   };
 
@@ -78,7 +87,8 @@ export function McpServersPage() {
         <div>
           <h1 className="text-2xl font-bold">MCP Servers</h1>
           <p className="text-sm text-muted-foreground">
-            Model Context Protocol servers — external tool providers for agent instances
+            Model Context Protocol servers — external tool providers for agent
+            instances
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -122,7 +132,9 @@ export function McpServersPage() {
                 <Input
                   id="prefix"
                   value={form.toolsPrefix}
-                  onChange={(e) => setForm({ ...form, toolsPrefix: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, toolsPrefix: e.target.value })
+                  }
                   placeholder="mytools"
                 />
               </div>
@@ -150,12 +162,16 @@ export function McpServersPage() {
                   id="timeout"
                   type="number"
                   value={form.timeout}
-                  onChange={(e) => setForm({ ...form, timeout: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, timeout: e.target.value })
+                  }
                 />
               </div>
               <Button
                 onClick={handleCreate}
-                disabled={!form.name || !form.toolsPrefix || createMutation.isPending}
+                disabled={
+                  !form.name || !form.toolsPrefix || createMutation.isPending
+                }
                 className="w-full"
               >
                 {createMutation.isPending ? "Creating…" : "Create"}
@@ -209,9 +225,13 @@ export function McpServersPage() {
                 </TableCell>
                 <TableCell>
                   {mcp.status?.ready ? (
-                    <Badge variant="default" className="text-xs">Ready</Badge>
+                    <Badge variant="default" className="text-xs">
+                      Ready
+                    </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">Not Ready</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Not Ready
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground font-mono max-w-48 truncate">

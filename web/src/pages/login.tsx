@@ -36,7 +36,9 @@ export function LoginPage() {
         headers: { Authorization: `Bearer ${safeToken}` },
       });
       if (res.status === 401) {
-        setError("Invalid token. Check the token printed by the server at startup.");
+        setError(
+          "Invalid token. Check the token printed by the server at startup.",
+        );
         return;
       }
       login(safeToken);
@@ -85,7 +87,11 @@ export function LoginPage() {
             {error && (
               <p className="text-sm text-destructive text-center">{error}</p>
             )}
-            <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg shadow-blue-500/20" disabled={!token.trim() || loading}>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg shadow-blue-500/20"
+              disabled={!token.trim() || loading}
+            >
               {loading ? "Verifying…" : "Sign In"}
             </Button>
             <p className="text-center text-xs text-muted-foreground">

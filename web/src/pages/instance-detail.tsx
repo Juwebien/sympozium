@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { useInstance, useCapabilities, usePatchInstance, useRuns } from "@/hooks/use-api";
+import {
+  useInstance,
+  useCapabilities,
+  usePatchInstance,
+  useRuns,
+} from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
 import { GithubAuthDialog } from "@/components/github-auth-dialog";
 import {
@@ -12,12 +17,7 @@ import {
   type LifecycleHooks,
   type LifecycleHookContainer,
 } from "@/lib/api";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,7 +32,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import {
+  AlertTriangle,
+  Plus,
+  Pencil,
+  Trash2,
+  ExternalLink,
+} from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { useRunsSeen } from "@/hooks/use-runs-seen";
 import { formatAge, truncate } from "@/lib/utils";
@@ -41,7 +47,16 @@ import { YamlButton, instanceYamlFromResource } from "@/components/yaml-panel";
 export function InstanceDetailPage() {
   const { name } = useParams<{ name: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const allowedTabs = new Set(["overview", "runs", "channels", "skills", "memory", "web-endpoint", "lifecycle", "yaml"]);
+  const allowedTabs = new Set([
+    "overview",
+    "runs",
+    "channels",
+    "skills",
+    "memory",
+    "web-endpoint",
+    "lifecycle",
+    "yaml",
+  ]);
   const paramTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<string>(
     paramTab && allowedTabs.has(paramTab) ? paramTab : "overview",
@@ -53,9 +68,10 @@ export function InstanceDetailPage() {
   const { isUnseen } = useRunsSeen();
   const instanceRuns = (allRuns || [])
     .filter((r) => r.spec.instanceRef === name)
-    .sort((a, b) =>
-      new Date(b.metadata.creationTimestamp || "").getTime() -
-      new Date(a.metadata.creationTimestamp || "").getTime()
+    .sort(
+      (a, b) =>
+        new Date(b.metadata.creationTimestamp || "").getTime() -
+        new Date(a.metadata.creationTimestamp || "").getTime(),
     )
     .slice(0, 20);
 
@@ -89,11 +105,13 @@ export function InstanceDetailPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <Breadcrumbs items={[
-          { label: "Persona Packs", to: "/personas" },
-          { label: "Instances", to: "/instances" },
-          { label: inst.metadata.name },
-        ]} />
+        <Breadcrumbs
+          items={[
+            { label: "Persona Packs", to: "/personas" },
+            { label: "Instances", to: "/instances" },
+            { label: inst.metadata.name },
+          ]}
+        />
         <h1 className="text-2xl font-bold font-mono">{inst.metadata.name}</h1>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           Created {formatAge(inst.metadata.creationTimestamp)} ago
@@ -104,7 +122,9 @@ export function InstanceDetailPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="runs">Runs{instanceRuns.length > 0 ? ` (${instanceRuns.length})` : ""}</TabsTrigger>
+          <TabsTrigger value="runs">
+            Runs{instanceRuns.length > 0 ? ` (${instanceRuns.length})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="channels">Channels</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
           <TabsTrigger value="memory">Memory</TabsTrigger>
@@ -121,8 +141,14 @@ export function InstanceDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Row label="Model" value={inst.spec.agents?.default?.model} />
-                <Row label="Base URL" value={inst.spec.agents?.default?.baseURL} />
-                <Row label="Thinking" value={inst.spec.agents?.default?.thinking} />
+                <Row
+                  label="Base URL"
+                  value={inst.spec.agents?.default?.baseURL}
+                />
+                <Row
+                  label="Thinking"
+                  value={inst.spec.agents?.default?.thinking}
+                />
                 <Row label="Policy" value={inst.spec.policyRef} />
               </CardContent>
             </Card>
@@ -133,8 +159,14 @@ export function InstanceDetailPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Row label="Phase" value={inst.status?.phase} />
-                <Row label="Active Pods" value={String(inst.status?.activeAgentPods ?? 0)} />
-                <Row label="Total Runs" value={String(inst.status?.totalAgentRuns ?? 0)} />
+                <Row
+                  label="Active Pods"
+                  value={String(inst.status?.activeAgentPods ?? 0)}
+                />
+                <Row
+                  label="Total Runs"
+                  value={String(inst.status?.totalAgentRuns ?? 0)}
+                />
               </CardContent>
             </Card>
 
@@ -146,10 +178,7 @@ export function InstanceDetailPage() {
                 <CardContent>
                   <div className="space-y-2">
                     {inst.spec.authRefs.map((ref, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 text-sm"
-                      >
+                      <div key={i} className="flex items-center gap-2 text-sm">
                         <Badge variant="secondary">{ref.provider}</Badge>
                         <span className="font-mono text-muted-foreground">
                           {ref.secret}
@@ -183,10 +212,15 @@ export function InstanceDetailPage() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {isUnseen(run) && (
-                          <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" title="New" />
+                          <span
+                            className="h-2 w-2 rounded-full bg-blue-500 shrink-0"
+                            title="New"
+                          />
                         )}
                         <StatusBadge phase={run.status?.phase} />
-                        <span className="font-mono text-xs truncate">{run.metadata.name}</span>
+                        <span className="font-mono text-xs truncate">
+                          {run.metadata.name}
+                        </span>
                         <span className="text-xs text-muted-foreground truncate max-w-xs hidden sm:inline">
                           {truncate(run.spec.task, 50)}
                         </span>
@@ -194,7 +228,8 @@ export function InstanceDetailPage() {
                       <div className="flex items-center gap-3 shrink-0">
                         {run.status?.tokenUsage && (
                           <span className="text-xs text-muted-foreground">
-                            {run.status.tokenUsage.totalTokens.toLocaleString()} tokens
+                            {run.status.tokenUsage.totalTokens.toLocaleString()}{" "}
+                            tokens
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
@@ -204,15 +239,26 @@ export function InstanceDetailPage() {
                       </div>
                     </Link>
                   ))}
-                  {(allRuns || []).filter((r) => r.spec.instanceRef === name).length > 20 && (
-                    <Link to={`/runs?search=${name}`} className="block text-center text-xs text-blue-400 hover:text-blue-300 py-2">
+                  {(allRuns || []).filter((r) => r.spec.instanceRef === name)
+                    .length > 20 && (
+                    <Link
+                      to={`/runs?search=${name}`}
+                      className="block text-center text-xs text-blue-400 hover:text-blue-300 py-2"
+                    >
                       View all runs
                     </Link>
                   )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No runs yet. Dispatch an ad-hoc run from the <Link to="/runs" className="text-blue-400 hover:text-blue-300">Runs page</Link>.
+                  No runs yet. Dispatch an ad-hoc run from the{" "}
+                  <Link
+                    to="/runs"
+                    className="text-blue-400 hover:text-blue-300"
+                  >
+                    Runs page
+                  </Link>
+                  .
                 </p>
               )}
             </CardContent>
@@ -226,12 +272,17 @@ export function InstanceDetailPage() {
                 <div className="space-y-3">
                   {inst.spec.channels.map((ch, i) => {
                     const chStatus = inst.status?.channels?.find(
-                      (s) => s.type === ch.type
+                      (s) => s.type === ch.type,
                     );
                     return (
-                      <div key={i} className="flex items-center justify-between rounded-lg border p-3">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
                         <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="capitalize">{ch.type}</Badge>
+                          <Badge variant="outline" className="capitalize">
+                            {ch.type}
+                          </Badge>
                           {ch.configRef && (
                             <span className="text-xs text-muted-foreground font-mono">
                               secret: {ch.configRef.secret}
@@ -272,8 +323,18 @@ export function InstanceDetailPage() {
             <CardContent className="pt-6">
               {inst.spec.memory ? (
                 <div className="space-y-3">
-                  <Row label="Enabled" value={inst.spec.memory.enabled ? "Yes" : "No"} />
-                  <Row label="Max Size" value={inst.spec.memory.maxSizeKB ? `${inst.spec.memory.maxSizeKB} KB` : "Default"} />
+                  <Row
+                    label="Enabled"
+                    value={inst.spec.memory.enabled ? "Yes" : "No"}
+                  />
+                  <Row
+                    label="Max Size"
+                    value={
+                      inst.spec.memory.maxSizeKB
+                        ? `${inst.spec.memory.maxSizeKB} KB`
+                        : "Default"
+                    }
+                  />
                   <Separator />
                   {inst.spec.memory.systemPrompt && (
                     <div>
@@ -298,7 +359,10 @@ export function InstanceDetailPage() {
         </TabsContent>
 
         <TabsContent value="lifecycle">
-          <LifecycleTab instanceName={inst.metadata.name} lifecycle={inst.spec.agents?.default?.lifecycle} />
+          <LifecycleTab
+            instanceName={inst.metadata.name}
+            lifecycle={inst.spec.agents?.default?.lifecycle}
+          />
         </TabsContent>
 
         <TabsContent value="yaml">
@@ -308,7 +372,8 @@ export function InstanceDetailPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-3">
-                View the equivalent SympoziumInstance manifest for this resource.
+                View the equivalent SympoziumInstance manifest for this
+                resource.
               </p>
               <YamlButton
                 yaml={instanceYamlFromResource(inst)}
@@ -354,14 +419,25 @@ function AgentSandboxCard({
             <Row label="Enabled" value={enabled ? "Yes" : "No"} />
             {enabled && (
               <>
-                <Row label="Runtime Class" value={sandbox?.runtimeClass || "default"} />
+                <Row
+                  label="Runtime Class"
+                  value={sandbox?.runtimeClass || "default"}
+                />
                 {sandbox?.warmPool && (
                   <>
                     <Separator />
-                    <p className="text-xs font-medium text-muted-foreground">Warm Pool</p>
-                    <Row label="Size" value={String(sandbox.warmPool.size ?? 2)} />
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Warm Pool
+                    </p>
+                    <Row
+                      label="Size"
+                      value={String(sandbox.warmPool.size ?? 2)}
+                    />
                     {sandbox.warmPool.runtimeClass && (
-                      <Row label="Runtime Class" value={sandbox.warmPool.runtimeClass} />
+                      <Row
+                        label="Runtime Class"
+                        value={sandbox.warmPool.runtimeClass}
+                      />
                     )}
                   </>
                 )}
@@ -376,7 +452,8 @@ function AgentSandboxCard({
 
 function ResponseGateCard({ inst }: { inst: SympoziumInstance }) {
   const patchInstance = usePatchInstance();
-  const enabled = inst.spec.agents?.default?.lifecycle?.postRun?.some((h) => h.gate) ?? false;
+  const enabled =
+    inst.spec.agents?.default?.lifecycle?.postRun?.some((h) => h.gate) ?? false;
 
   function toggle() {
     patchInstance.mutate({
@@ -393,7 +470,9 @@ function ResponseGateCard({ inst }: { inst: SympoziumInstance }) {
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium">{enabled ? "Enabled" : "Disabled"}</p>
+            <p className="text-sm font-medium">
+              {enabled ? "Enabled" : "Disabled"}
+            </p>
             <p className="text-xs text-muted-foreground">
               {enabled
                 ? "All runs require manual approval before the response reaches users."
@@ -421,20 +500,28 @@ function ResponseGateCard({ inst }: { inst: SympoziumInstance }) {
 
 function WebEndpointTab({ inst }: { inst: SympoziumInstance }) {
   const webSkill = inst.spec.skills?.find(
-    (s) => s.skillPackRef === "web-endpoint" || s.skillPackRef === "skillpack-web-endpoint",
+    (s) =>
+      s.skillPackRef === "web-endpoint" ||
+      s.skillPackRef === "skillpack-web-endpoint",
   );
 
   if (webSkill) {
     return (
       <Card>
         <CardContent className="pt-6 space-y-3">
-          <Row label="Rate Limit" value={`${webSkill.params?.rate_limit_rpm || "60"} req/min`} />
-          <Row label="Hostname" value={webSkill.params?.hostname || "auto from gateway"} />
+          <Row
+            label="Rate Limit"
+            value={`${webSkill.params?.rate_limit_rpm || "60"} req/min`}
+          />
+          <Row
+            label="Hostname"
+            value={webSkill.params?.hostname || "auto from gateway"}
+          />
           <Separator />
           <p className="text-sm font-medium">Status</p>
           <p className="text-xs text-muted-foreground">
-            The web-proxy runs as a server-mode AgentRun. Check the Runs page for
-            a run in "Serving" phase with a Deployment and Service.
+            The web-proxy runs as a server-mode AgentRun. Check the Runs page
+            for a run in "Serving" phase with a Deployment and Service.
           </p>
         </CardContent>
       </Card>
@@ -446,8 +533,8 @@ function WebEndpointTab({ inst }: { inst: SympoziumInstance }) {
     <Card>
       <CardContent className="pt-6">
         <p className="text-sm text-muted-foreground">
-          Web endpoint is not enabled. Add the "web-endpoint" skill to expose this
-          agent as an HTTP API.
+          Web endpoint is not enabled. Add the "web-endpoint" skill to expose
+          this agent as an HTTP API.
         </p>
       </CardContent>
     </Card>
@@ -524,9 +611,7 @@ function SkillsTab({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No skills attached
-            </p>
+            <p className="text-sm text-muted-foreground">No skills attached</p>
           )}
 
           {hasGithubGitops && (
@@ -598,15 +683,38 @@ const lifecycleEnvVars = [
   { name: "AGENT_RUN_ID", desc: "Unique run identifier", scope: "all" },
   { name: "INSTANCE_NAME", desc: "SympoziumInstance name", scope: "all" },
   { name: "AGENT_NAMESPACE", desc: "Kubernetes namespace", scope: "all" },
-  { name: "AGENT_EXIT_CODE", desc: "Agent container exit code", scope: "postRun" },
-  { name: "AGENT_RESULT", desc: "Agent response (truncated to 32Ki)", scope: "postRun" },
+  {
+    name: "AGENT_EXIT_CODE",
+    desc: "Agent container exit code",
+    scope: "postRun",
+  },
+  {
+    name: "AGENT_RESULT",
+    desc: "Agent response (truncated to 32Ki)",
+    scope: "postRun",
+  },
 ];
 
-const emptyHook: LifecycleHookContainer = { name: "", image: "", command: [], env: [] };
+const emptyHook: LifecycleHookContainer = {
+  name: "",
+  image: "",
+  command: [],
+  env: [],
+};
 
-function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifecycle?: LifecycleHooks }) {
+function LifecycleTab({
+  instanceName,
+  lifecycle,
+}: {
+  instanceName: string;
+  lifecycle?: LifecycleHooks;
+}) {
   const patchMutation = usePatchInstance();
-  const [editingHook, setEditingHook] = useState<{ hook: LifecycleHookContainer; phase: "preRun" | "postRun"; index: number } | null>(null);
+  const [editingHook, setEditingHook] = useState<{
+    hook: LifecycleHookContainer;
+    phase: "preRun" | "postRun";
+    index: number;
+  } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const preRun = lifecycle?.preRun ?? [];
@@ -624,12 +732,24 @@ function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifec
 
   const openEditHook = (phase: "preRun" | "postRun", index: number) => {
     const hooks = phase === "preRun" ? preRun : postRun;
-    setEditingHook({ hook: { ...hooks[index], command: [...(hooks[index].command ?? [])], env: [...(hooks[index].env ?? [])] }, phase, index });
+    setEditingHook({
+      hook: {
+        ...hooks[index],
+        command: [...(hooks[index].command ?? [])],
+        env: [...(hooks[index].env ?? [])],
+      },
+      phase,
+      index,
+    });
     setDialogOpen(true);
   };
 
   const deleteHook = (phase: "preRun" | "postRun", index: number) => {
-    const updated: LifecycleHooks = { preRun: [...preRun], postRun: [...postRun], rbac: [...rbac] };
+    const updated: LifecycleHooks = {
+      preRun: [...preRun],
+      postRun: [...postRun],
+      rbac: [...rbac],
+    };
     if (phase === "preRun") {
       updated.preRun = preRun.filter((_, i) => i !== index);
     } else {
@@ -640,8 +760,13 @@ function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifec
 
   const saveHook = (hook: LifecycleHookContainer) => {
     if (!editingHook) return;
-    const updated: LifecycleHooks = { preRun: [...preRun], postRun: [...postRun], rbac: [...rbac] };
-    const list = editingHook.phase === "preRun" ? updated.preRun! : updated.postRun!;
+    const updated: LifecycleHooks = {
+      preRun: [...preRun],
+      postRun: [...postRun],
+      rbac: [...rbac],
+    };
+    const list =
+      editingHook.phase === "preRun" ? updated.preRun! : updated.postRun!;
     if (editingHook.index === -1) {
       list.push(hook);
     } else {
@@ -674,14 +799,25 @@ function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifec
 
       {rbac.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">RBAC Rules</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">RBAC Rules</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {rbac.map((rule, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm font-mono">
-                  <Badge variant="secondary">{rule.apiGroups.map(g => g || "core").join(", ")}</Badge>
-                  <span className="text-muted-foreground">{rule.resources.join(", ")}</span>
-                  <span className="text-xs text-muted-foreground">[{rule.verbs.join(", ")}]</span>
+                <div
+                  key={i}
+                  className="flex items-center gap-2 text-sm font-mono"
+                >
+                  <Badge variant="secondary">
+                    {rule.apiGroups.map((g) => g || "core").join(", ")}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {rule.resources.join(", ")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    [{rule.verbs.join(", ")}]
+                  </span>
                 </div>
               ))}
             </div>
@@ -690,20 +826,29 @@ function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifec
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Available Environment Variables</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Available Environment Variables
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <div className="space-y-1">
             {lifecycleEnvVars.map((ev) => (
               <div key={ev.name} className="flex items-baseline gap-3 text-sm">
-                <code className="font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded min-w-[10rem]">{ev.name}</code>
+                <code className="font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded min-w-[10rem]">
+                  {ev.name}
+                </code>
                 <span className="text-muted-foreground">{ev.desc}</span>
                 {ev.scope === "postRun" && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">postRun only</Badge>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    postRun only
+                  </Badge>
                 )}
               </div>
             ))}
             <p className="text-xs text-muted-foreground mt-3">
-              Custom env vars from <code className="font-mono">spec.env</code> are also forwarded to all hook containers.
+              Custom env vars from <code className="font-mono">spec.env</code>{" "}
+              are also forwarded to all hook containers.
             </p>
           </div>
         </CardContent>
@@ -711,7 +856,10 @@ function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifec
 
       <HookEditDialog
         open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingHook(null); }}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingHook(null);
+        }}
         hook={editingHook?.hook ?? emptyHook}
         phase={editingHook?.phase ?? "preRun"}
         isNew={editingHook?.index === -1}
@@ -721,7 +869,14 @@ function LifecycleTab({ instanceName, lifecycle }: { instanceName: string; lifec
   );
 }
 
-function HookSection({ title, description, hooks, onAdd, onEdit, onDelete }: {
+function HookSection({
+  title,
+  description,
+  hooks,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
   title: string;
   description: string;
   hooks: LifecycleHookContainer[];
@@ -745,13 +900,25 @@ function HookSection({ title, description, hooks, onAdd, onEdit, onDelete }: {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm">{hook.name}</span>
-                    <Badge variant="secondary" className="font-mono text-xs">{hook.image}</Badge>
+                    <Badge variant="secondary" className="font-mono text-xs">
+                      {hook.image}
+                    </Badge>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onEdit(i)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => onEdit(i)}
+                    >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => onDelete(i)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={() => onDelete(i)}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -759,7 +926,9 @@ function HookSection({ title, description, hooks, onAdd, onEdit, onDelete }: {
                 {hook.command && hook.command.length > 0 && (
                   <div className="text-xs">
                     <span className="text-muted-foreground">Command: </span>
-                    <code className="font-mono bg-muted/50 px-1 py-0.5 rounded">{hook.command.join(" ")}</code>
+                    <code className="font-mono bg-muted/50 px-1 py-0.5 rounded">
+                      {hook.command.join(" ")}
+                    </code>
                   </div>
                 )}
                 {hook.env && hook.env.length > 0 && (
@@ -767,7 +936,8 @@ function HookSection({ title, description, hooks, onAdd, onEdit, onDelete }: {
                     <span className="text-muted-foreground">Env:</span>
                     {hook.env.map((e, j) => (
                       <div key={j} className="ml-2 font-mono">
-                        <span className="text-muted-foreground">{e.name}</span>=<span>{e.value}</span>
+                        <span className="text-muted-foreground">{e.name}</span>=
+                        <span>{e.value}</span>
                       </div>
                     ))}
                   </div>
@@ -785,7 +955,14 @@ function HookSection({ title, description, hooks, onAdd, onEdit, onDelete }: {
   );
 }
 
-function HookEditDialog({ open, onOpenChange, hook, phase, isNew, onSave }: {
+function HookEditDialog({
+  open,
+  onOpenChange,
+  hook,
+  phase,
+  isNew,
+  onSave,
+}: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hook: LifecycleHookContainer;
@@ -796,21 +973,26 @@ function HookEditDialog({ open, onOpenChange, hook, phase, isNew, onSave }: {
   const [name, setName] = useState(hook.name);
   const [image, setImage] = useState(hook.image);
   const [command, setCommand] = useState(hook.command?.join(" ") ?? "");
-  const [envText, setEnvText] = useState(hook.env?.map(e => `${e.name}=${e.value}`).join("\n") ?? "");
+  const [envText, setEnvText] = useState(
+    hook.env?.map((e) => `${e.name}=${e.value}`).join("\n") ?? "",
+  );
 
   // Reset form when hook changes.
   useEffect(() => {
     setName(hook.name);
     setImage(hook.image);
     setCommand(hook.command?.join(" ") ?? "");
-    setEnvText(hook.env?.map(e => `${e.name}=${e.value}`).join("\n") ?? "");
+    setEnvText(hook.env?.map((e) => `${e.name}=${e.value}`).join("\n") ?? "");
   }, [hook]);
 
   const handleSave = () => {
-    const envParsed = envText.split("\n").filter(l => l.includes("=")).map(l => {
-      const [k, ...v] = l.split("=");
-      return { name: k.trim(), value: v.join("=") };
-    });
+    const envParsed = envText
+      .split("\n")
+      .filter((l) => l.includes("="))
+      .map((l) => {
+        const [k, ...v] = l.split("=");
+        return { name: k.trim(), value: v.join("=") };
+      });
     onSave({
       name: name.trim(),
       image: image.trim(),
@@ -825,30 +1007,64 @@ function HookEditDialog({ open, onOpenChange, hook, phase, isNew, onSave }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isNew ? "Add" : "Edit"} {phase === "preRun" ? "PreRun" : "PostRun"} Hook</DialogTitle>
+          <DialogTitle>
+            {isNew ? "Add" : "Edit"} {phase === "preRun" ? "PreRun" : "PostRun"}{" "}
+            Hook
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label htmlFor="hook-name">Name</Label>
-            <Input id="hook-name" placeholder="e.g. fetch-context" value={name} onChange={e => setName(e.target.value)} />
+            <Input
+              id="hook-name"
+              placeholder="e.g. fetch-context"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="hook-image">Image</Label>
-            <Input id="hook-image" placeholder="e.g. curlimages/curl:latest" value={image} onChange={e => setImage(e.target.value)} />
+            <Input
+              id="hook-image"
+              placeholder="e.g. curlimages/curl:latest"
+              value={image}
+              onChange={(e) => setImage(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="hook-command">Command</Label>
-            <Input id="hook-command" placeholder="e.g. sh -c 'curl http://...'" value={command} onChange={e => setCommand(e.target.value)} />
-            <p className="text-xs text-muted-foreground">Space-separated. Leave empty to use the image's default entrypoint.</p>
+            <Input
+              id="hook-command"
+              placeholder="e.g. sh -c 'curl http://...'"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Space-separated. Leave empty to use the image's default
+              entrypoint.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="hook-env">Environment Variables</Label>
-            <Textarea id="hook-env" placeholder={"KEY=VALUE\nANOTHER=value"} value={envText} onChange={e => setEnvText(e.target.value)} rows={3} className="font-mono text-xs" />
-            <p className="text-xs text-muted-foreground">One per line, KEY=VALUE format.</p>
+            <Textarea
+              id="hook-env"
+              placeholder={"KEY=VALUE\nANOTHER=value"}
+              value={envText}
+              onChange={(e) => setEnvText(e.target.value)}
+              rows={3}
+              className="font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              One per line, KEY=VALUE format.
+            </p>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!valid}>{isNew ? "Add Hook" : "Save"}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={!valid}>
+              {isNew ? "Add Hook" : "Save"}
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -53,14 +53,15 @@ export function FeedPane({
         const phase = inst.status?.phase?.toLowerCase();
         return phase === "running" || phase === "ready" || phase === "active";
       }),
-    [instances]
+    [instances],
   );
 
   // All instances for fallback
   const allInstances = instances || [];
 
   // Use active instances if available, otherwise show all
-  const tabInstances = activeInstances.length > 0 ? activeInstances : allInstances;
+  const tabInstances =
+    activeInstances.length > 0 ? activeInstances : allInstances;
 
   // Auto-select first tab
   useEffect(() => {
@@ -79,7 +80,7 @@ export function FeedPane({
           const tb = b.metadata.creationTimestamp || "";
           return ta.localeCompare(tb);
         }),
-    [runs, activeTab]
+    [runs, activeTab],
   );
 
   // Events for the selected instance (filter by metadata)
@@ -99,7 +100,7 @@ export function FeedPane({
         // Also check if the event topic mentions the instance
         return false;
       }),
-    [events, activeTab]
+    [events, activeTab],
   );
 
   // Build a unified feed: runs + stream events for this instance
@@ -120,7 +121,8 @@ export function FeedPane({
           id: `run-result-${run.metadata.name}`,
           type: "agent",
           text: run.status.result,
-          timestamp: run.status.completedAt || run.metadata.creationTimestamp || "",
+          timestamp:
+            run.status.completedAt || run.metadata.creationTimestamp || "",
           meta: run.status.phase || "completed",
         });
       } else if (run.status?.error) {
@@ -128,7 +130,8 @@ export function FeedPane({
           id: `run-error-${run.metadata.name}`,
           type: "error",
           text: run.status.error,
-          timestamp: run.status.completedAt || run.metadata.creationTimestamp || "",
+          timestamp:
+            run.status.completedAt || run.metadata.creationTimestamp || "",
           meta: "failed",
         });
       } else if (
@@ -140,7 +143,8 @@ export function FeedPane({
           id: `run-gate-${run.metadata.name}`,
           type: "system",
           text: "Awaiting approval — response held by gate",
-          timestamp: run.status?.startedAt || run.metadata.creationTimestamp || "",
+          timestamp:
+            run.status?.startedAt || run.metadata.creationTimestamp || "",
           meta: "gate-pending",
         });
       } else if (run.status?.phase === "Running") {
@@ -148,7 +152,8 @@ export function FeedPane({
           id: `run-pending-${run.metadata.name}`,
           type: "thinking",
           text: "Agent is working…",
-          timestamp: run.status?.startedAt || run.metadata.creationTimestamp || "",
+          timestamp:
+            run.status?.startedAt || run.metadata.creationTimestamp || "",
           meta: "running",
         });
       }
@@ -260,7 +265,7 @@ export function FeedPane({
                             inst.status?.phase?.toLowerCase() === "ready" ||
                             inst.status?.phase?.toLowerCase() === "active"
                             ? "bg-emerald-400"
-                            : "bg-muted-foreground"
+                            : "bg-muted-foreground",
                         )}
                       />
                       {inst.metadata.name}
@@ -345,9 +350,7 @@ function FeedBubble({ item }: { item: FeedItem }) {
   const isUser = item.type === "user";
 
   return (
-    <div
-      className={cn("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
-    >
+    <div className={cn("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}>
       {/* Avatar */}
       <div
         className={cn(
@@ -355,19 +358,15 @@ function FeedBubble({ item }: { item: FeedItem }) {
           isUser
             ? "bg-blue-500/20 text-blue-400"
             : item.type === "error"
-            ? "bg-red-500/20 text-red-400"
-            : item.type === "thinking"
-            ? "bg-amber-500/20 text-amber-400"
-            : item.type === "system"
-            ? "bg-amber-500/20 text-amber-400"
-            : "bg-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/20 text-red-400"
+              : item.type === "thinking"
+                ? "bg-amber-500/20 text-amber-400"
+                : item.type === "system"
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "bg-emerald-500/20 text-emerald-400",
         )}
       >
-        {isUser ? (
-          <User className="h-3 w-3" />
-        ) : (
-          <Bot className="h-3 w-3" />
-        )}
+        {isUser ? <User className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
       </div>
 
       {/* Bubble */}
@@ -377,12 +376,12 @@ function FeedBubble({ item }: { item: FeedItem }) {
           isUser
             ? "bg-blue-500/15 text-blue-100 border border-blue-500/20"
             : item.type === "error"
-            ? "bg-red-500/10 text-red-300 border border-red-500/20"
-            : item.type === "thinking"
-            ? "bg-amber-500/10 text-amber-300 border border-amber-500/20"
-            : item.type === "system"
-            ? "bg-amber-500/10 text-amber-300 border border-amber-500/30"
-            : "bg-muted/50 text-foreground border border-border/50"
+              ? "bg-red-500/10 text-red-300 border border-red-500/20"
+              : item.type === "thinking"
+                ? "bg-amber-500/10 text-amber-300 border border-amber-500/20"
+                : item.type === "system"
+                  ? "bg-amber-500/10 text-amber-300 border border-amber-500/30"
+                  : "bg-muted/50 text-foreground border border-border/50",
         )}
       >
         {item.type === "system" ? (
@@ -399,7 +398,9 @@ function FeedBubble({ item }: { item: FeedItem }) {
           <p className="whitespace-pre-wrap break-all">{item.text}</p>
         ) : (
           <div className="prose prose-sm prose-invert prose-feed break-word max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {item.text}
+            </ReactMarkdown>
           </div>
         )}
         {item.meta && (

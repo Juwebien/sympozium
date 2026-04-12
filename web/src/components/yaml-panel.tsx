@@ -101,7 +101,9 @@ export function personaPackYamlFromWizard(
     ...(result.baseURL ? { baseURL: result.baseURL } : {}),
     ...(Object.keys(channelConfigs).length > 0 ? { channelConfigs } : {}),
     ...(Object.keys(skillParams).length > 0 ? { skillParams } : {}),
-    ...(result.heartbeatInterval ? { heartbeatInterval: result.heartbeatInterval } : {}),
+    ...(result.heartbeatInterval
+      ? { heartbeatInterval: result.heartbeatInterval }
+      : {}),
     ...(result.agentSandboxEnabled
       ? {
           agentSandbox: {
@@ -110,7 +112,9 @@ export function personaPackYamlFromWizard(
           },
         }
       : {}),
-    personas: [`# ${personaCount ?? "?"} personas defined in pack (omitted for brevity)`],
+    personas: [
+      `# ${personaCount ?? "?"} personas defined in pack (omitted for brevity)`,
+    ],
   };
 
   const obj: Record<string, YamlValue> = {
@@ -128,9 +132,12 @@ export function instanceYamlFromResource(inst: SympoziumInstance): string {
   const spec: Record<string, YamlValue> = {};
 
   if (inst.spec.agents) spec.agents = inst.spec.agents as unknown as YamlValue;
-  if (inst.spec.skills && inst.spec.skills.length > 0) spec.skills = inst.spec.skills as unknown as YamlValue;
-  if (inst.spec.channels && inst.spec.channels.length > 0) spec.channels = inst.spec.channels as unknown as YamlValue;
-  if (inst.spec.authRefs && inst.spec.authRefs.length > 0) spec.authRefs = inst.spec.authRefs as unknown as YamlValue;
+  if (inst.spec.skills && inst.spec.skills.length > 0)
+    spec.skills = inst.spec.skills as unknown as YamlValue;
+  if (inst.spec.channels && inst.spec.channels.length > 0)
+    spec.channels = inst.spec.channels as unknown as YamlValue;
+  if (inst.spec.authRefs && inst.spec.authRefs.length > 0)
+    spec.authRefs = inst.spec.authRefs as unknown as YamlValue;
   if (inst.spec.memory) spec.memory = inst.spec.memory as unknown as YamlValue;
   if (inst.spec.policyRef) spec.policyRef = inst.spec.policyRef;
 
@@ -157,8 +164,12 @@ export function personaPackYamlFromResource(pack: PersonaPack): string {
   if (pack.spec.description) spec.description = pack.spec.description;
   if (pack.spec.category) spec.category = pack.spec.category;
   if (pack.spec.version) spec.version = pack.spec.version;
-  if (pack.spec.authRefs && pack.spec.authRefs.length > 0) spec.authRefs = pack.spec.authRefs as unknown as YamlValue;
-  if (pack.spec.channelConfigs && Object.keys(pack.spec.channelConfigs).length > 0)
+  if (pack.spec.authRefs && pack.spec.authRefs.length > 0)
+    spec.authRefs = pack.spec.authRefs as unknown as YamlValue;
+  if (
+    pack.spec.channelConfigs &&
+    Object.keys(pack.spec.channelConfigs).length > 0
+  )
     spec.channelConfigs = pack.spec.channelConfigs;
   if (pack.spec.skillParams && Object.keys(pack.spec.skillParams).length > 0)
     spec.skillParams = pack.spec.skillParams;
@@ -172,12 +183,15 @@ export function personaPackYamlFromResource(pack: PersonaPack): string {
     };
     if (p.displayName) persona.displayName = p.displayName;
     if (p.model) persona.model = p.model;
-    if (p.skills && p.skills.length > 0) persona.skills = p.skills as unknown as YamlValue;
+    if (p.skills && p.skills.length > 0)
+      persona.skills = p.skills as unknown as YamlValue;
     if (p.toolPolicy) persona.toolPolicy = p.toolPolicy as unknown as YamlValue;
     if (p.schedule) persona.schedule = p.schedule as unknown as YamlValue;
     if (p.memory) persona.memory = p.memory as unknown as YamlValue;
-    if (p.channels && p.channels.length > 0) persona.channels = p.channels as unknown as YamlValue;
-    if (p.webEndpoint) persona.webEndpoint = p.webEndpoint as unknown as YamlValue;
+    if (p.channels && p.channels.length > 0)
+      persona.channels = p.channels as unknown as YamlValue;
+    if (p.webEndpoint)
+      persona.webEndpoint = p.webEndpoint as unknown as YamlValue;
     if (p.lifecycle) persona.lifecycle = p.lifecycle as unknown as YamlValue;
     return persona;
   });
@@ -251,7 +265,10 @@ export function YamlModal({ open, onClose, yaml, title }: YamlModalProps) {
           </pre>
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Apply with <code className="px-1 py-0.5 rounded bg-muted text-[11px]">kubectl apply -f</code>
+          Apply with{" "}
+          <code className="px-1 py-0.5 rounded bg-muted text-[11px]">
+            kubectl apply -f
+          </code>
         </p>
       </DialogContent>
     </Dialog>

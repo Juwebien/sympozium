@@ -70,7 +70,9 @@ describe("PersonaPack — Enable via Wizard", () => {
 
     // ── Wizard opens in persona mode ──────────────────────────
     // Step: Provider — select LM Studio.
-    cy.get("[role='dialog']").find("button[role='combobox']").click({ force: true });
+    cy.get("[role='dialog']")
+      .find("button[role='combobox']")
+      .click({ force: true });
     cy.get("[data-radix-popper-content-wrapper]")
       .contains("LM Studio")
       .click({ force: true });
@@ -80,14 +82,19 @@ describe("PersonaPack — Enable via Wizard", () => {
     cy.wizardNext();
 
     // Step: Model — type the model name.
-    cy.get("[role='dialog']").find("input[placeholder='gpt-4o']").clear().type("qwen/qwen3.5-9b");
+    cy.get("[role='dialog']")
+      .find("input[placeholder='gpt-4o']")
+      .clear()
+      .type("qwen/qwen3.5-9b");
     cy.wizardNext();
 
     // Step: Skills — accept defaults.
     cy.wizardNext();
 
     // Step: Heartbeat — accept pack default.
-    cy.get("[role='dialog']").contains("button", "Pack default").click({ force: true });
+    cy.get("[role='dialog']")
+      .contains("button", "Pack default")
+      .click({ force: true });
     cy.wizardNext();
 
     // Step: Channels — skip.
@@ -96,7 +103,9 @@ describe("PersonaPack — Enable via Wizard", () => {
     // Step: Confirm — verify summary and activate.
     cy.get("[role='dialog']").contains("lm-studio");
     cy.get("[role='dialog']").contains("qwen/qwen3.5-9b");
-    cy.get("[role='dialog']").contains("button", "Activate").click({ force: true });
+    cy.get("[role='dialog']")
+      .contains("button", "Activate")
+      .click({ force: true });
 
     // Wait for dialog to close.
     cy.get("[role='dialog']").should("not.exist", { timeout: 20000 });

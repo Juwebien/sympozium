@@ -8,12 +8,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -36,9 +31,7 @@ export function SkillsPage() {
   const [selected, setSelected] = useState<SkillPack | null>(null);
 
   const filtered = (data || [])
-    .filter((s) =>
-      s.metadata.name.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((s) => s.metadata.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
   return (
@@ -91,7 +84,9 @@ export function SkillsPage() {
                 </TableCell>
                 <TableCell>
                   {sk.spec.sidecar ? (
-                    <Badge variant="default" className="text-xs">Yes</Badge>
+                    <Badge variant="default" className="text-xs">
+                      Yes
+                    </Badge>
                   ) : (
                     <span className="text-muted-foreground text-xs">No</span>
                   )}
@@ -107,7 +102,9 @@ export function SkillsPage() {
                 </TableCell>
                 <TableCell>
                   {sk.spec.sidecar?.hostAccess?.enabled ? (
-                    <Badge variant="destructive" className="text-xs">Enabled</Badge>
+                    <Badge variant="destructive" className="text-xs">
+                      Enabled
+                    </Badge>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
@@ -215,26 +212,41 @@ function SkillDetail({ skill }: { skill: SkillPack }) {
             <CardContent className="space-y-3 text-sm">
               <div className="flex flex-wrap gap-2">
                 {skill.spec.sidecar.hostAccess.hostPID && (
-                  <Badge variant="outline" className="text-xs">hostPID</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    hostPID
+                  </Badge>
                 )}
                 {skill.spec.sidecar.hostAccess.hostNetwork && (
-                  <Badge variant="outline" className="text-xs">hostNetwork</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    hostNetwork
+                  </Badge>
                 )}
                 {skill.spec.sidecar.hostAccess.runAsRoot && (
-                  <Badge variant="outline" className="text-xs">runAsRoot</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    runAsRoot
+                  </Badge>
                 )}
                 {skill.spec.sidecar.hostAccess.privileged && (
-                  <Badge variant="outline" className="text-xs">privileged</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    privileged
+                  </Badge>
                 )}
               </div>
-              {skill.spec.sidecar.hostAccess.mounts && skill.spec.sidecar.hostAccess.mounts.length > 0 && (
-                <div>
-                  <p className="text-muted-foreground mb-1">HostPath Mounts</p>
-                  <pre className="text-xs font-mono whitespace-pre-wrap rounded bg-muted/50 p-3 overflow-auto max-h-64">
-                    {JSON.stringify(skill.spec.sidecar.hostAccess.mounts, null, 2)}
-                  </pre>
-                </div>
-              )}
+              {skill.spec.sidecar.hostAccess.mounts &&
+                skill.spec.sidecar.hostAccess.mounts.length > 0 && (
+                  <div>
+                    <p className="text-muted-foreground mb-1">
+                      HostPath Mounts
+                    </p>
+                    <pre className="text-xs font-mono whitespace-pre-wrap rounded bg-muted/50 p-3 overflow-auto max-h-64">
+                      {JSON.stringify(
+                        skill.spec.sidecar.hostAccess.mounts,
+                        null,
+                        2,
+                      )}
+                    </pre>
+                  </div>
+                )}
             </CardContent>
           </Card>
         </>

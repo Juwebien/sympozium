@@ -17,7 +17,9 @@ describe("Schedule — create via UI", () => {
   it("creates a schedule and surfaces it on the list", () => {
     cy.visit("/schedules");
 
-    cy.contains("button", /Create Schedule|New Schedule/, { timeout: 20000 }).click({ force: true });
+    cy.contains("button", /Create Schedule|New Schedule/, {
+      timeout: 20000,
+    }).click({ force: true });
 
     cy.get("[role='dialog']", { timeout: 10000 }).within(() => {
       // Name field — placeholder is "my-heartbeat".
@@ -27,7 +29,9 @@ describe("Schedule — create via UI", () => {
       cy.get("[role='combobox']").first().click({ force: true });
     });
     // Select the instance from the Radix portal (rendered outside the dialog).
-    cy.contains("[role='option']", INSTANCE, { timeout: 10000 }).click({ force: true });
+    cy.contains("[role='option']", INSTANCE, { timeout: 10000 }).click({
+      force: true,
+    });
 
     cy.get("[role='dialog']").within(() => {
       // Cron field — already defaults to */5 * * * *, but set it explicitly.

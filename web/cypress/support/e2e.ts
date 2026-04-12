@@ -44,7 +44,10 @@ declare global {
         opts?: { name?: string },
       ): Chainable<string>;
       /** Poll status.phase of an AgentRun until it reaches a terminal phase. */
-      waitForRunTerminal(runName: string, timeoutMs?: number): Chainable<string>;
+      waitForRunTerminal(
+        runName: string,
+        timeoutMs?: number,
+      ): Chainable<string>;
       /** Poll an API URL until it returns 404 (resource fully deleted). */
       waitForDeleted(path: string, timeoutMs?: number): Chainable<void>;
       /** Delete an AgentRun by name (cleanup helper). */
@@ -65,7 +68,9 @@ function authHeaders(): Record<string, string> {
 }
 
 Cypress.Commands.add("wizardNext", () => {
-  cy.contains("button", "Next").should("not.be.disabled").click({ force: true });
+  cy.contains("button", "Next")
+    .should("not.be.disabled")
+    .click({ force: true });
 });
 
 Cypress.Commands.add("wizardBack", () => {
@@ -158,25 +163,28 @@ Cypress.Commands.add("createLlamaServerInstance", (name: string, opts) => {
   });
 });
 
-Cypress.Commands.add("dispatchRun", (instanceRef: string, task: string, opts) => {
-  return cy
-    .request({
-      method: "POST",
-      url: "/api/v1/runs?namespace=default",
-      headers: authHeaders(),
-      body: {
-        instanceRef,
-        task,
-        ...(opts?.name ? { name: opts.name } : {}),
-      },
-    })
-    .then((resp) => {
-      expect(resp.status).to.be.oneOf([200, 201]);
-      const name = resp.body?.metadata?.name as string;
-      expect(name).to.be.a("string").and.not.be.empty;
-      return cy.wrap(name);
-    });
-});
+Cypress.Commands.add(
+  "dispatchRun",
+  (instanceRef: string, task: string, opts) => {
+    return cy
+      .request({
+        method: "POST",
+        url: "/api/v1/runs?namespace=default",
+        headers: authHeaders(),
+        body: {
+          instanceRef,
+          task,
+          ...(opts?.name ? { name: opts.name } : {}),
+        },
+      })
+      .then((resp) => {
+        expect(resp.status).to.be.oneOf([200, 201]);
+        const name = resp.body?.metadata?.name as string;
+        expect(name).to.be.a("string").and.not.be.empty;
+        return cy.wrap(name);
+      });
+  },
+);
 
 Cypress.Commands.add("waitForDeleted", (path: string, timeoutMs = 30000) => {
   const started = Date.now();
@@ -203,30 +211,33 @@ Cypress.Commands.add("waitForDeleted", (path: string, timeoutMs = 30000) => {
   return poll();
 });
 
-Cypress.Commands.add("waitForRunTerminal", (runName: string, timeoutMs = 180000) => {
-  const started = Date.now();
-  const poll = (): Cypress.Chainable<string> => {
-    return cy
-      .request({
-        url: `/api/v1/runs/${runName}?namespace=default`,
-        headers: authHeaders(),
-        failOnStatusCode: false,
-      })
-      .then((resp) => {
-        const phase = resp.body?.status?.phase as string | undefined;
-        if (phase === "Succeeded" || phase === "Failed") {
-          return cy.wrap(phase);
-        }
-        if (Date.now() - started > timeoutMs) {
-          throw new Error(
-            `waitForRunTerminal(${runName}) timed out; last phase=${phase ?? "none"}`,
-          );
-        }
-        cy.wait(2000, { log: false });
-        return poll();
-      });
-  };
-  return poll();
-});
+Cypress.Commands.add(
+  "waitForRunTerminal",
+  (runName: string, timeoutMs = 180000) => {
+    const started = Date.now();
+    const poll = (): Cypress.Chainable<string> => {
+      return cy
+        .request({
+          url: `/api/v1/runs/${runName}?namespace=default`,
+          headers: authHeaders(),
+          failOnStatusCode: false,
+        })
+        .then((resp) => {
+          const phase = resp.body?.status?.phase as string | undefined;
+          if (phase === "Succeeded" || phase === "Failed") {
+            return cy.wrap(phase);
+          }
+          if (Date.now() - started > timeoutMs) {
+            throw new Error(
+              `waitForRunTerminal(${runName}) timed out; last phase=${phase ?? "none"}`,
+            );
+          }
+          cy.wait(2000, { log: false });
+          return poll();
+        });
+    };
+    return poll();
+  },
+);
 
 export {};

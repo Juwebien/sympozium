@@ -2193,50 +2193,50 @@ type podRow struct {
 type wizardStep int
 
 const (
-	wizStepNone                   wizardStep = iota
-	wizStepCheckCluster                      // auto — verify CRDs
-	wizStepNamespace                         // text: target namespace
-	wizStepInstanceName                      // text: instance name
-	wizStepProvider                          // menu 1-6: provider
-	wizStepModel                             // text: model name
-	wizStepBaseURL                           // text: base URL (some providers)
-	wizStepAPIKey                            // text: API key (non-ollama)
-	wizStepGithubRepo                        // text: GitHub repo (owner/repo)
-	wizStepTeamTask                          // text: team-level task/instructions
-	wizStepChannel                           // menu 1-5: channel type
-	wizStepChannelToken                      // text: channel bot token
-	wizStepPolicy                            // y/n: apply default policy
-	wizStepAgentSandbox                      // y/n: enable agent sandbox (CRD) isolation
-	wizStepRunTimeout                        // menu: run timeout per agent run
-	wizStepHeartbeat                         // menu 1-5: heartbeat interval
-	wizStepConfirm                           // y/n: confirm summary
-	wizStepApplying                          // auto — create resources
-	wizStepWhatsAppQR                        // auto — stream QR from pod logs
-	wizStepDone                              // auto — show result
-	wizStepLMStudioAPIKeyRequired            // y/n: LM Studio requires API key?
-	wizStepLlamaServerAPIKeyRequired         // y/n: llama-server requires API key?
-	wizStepAWSRegion                         // text: AWS region for Bedrock
-	wizStepAWSAccessKeyID                    // text: AWS Access Key ID
-	wizStepAWSSecretAccessKey                // text: AWS Secret Access Key
-	wizStepAWSSessionToken                   // text: AWS Session Token (optional)
+	wizStepNone                      wizardStep = iota
+	wizStepCheckCluster                         // auto — verify CRDs
+	wizStepNamespace                            // text: target namespace
+	wizStepInstanceName                         // text: instance name
+	wizStepProvider                             // menu 1-6: provider
+	wizStepModel                                // text: model name
+	wizStepBaseURL                              // text: base URL (some providers)
+	wizStepAPIKey                               // text: API key (non-ollama)
+	wizStepGithubRepo                           // text: GitHub repo (owner/repo)
+	wizStepTeamTask                             // text: team-level task/instructions
+	wizStepChannel                              // menu 1-5: channel type
+	wizStepChannelToken                         // text: channel bot token
+	wizStepPolicy                               // y/n: apply default policy
+	wizStepAgentSandbox                         // y/n: enable agent sandbox (CRD) isolation
+	wizStepRunTimeout                           // menu: run timeout per agent run
+	wizStepHeartbeat                            // menu 1-5: heartbeat interval
+	wizStepConfirm                              // y/n: confirm summary
+	wizStepApplying                             // auto — create resources
+	wizStepWhatsAppQR                           // auto — stream QR from pod logs
+	wizStepDone                                 // auto — show result
+	wizStepLMStudioAPIKeyRequired               // y/n: LM Studio requires API key?
+	wizStepLlamaServerAPIKeyRequired            // y/n: llama-server requires API key?
+	wizStepAWSRegion                            // text: AWS region for Bedrock
+	wizStepAWSAccessKeyID                       // text: AWS Access Key ID
+	wizStepAWSSecretAccessKey                   // text: AWS Secret Access Key
+	wizStepAWSSessionToken                      // text: AWS Session Token (optional)
 
 	// Persona wizard steps
-	wizStepPersonaPick                   // menu: select a persona pack
-	wizStepPersonaProvider               // menu 1-6: provider
-	wizStepPersonaBaseURL                // text: base URL
-	wizStepPersonaLMStudioAPIKeyRequired     // y/n: LM Studio requires API key?
-	wizStepPersonaLlamaServerAPIKeyRequired  // y/n: llama-server requires API key?
-	wizStepPersonaAPIKey                 // text: API key
-	wizStepPersonaModel                  // text: model name
-	wizStepPersonaGithubRepo             // text: GitHub repo (owner/repo)
-	wizStepPersonaTeamTask               // text: team-level task/instructions
-	wizStepPersonaAgentSandbox           // y/n: enable agent sandbox (CRD) isolation
-	wizStepPersonaChannels               // multi-toggle: channels to bind
-	wizStepPersonaChannelToken           // text: channel token (per selected channel)
-	wizStepPersonaHeartbeat              // menu 1-5: heartbeat interval override
-	wizStepPersonaConfirm                // y/n: confirm summary
-	wizStepPersonaApplying               // auto — patch pack + create resources
-	wizStepPersonaDone                   // auto — show result
+	wizStepPersonaPick                      // menu: select a persona pack
+	wizStepPersonaProvider                  // menu 1-6: provider
+	wizStepPersonaBaseURL                   // text: base URL
+	wizStepPersonaLMStudioAPIKeyRequired    // y/n: LM Studio requires API key?
+	wizStepPersonaLlamaServerAPIKeyRequired // y/n: llama-server requires API key?
+	wizStepPersonaAPIKey                    // text: API key
+	wizStepPersonaModel                     // text: model name
+	wizStepPersonaGithubRepo                // text: GitHub repo (owner/repo)
+	wizStepPersonaTeamTask                  // text: team-level task/instructions
+	wizStepPersonaAgentSandbox              // y/n: enable agent sandbox (CRD) isolation
+	wizStepPersonaChannels                  // multi-toggle: channels to bind
+	wizStepPersonaChannelToken              // text: channel token (per selected channel)
+	wizStepPersonaHeartbeat                 // menu 1-5: heartbeat interval override
+	wizStepPersonaConfirm                   // y/n: confirm summary
+	wizStepPersonaApplying                  // auto — patch pack + create resources
+	wizStepPersonaDone                      // auto — show result
 )
 
 type wizardState struct {

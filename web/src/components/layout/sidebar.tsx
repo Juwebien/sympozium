@@ -20,7 +20,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRuns } from "@/hooks/use-api";
 import { useRunsSeen } from "@/hooks/use-runs-seen";
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; indent?: number; badgeKey?: string };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  indent?: number;
+  badgeKey?: string;
+};
 type NavSection = { label?: string; items: NavItem[] };
 
 const navSections: NavSection[] = [
@@ -64,25 +70,28 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   );
 
   const badges: Record<string, { count: number; color: string } | null> = {
-    runs: unseenFailed > 0
-      ? { count: unseenFailed, color: "bg-red-500" }
-      : unseen > 0
-        ? { count: unseen, color: "bg-blue-500" }
-        : null,
+    runs:
+      unseenFailed > 0
+        ? { count: unseenFailed, color: "bg-red-500" }
+        : unseen > 0
+          ? { count: unseen, color: "bg-blue-500" }
+          : null,
   };
 
   return (
     <aside
       className={cn(
         "flex h-full flex-col border-r border-border/50 bg-card transition-[width] duration-200 ease-in-out",
-        collapsed ? "w-14" : "w-60"
+        collapsed ? "w-14" : "w-60",
       )}
     >
       {/* Logo */}
-      <div className={cn(
-        "flex h-14 items-center border-b border-border/50 overflow-hidden",
-        collapsed ? "justify-center px-0" : "-ml-5"
-      )}>
+      <div
+        className={cn(
+          "flex h-14 items-center border-b border-border/50 overflow-hidden",
+          collapsed ? "justify-center px-0" : "-ml-5",
+        )}
+      >
         {collapsed ? (
           <img src="/icon.png" alt="Sympozium" className="h-8 w-8 shrink-0" />
         ) : (
@@ -111,22 +120,33 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                   className={({ isActive }) =>
                     cn(
                       "relative flex items-center rounded-md text-sm font-medium transition-colors",
-                      collapsed ? "justify-center px-0 py-2" : "gap-3 py-2 pr-3",
-                      !collapsed && (item.indent === 2 ? "pl-9" : item.indent === 1 ? "pl-6" : "pl-3"),
+                      collapsed
+                        ? "justify-center px-0 py-2"
+                        : "gap-3 py-2 pr-3",
+                      !collapsed &&
+                        (item.indent === 2
+                          ? "pl-9"
+                          : item.indent === 1
+                            ? "pl-6"
+                            : "pl-3"),
                       isActive
                         ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent",
                     )
                   }
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   {!collapsed && item.label}
                   {item.badgeKey && badges[item.badgeKey] && (
-                    <span className={cn(
-                      "ml-auto inline-flex items-center justify-center rounded-full text-[10px] font-bold text-white",
-                      collapsed ? "absolute -top-1 -right-1 h-4 min-w-4 px-1" : "h-5 min-w-5 px-1.5",
-                      badges[item.badgeKey]!.color,
-                    )}>
+                    <span
+                      className={cn(
+                        "ml-auto inline-flex items-center justify-center rounded-full text-[10px] font-bold text-white",
+                        collapsed
+                          ? "absolute -top-1 -right-1 h-4 min-w-4 px-1"
+                          : "h-5 min-w-5 px-1.5",
+                        badges[item.badgeKey]!.color,
+                      )}
+                    >
                       {badges[item.badgeKey]!.count}
                     </span>
                   )}
@@ -140,12 +160,22 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       {/* Help & Contribute */}
       {collapsed && (
         <div className="border-t border-border/50 px-2 py-2 flex flex-col items-center gap-1">
-          <a href="https://deploy.sympozium.ai/docs" target="_blank" rel="noopener noreferrer" title="Documentation"
-            className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
+          <a
+            href="https://deploy.sympozium.ai/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Documentation"
+            className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+          >
             <BookOpen className="h-4 w-4" />
           </a>
-          <a href="https://github.com/sympozium-ai/sympozium" target="_blank" rel="noopener noreferrer" title="GitHub"
-            className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors">
+          <a
+            href="https://github.com/sympozium-ai/sympozium"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="GitHub"
+            className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+          >
             <Github className="h-4 w-4" />
           </a>
         </div>
@@ -186,12 +216,17 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       )}
 
       {/* Collapse toggle */}
-      <div className={cn("border-t border-border/50 py-2", collapsed ? "px-2" : "px-4")}>
+      <div
+        className={cn(
+          "border-t border-border/50 py-2",
+          collapsed ? "px-2" : "px-4",
+        )}
+      >
         <button
           onClick={onToggle}
           className={cn(
             "flex items-center rounded-md py-1.5 text-xs font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors w-full",
-            collapsed ? "justify-center px-0" : "gap-2 px-2"
+            collapsed ? "justify-center px-0" : "gap-2 px-2",
           )}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >

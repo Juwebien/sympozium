@@ -14,7 +14,12 @@ const queryClient = new QueryClient({
       refetchInterval: 5000,
       // Don't retry on 401 (bad token) — retry other transient errors 3 times.
       retry: (failureCount, error) => {
-        if (error instanceof Error && "status" in error && (error as { status: number }).status === 401) return false;
+        if (
+          error instanceof Error &&
+          "status" in error &&
+          (error as { status: number }).status === 401
+        )
+          return false;
         return failureCount < 3;
       },
       retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
@@ -25,7 +30,8 @@ const queryClient = new QueryClient({
       retry: (failureCount, error) => {
         const isNetwork =
           error instanceof TypeError ||
-          (error instanceof Error && /network|failed to fetch|load failed/i.test(error.message));
+          (error instanceof Error &&
+            /network|failed to fetch|load failed/i.test(error.message));
         return isNetwork && failureCount < 2;
       },
       retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
@@ -55,5 +61,5 @@ createRoot(document.getElementById("root")!).render(
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

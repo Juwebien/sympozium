@@ -17,7 +17,9 @@ interface GithubAuthDialogProps {
 }
 
 export function GithubAuthDialog({ open, onClose }: GithubAuthDialogProps) {
-  const [status, setStatus] = useState<"idle" | "complete" | "saving" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "complete" | "saving" | "error"
+  >("idle");
   const [token, setToken] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -37,7 +39,9 @@ export function GithubAuthDialog({ open, onClose }: GithubAuthDialogProps) {
       }
     };
     check();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   const handleSave = async () => {
@@ -123,8 +127,9 @@ export function GithubAuthDialog({ open, onClose }: GithubAuthDialogProps) {
                 )}
               </Button>
               <p className="text-xs text-muted-foreground">
-                The token is stored as a Kubernetes Secret (<code>github-gitops-token</code>)
-                and mounted into agent pods via the github-gitops skill sidecar.
+                The token is stored as a Kubernetes Secret (
+                <code>github-gitops-token</code>) and mounted into agent pods
+                via the github-gitops skill sidecar.
               </p>
             </div>
           )}

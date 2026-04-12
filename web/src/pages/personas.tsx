@@ -7,7 +7,10 @@ import {
   useSkills,
 } from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
-import { OnboardingWizard, type WizardResult } from "@/components/onboarding-wizard";
+import {
+  OnboardingWizard,
+  type WizardResult,
+} from "@/components/onboarding-wizard";
 import { WhatsAppQRModal } from "@/components/whatsapp-qr-modal";
 import {
   Dialog,
@@ -48,9 +51,7 @@ export function PersonasPage() {
   const [disablePack, setDisablePack] = useState<PersonaPack | null>(null);
 
   const filtered = (data || [])
-    .filter((p) =>
-      p.metadata.name.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((p) => p.metadata.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
   function openWizard(pack: PersonaPack) {
@@ -97,7 +98,10 @@ export function PersonasPage() {
         skillParams,
         githubToken: result.githubToken || undefined,
         agentSandbox: result.agentSandboxEnabled
-          ? { enabled: true, runtimeClass: result.agentSandboxRuntimeClass || "gvisor" }
+          ? {
+              enabled: true,
+              runtimeClass: result.agentSandboxRuntimeClass || "gvisor",
+            }
           : undefined,
       },
       {
@@ -107,7 +111,7 @@ export function PersonasPage() {
             setWhatsAppPack(wizardPack.metadata.name);
           }
         },
-      }
+      },
     );
   }
 
@@ -122,7 +126,7 @@ export function PersonasPage() {
         name: disablePack.metadata.name,
         enabled: false,
       },
-      { onSuccess: () => setDisablePack(null) }
+      { onSuccess: () => setDisablePack(null) },
     );
   }
 
@@ -163,7 +167,9 @@ export function PersonasPage() {
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center space-y-3">
           <p className="text-muted-foreground">
-            {search ? "No persona packs match your search" : "No persona packs yet"}
+            {search
+              ? "No persona packs match your search"
+              : "No persona packs yet"}
           </p>
           {!search && (
             <p className="text-sm text-muted-foreground">
@@ -228,9 +234,13 @@ export function PersonasPage() {
                 </TableCell>
                 <TableCell>
                   {pack.spec.enabled ? (
-                    <Badge variant="default" className="text-xs">Yes</Badge>
+                    <Badge variant="default" className="text-xs">
+                      Yes
+                    </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">No</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      No
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
@@ -282,8 +292,8 @@ export function PersonasPage() {
           model: wizardPack?.spec.personas?.[0]?.model || "",
           skills: Array.from(
             new Set(
-              (wizardPack?.spec.personas || []).flatMap((p) => p.skills || [])
-            )
+              (wizardPack?.spec.personas || []).flatMap((p) => p.skills || []),
+            ),
           ),
           channelConfigs: wizardPack?.spec.channelConfigs || {},
           channels:
@@ -301,14 +311,18 @@ export function PersonasPage() {
       />
 
       {/* Disable confirmation dialog */}
-      <Dialog open={!!disablePack} onOpenChange={(open) => !open && setDisablePack(null)}>
+      <Dialog
+        open={!!disablePack}
+        onOpenChange={(open) => !open && setDisablePack(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Disable Persona Pack</DialogTitle>
             <DialogDescription>
-              This will disable <strong>{disablePack?.metadata.name}</strong> and
-              remove all associated Instances, Schedules, and resources. The pack
-              itself will remain available and can be re-enabled at any time.
+              This will disable <strong>{disablePack?.metadata.name}</strong>{" "}
+              and remove all associated Instances, Schedules, and resources. The
+              pack itself will remain available and can be re-enabled at any
+              time.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-2">

@@ -36,7 +36,9 @@ spec:
     cy.exec(`kubectl apply -f cypress/tmp/${PACK}.yaml`);
 
     cy.visit("/instances");
-    cy.contains(STAMPED_INSTANCE, { timeout: 30000 }).should("be.visible").click();
+    cy.contains(STAMPED_INSTANCE, { timeout: 30000 })
+      .should("be.visible")
+      .click();
 
     // Navigate to the Channels tab on instance detail.
     cy.contains("button", "Channels", { timeout: 20000 }).click();

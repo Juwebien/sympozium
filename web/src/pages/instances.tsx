@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useInstances, useDeleteInstance, useCreateInstance, useSkills } from "@/hooks/use-api";
+import {
+  useInstances,
+  useDeleteInstance,
+  useCreateInstance,
+  useSkills,
+} from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
-import { OnboardingWizard, type WizardResult } from "@/components/onboarding-wizard";
+import {
+  OnboardingWizard,
+  type WizardResult,
+} from "@/components/onboarding-wizard";
 import { WhatsAppQRModal } from "@/components/whatsapp-qr-modal";
 import {
   Table,
@@ -30,7 +38,7 @@ export function InstancesPage() {
 
   const filtered = (data || [])
     .filter((inst) =>
-      inst.metadata.name.toLowerCase().includes(search.toLowerCase())
+      inst.metadata.name.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
@@ -56,7 +64,10 @@ export function InstancesPage() {
             if (result.webEndpointHostname) {
               params.hostname = result.webEndpointHostname;
             }
-            return { skillPackRef, params: Object.keys(params).length > 0 ? params : undefined };
+            return {
+              skillPackRef,
+              params: Object.keys(params).length > 0 ? params : undefined,
+            };
           }
           return { skillPackRef };
         }),
@@ -68,7 +79,10 @@ export function InstancesPage() {
         })),
         heartbeatInterval: result.heartbeatInterval || undefined,
         agentSandbox: result.agentSandboxEnabled
-          ? { enabled: true, runtimeClass: result.agentSandboxRuntimeClass || "gvisor" }
+          ? {
+              enabled: true,
+              runtimeClass: result.agentSandboxRuntimeClass || "gvisor",
+            }
           : undefined,
         runTimeout: result.runTimeout || undefined,
         requireApproval: result.requireApproval || undefined,
@@ -80,7 +94,7 @@ export function InstancesPage() {
             setWhatsAppInstance(result.name);
           }
         },
-      }
+      },
     );
   }
 
@@ -122,10 +136,20 @@ export function InstancesPage() {
           </p>
           {!search && (
             <p className="text-sm text-muted-foreground">
-              <Link to="/personas" className="text-blue-400 hover:text-blue-300">Enable a Persona Pack</Link> to auto-create instances, or{" "}
-              <button onClick={() => setWizardOpen(true)} className="text-blue-400 hover:text-blue-300">
+              <Link
+                to="/personas"
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Enable a Persona Pack
+              </Link>{" "}
+              to auto-create instances, or{" "}
+              <button
+                onClick={() => setWizardOpen(true)}
+                className="text-blue-400 hover:text-blue-300"
+              >
                 create one manually
-              </button>.
+              </button>
+              .
             </p>
           )}
         </div>
@@ -158,11 +182,16 @@ export function InstancesPage() {
                       <ExternalLink className="h-3 w-3 opacity-50" />
                     </Link>
                     {inst.metadata.labels?.["sympozium.ai/persona-pack"] && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-blue-400 border-blue-500/30">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-0 text-blue-400 border-blue-500/30"
+                      >
                         {inst.metadata.labels["sympozium.ai/persona-pack"]}
                       </Badge>
                     )}
-                    {inst.spec.agents?.default?.lifecycle?.postRun?.some((h) => h.gate) && (
+                    {inst.spec.agents?.default?.lifecycle?.postRun?.some(
+                      (h) => h.gate,
+                    ) && (
                       <span
                         data-testid="instance-gate-badge"
                         className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0 text-[10px] font-medium text-amber-400"
@@ -175,15 +204,19 @@ export function InstancesPage() {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm">
-                  {inst.spec.authRefs?.[0]?.provider || (() => {
-                    const base = inst.spec.agents?.default?.baseURL || "";
-                    if (base.includes("ollama") || base.includes(":11434")) return "ollama";
-                    if (base.includes("lm-studio") || base.includes(":1234")) return "lm-studio";
-                    if (base.includes("llama-server")) return "llama-server";
-                    if (base.includes("unsloth") || base.includes(":8080")) return "unsloth";
-                    if (base) return "custom";
-                    return "—";
-                  })()}
+                  {inst.spec.authRefs?.[0]?.provider ||
+                    (() => {
+                      const base = inst.spec.agents?.default?.baseURL || "";
+                      if (base.includes("ollama") || base.includes(":11434"))
+                        return "ollama";
+                      if (base.includes("lm-studio") || base.includes(":1234"))
+                        return "lm-studio";
+                      if (base.includes("llama-server")) return "llama-server";
+                      if (base.includes("unsloth") || base.includes(":8080"))
+                        return "unsloth";
+                      if (base) return "custom";
+                      return "—";
+                    })()}
                 </TableCell>
                 <TableCell className="text-sm">
                   {inst.spec.agents?.default?.model || "—"}
@@ -200,9 +233,7 @@ export function InstancesPage() {
                 <TableCell className="text-sm">
                   {inst.status?.totalAgentRuns ?? 0}
                 </TableCell>
-                <TableCell className="text-sm">
-                  —
-                </TableCell>
+                <TableCell className="text-sm">—</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatAge(inst.metadata.creationTimestamp)}
                 </TableCell>
@@ -229,7 +260,11 @@ export function InstancesPage() {
         onClose={() => setWizardOpen(false)}
         mode="instance"
         availableSkills={(skillPacks || []).map((s) => s.metadata.name)}
-        defaults={{ provider: "openai", model: "gpt-4o", skills: ["k8s-ops", "llmfit", "memory"] }}
+        defaults={{
+          provider: "openai",
+          model: "gpt-4o",
+          skills: ["k8s-ops", "llmfit", "memory"],
+        }}
         onComplete={handleComplete}
         isPending={createInstance.isPending}
       />

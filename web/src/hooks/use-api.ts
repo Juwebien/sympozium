@@ -72,8 +72,13 @@ export function useCreateInstance() {
 export function usePatchInstance() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, data }: { name: string; data: Parameters<typeof api.instances.patch>[1] }) =>
-      api.instances.patch(name, data),
+    mutationFn: ({
+      name,
+      data,
+    }: {
+      name: string;
+      data: Parameters<typeof api.instances.patch>[1];
+    }) => api.instances.patch(name, data),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["instances"] });
       qc.invalidateQueries({ queryKey: ["instances", variables.name] });
@@ -129,12 +134,19 @@ export function useDeleteRun() {
 export function useGateVerdict() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, data }: { name: string; data: Parameters<typeof api.runs.gateVerdict>[1] }) =>
-      api.runs.gateVerdict(name, data),
+    mutationFn: ({
+      name,
+      data,
+    }: {
+      name: string;
+      data: Parameters<typeof api.runs.gateVerdict>[1];
+    }) => api.runs.gateVerdict(name, data),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["runs"] });
       qc.invalidateQueries({ queryKey: ["runs", variables.name] });
-      toast.success(`Run ${variables.data.action === "approve" ? "approved" : "rejected"}`);
+      toast.success(
+        `Run ${variables.data.action === "approve" ? "approved" : "rejected"}`,
+      );
     },
     onError: toastError,
   });
@@ -297,7 +309,7 @@ export function useInstallDefaultPersonaPacks() {
       toast.success(
         copied > 0
           ? `Installed ${copied} default pack${copied === 1 ? "" : "s"} (${existing} already present)`
-          : `No packs installed (${existing} already present)`
+          : `No packs installed (${existing} already present)`,
       );
     },
     onError: toastError,
@@ -345,8 +357,18 @@ export function useDeleteMcpServer() {
 export function usePatchMcpServer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, ...data }: { name: string; transportType?: string; url?: string; toolsPrefix?: string; timeout?: number; toolsAllow?: string[]; toolsDeny?: string[] }) =>
-      api.mcpServers.patch(name, data),
+    mutationFn: ({
+      name,
+      ...data
+    }: {
+      name: string;
+      transportType?: string;
+      url?: string;
+      toolsPrefix?: string;
+      timeout?: number;
+      toolsAllow?: string[];
+      toolsDeny?: string[];
+    }) => api.mcpServers.patch(name, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mcpServers"] });
       toast.success("MCP server updated");

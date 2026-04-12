@@ -7,25 +7,37 @@ describe("Empty States — contextual guidance", () => {
     cy.visit("/instances");
 
     // Search for something guaranteed not to exist.
-    cy.get("input[placeholder*='Search']", { timeout: 20000 }).clear().type("zzz-nonexistent-xyz");
+    cy.get("input[placeholder*='Search']", { timeout: 20000 })
+      .clear()
+      .type("zzz-nonexistent-xyz");
 
-    cy.contains("No instances match your search", { timeout: 10000 }).should("be.visible");
+    cy.contains("No instances match your search", { timeout: 10000 }).should(
+      "be.visible",
+    );
   });
 
   it("shows contextual empty state on runs page", () => {
     cy.visit("/runs");
 
-    cy.get("input[placeholder*='Search']", { timeout: 20000 }).clear().type("zzz-nonexistent-xyz");
+    cy.get("input[placeholder*='Search']", { timeout: 20000 })
+      .clear()
+      .type("zzz-nonexistent-xyz");
 
-    cy.contains("No runs match your search", { timeout: 10000 }).should("be.visible");
+    cy.contains("No runs match your search", { timeout: 10000 }).should(
+      "be.visible",
+    );
   });
 
   it("shows contextual empty state on persona packs page", () => {
     cy.visit("/personas");
 
-    cy.get("input[placeholder*='Search']", { timeout: 20000 }).clear().type("zzz-nonexistent-xyz");
+    cy.get("input[placeholder*='Search']", { timeout: 20000 })
+      .clear()
+      .type("zzz-nonexistent-xyz");
 
-    cy.contains("No persona packs match your search", { timeout: 10000 }).should("be.visible");
+    cy.contains("No persona packs match your search", {
+      timeout: 10000,
+    }).should("be.visible");
   });
 });
 

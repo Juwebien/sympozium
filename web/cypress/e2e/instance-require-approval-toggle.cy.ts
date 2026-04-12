@@ -43,7 +43,9 @@ describe("Instance -- require approval toggle", () => {
     cy.contains("td", INSTANCE, { timeout: 20000 })
       .parents("tr")
       .within(() => {
-        cy.get("[data-testid='instance-gate-badge']", { timeout: 10000 }).should("exist");
+        cy.get("[data-testid='instance-gate-badge']", {
+          timeout: 10000,
+        }).should("exist");
       });
 
     // Verify via API that the lifecycle has the manual gate hook.
@@ -58,7 +60,8 @@ describe("Instance -- require approval toggle", () => {
     }).then((resp) => {
       const hooks = resp.body.spec.agents?.default?.lifecycle?.postRun || [];
       const gateHook = hooks.find(
-        (h: { name: string; gate?: boolean }) => h.name === "manual-approval-gate",
+        (h: { name: string; gate?: boolean }) =>
+          h.name === "manual-approval-gate",
       );
       expect(gateHook).to.not.be.undefined;
       expect(gateHook.gate).to.eq(true);

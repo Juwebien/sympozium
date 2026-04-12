@@ -64,13 +64,16 @@ export function useRunsSeen() {
     emit();
   }, []);
 
-  const markSeenUpTo = useCallback((ts: string) => {
-    const proposed = new Date(ts).getTime();
-    if (proposed > watermark) {
-      localStorage.setItem(STORAGE_KEY, new Date(proposed).toISOString());
-      emit();
-    }
-  }, [watermark]);
+  const markSeenUpTo = useCallback(
+    (ts: string) => {
+      const proposed = new Date(ts).getTime();
+      if (proposed > watermark) {
+        localStorage.setItem(STORAGE_KEY, new Date(proposed).toISOString());
+        emit();
+      }
+    },
+    [watermark],
+  );
 
   return { isUnseen, unseenCount, markAllSeen, markSeenUpTo, watermark };
 }

@@ -13,12 +13,17 @@ describe("Create Instance — Unsloth", () => {
     cy.contains("button", "Create Instance", { timeout: 20000 }).click();
 
     // ── Step 1: Name ──────────────────────────────────────────
-    cy.get("[role='dialog']").find("input[placeholder='my-agent']").clear().type(INSTANCE);
+    cy.get("[role='dialog']")
+      .find("input[placeholder='my-agent']")
+      .clear()
+      .type(INSTANCE);
     cy.wizardNext();
 
     // ── Step 2: Provider — select Unsloth ─────────────────────
     // Scope to the dialog to avoid matching page-level selects.
-    cy.get("[role='dialog']").find("button[role='combobox']").click({ force: true });
+    cy.get("[role='dialog']")
+      .find("button[role='combobox']")
+      .click({ force: true });
     cy.get("[data-radix-popper-content-wrapper]")
       .contains("Unsloth")
       .click({ force: true });
@@ -29,14 +34,19 @@ describe("Create Instance — Unsloth", () => {
     cy.wizardNext();
 
     // ── Step 4: Model ─────────────────────────────────────────
-    cy.get("[role='dialog']").find("input[placeholder='gpt-4o']").clear().type("unsloth/gemma-3-12b-it");
+    cy.get("[role='dialog']")
+      .find("input[placeholder='gpt-4o']")
+      .clear()
+      .type("unsloth/gemma-3-12b-it");
     cy.wizardNext();
 
     // ── Step 5: Skills ────────────────────────────────────────
     cy.wizardNext();
 
     // ── Step 6: Heartbeat ─────────────────────────────────────
-    cy.get("[role='dialog']").contains("button", "No heartbeat").click({ force: true });
+    cy.get("[role='dialog']")
+      .contains("button", "No heartbeat")
+      .click({ force: true });
     cy.wizardNext();
 
     // ── Step 7: Channels ──────────────────────────────────────
@@ -46,7 +56,9 @@ describe("Create Instance — Unsloth", () => {
     cy.get("[role='dialog']").contains(INSTANCE);
     cy.get("[role='dialog']").contains("unsloth");
     cy.get("[role='dialog']").contains("unsloth/gemma-3-12b-it");
-    cy.get("[role='dialog']").contains("button", "Create").click({ force: true });
+    cy.get("[role='dialog']")
+      .contains("button", "Create")
+      .click({ force: true });
 
     // Wait for the dialog to close (instance was created).
     cy.get("[role='dialog']").should("not.exist", { timeout: 20000 });

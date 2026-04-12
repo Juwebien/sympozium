@@ -45,7 +45,7 @@ async function fetchOpenAIModels(apiKey: string): Promise<string[]> {
         id.startsWith("gpt-") ||
         id.startsWith("o1") ||
         id.startsWith("o3") ||
-        id.startsWith("o4")
+        id.startsWith("o4"),
     )
     .sort((a, b) => a.localeCompare(b));
 }
@@ -63,12 +63,17 @@ async function fetchAnthropicModels(apiKey: string): Promise<string[]> {
   return (data.data as { id: string }[]).map((m) => m.id).sort();
 }
 
-async function fetchProviderModelsViaProxy(baseURL: string, apiKey?: string): Promise<string[]> {
+async function fetchProviderModelsViaProxy(
+  baseURL: string,
+  apiKey?: string,
+): Promise<string[]> {
   const res = await api.providers.models(baseURL, apiKey);
   return res.models;
 }
 
-async function fetchBedrockModels(creds: BedrockCredentials): Promise<string[]> {
+async function fetchBedrockModels(
+  creds: BedrockCredentials,
+): Promise<string[]> {
   const res = await api.providers.bedrockModels({
     region: creds.region,
     accessKeyId: creds.accessKeyId,
@@ -101,9 +106,15 @@ export function useModelList(
   baseURL?: string,
   bedrockCredentials?: BedrockCredentials,
 ) {
-  const isLocalProvider = provider === "ollama" || provider === "lm-studio" || provider === "llama-server" || provider === "unsloth" || provider === "custom";
+  const isLocalProvider =
+    provider === "ollama" ||
+    provider === "lm-studio" ||
+    provider === "llama-server" ||
+    provider === "unsloth" ||
+    provider === "custom";
   const canFetchLocal = isLocalProvider && !!baseURL;
-  const canFetchCloud = !!apiKey && (provider === "openai" || provider === "anthropic");
+  const canFetchCloud =
+    !!apiKey && (provider === "openai" || provider === "anthropic");
   const canFetchBedrock =
     provider === "bedrock" &&
     !!bedrockCredentials?.region &&
@@ -111,12 +122,21 @@ export function useModelList(
     !!bedrockCredentials?.secretAccessKey;
 
   const query = useQuery<string[]>({
-    queryKey: ["provider-models", provider, apiKey, baseURL, bedrockCredentials?.region, bedrockCredentials?.accessKeyId],
+    queryKey: [
+      "provider-models",
+      provider,
+      apiKey,
+      baseURL,
+      bedrockCredentials?.region,
+      bedrockCredentials?.accessKeyId,
+    ],
     queryFn: async () => {
-      if (canFetchLocal) return fetchProviderModelsViaProxy(baseURL!, apiKey || undefined);
+      if (canFetchLocal)
+        return fetchProviderModelsViaProxy(baseURL!, apiKey || undefined);
       if (canFetchBedrock) return fetchBedrockModels(bedrockCredentials!);
       if (provider === "openai" && apiKey) return fetchOpenAIModels(apiKey);
-      if (provider === "anthropic" && apiKey) return fetchAnthropicModels(apiKey);
+      if (provider === "anthropic" && apiKey)
+        return fetchAnthropicModels(apiKey);
       throw new Error("no-fetch");
     },
     enabled: canFetchLocal || canFetchCloud || canFetchBedrock,

@@ -1,10 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -46,10 +41,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  ResponsiveGridLayout,
-  useContainerWidth,
-} from "react-grid-layout";
+import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
 import type { Layout, ResponsiveLayouts } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 
@@ -67,8 +59,7 @@ type PanelId =
   | "recentRuns"
   | "eventStream"
   | "runStatus"
-  | "recentErrors"
-;
+  | "recentErrors";
 
 const DEFAULT_LAYOUTS: ResponsiveLayouts = {
   lg: [
@@ -150,7 +141,10 @@ type DurationMode = "avg" | "p95";
 function percentile(values: number[], p: number): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
-  const idx = Math.max(0, Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1));
+  const idx = Math.max(
+    0,
+    Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1),
+  );
   return sorted[idx];
 }
 
@@ -159,29 +153,52 @@ type RangeKey = "1h" | "24h" | "7d";
 function buildActivityBuckets(
   runs: NonNullable<ReturnType<typeof useRuns>["data"]>,
   instances: NonNullable<ReturnType<typeof useInstances>["data"]>,
-  range: RangeKey
+  range: RangeKey,
 ): ActivityBucket[] {
   const now = new Date();
   const buckets: ActivityBucket[] = [];
 
-  const configs: Record<RangeKey, { count: number; stepMs: number; labelFn: (d: Date) => string; startFn: () => Date }> = {
+  const configs: Record<
+    RangeKey,
+    {
+      count: number;
+      stepMs: number;
+      labelFn: (d: Date) => string;
+      startFn: () => Date;
+    }
+  > = {
     "1h": {
       count: 60,
       stepMs: 60 * 1000,
-      labelFn: (d) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      startFn: () => { const s = new Date(now.getTime() - 59 * 60 * 1000); s.setSeconds(0, 0); return s; },
+      labelFn: (d) =>
+        d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      startFn: () => {
+        const s = new Date(now.getTime() - 59 * 60 * 1000);
+        s.setSeconds(0, 0);
+        return s;
+      },
     },
     "24h": {
       count: 24,
       stepMs: 60 * 60 * 1000,
       labelFn: (d) => d.toLocaleTimeString([], { hour: "numeric" }),
-      startFn: () => { const s = new Date(now.getTime() - 23 * 60 * 60 * 1000); s.setMinutes(0, 0, 0); return s; },
+      startFn: () => {
+        const s = new Date(now.getTime() - 23 * 60 * 60 * 1000);
+        s.setMinutes(0, 0, 0);
+        return s;
+      },
     },
     "7d": {
       count: 7,
       stepMs: 24 * 60 * 60 * 1000,
-      labelFn: (d) => d.toLocaleDateString([], { month: "short", day: "numeric" }),
-      startFn: () => { const s = new Date(now); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 6); return s; },
+      labelFn: (d) =>
+        d.toLocaleDateString([], { month: "short", day: "numeric" }),
+      startFn: () => {
+        const s = new Date(now);
+        s.setHours(0, 0, 0, 0);
+        s.setDate(s.getDate() - 6);
+        return s;
+      },
     },
   };
 
@@ -193,10 +210,15 @@ function buildActivityBuckets(
     buckets.push({
       ts: d.getTime(),
       label: cfg.labelFn(d),
-      runs: 0, failed: 0,
-      durationTotalSec: 0, durationSamples: 0, durationValuesSec: [],
-      avgDurationSec: 0, p95DurationSec: 0,
-      agentsInstalled: 0, serving: 0,
+      runs: 0,
+      failed: 0,
+      durationTotalSec: 0,
+      durationSamples: 0,
+      durationValuesSec: [],
+      avgDurationSec: 0,
+      p95DurationSec: 0,
+      agentsInstalled: 0,
+      serving: 0,
     });
   }
 
@@ -217,7 +239,8 @@ function buildActivityBuckets(
   }
 
   for (const b of buckets) {
-    b.avgDurationSec = b.durationSamples > 0 ? b.durationTotalSec / b.durationSamples : 0;
+    b.avgDurationSec =
+      b.durationSamples > 0 ? b.durationTotalSec / b.durationSamples : 0;
     b.p95DurationSec = percentile(b.durationValuesSec, 95);
   }
 
@@ -294,7 +317,9 @@ function PanelWrapper({
           {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
           <CardTitle className="text-sm truncate">{title}</CardTitle>
         </div>
-        {actions && <div className="flex items-center gap-1 shrink-0">{actions}</div>}
+        {actions && (
+          <div className="flex items-center gap-1 shrink-0">{actions}</div>
+        )}
       </CardHeader>
       <CardContent className="flex-1 overflow-auto pt-0 px-4 pb-4">
         {children}
@@ -318,7 +343,9 @@ export function DashboardPage() {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [layouts, setLayouts] = useState<ResponsiveLayouts>(loadLayouts);
   const [locked, setLocked] = useState(loadLocked);
-  const { width: containerWidth, containerRef } = useContainerWidth({ initialWidth: 1200 });
+  const { width: containerWidth, containerRef } = useContainerWidth({
+    initialWidth: 1200,
+  });
 
   // --- Computed data ---
   const recentRuns = useMemo(
@@ -327,10 +354,10 @@ export function DashboardPage() {
         .sort(
           (a, b) =>
             new Date(b.metadata.creationTimestamp || "").getTime() -
-            new Date(a.metadata.creationTimestamp || "").getTime()
+            new Date(a.metadata.creationTimestamp || "").getTime(),
         )
         .slice(0, 8),
-    [runs.data]
+    [runs.data],
   );
 
   const activeRuns = useMemo(
@@ -339,27 +366,25 @@ export function DashboardPage() {
         (r) =>
           r.status?.phase === "Running" ||
           r.status?.phase === "Pending" ||
-          r.status?.phase === "Serving"
+          r.status?.phase === "Serving",
       ),
-    [runs.data]
+    [runs.data],
   );
 
   const failedRuns = useMemo(
     () =>
       (runs.data || [])
-        .filter(
-          (r) => {
-            const p = (r.status?.phase || "").toLowerCase();
-            return p === "failed" || p === "error";
-          }
-        )
+        .filter((r) => {
+          const p = (r.status?.phase || "").toLowerCase();
+          return p === "failed" || p === "error";
+        })
         .sort(
           (a, b) =>
             new Date(b.metadata.creationTimestamp || "").getTime() -
-            new Date(a.metadata.creationTimestamp || "").getTime()
+            new Date(a.metadata.creationTimestamp || "").getTime(),
         )
         .slice(0, 6),
-    [runs.data]
+    [runs.data],
   );
 
   const gateVerdict = useGateVerdict();
@@ -377,11 +402,18 @@ export function DashboardPage() {
 
   const activity = useMemo(
     () => buildActivityBuckets(runs.data || [], instances.data || [], range),
-    [runs.data, instances.data, range]
+    [runs.data, instances.data, range],
   );
-  const totalInRange = useMemo(() => activity.reduce((acc, b) => acc + b.runs, 0), [activity]);
-  const failedInRange = useMemo(() => activity.reduce((acc, b) => acc + b.failed, 0), [activity]);
-  const failureRate = totalInRange > 0 ? (failedInRange / totalInRange) * 100 : 0;
+  const totalInRange = useMemo(
+    () => activity.reduce((acc, b) => acc + b.runs, 0),
+    [activity],
+  );
+  const failedInRange = useMemo(
+    () => activity.reduce((acc, b) => acc + b.failed, 0),
+    [activity],
+  );
+  const failureRate =
+    totalInRange > 0 ? (failedInRange / totalInRange) * 100 : 0;
   const avgDurationSecInRange = useMemo(() => {
     const dur = activity.reduce((acc, b) => acc + b.durationTotalSec, 0);
     const samples = activity.reduce((acc, b) => acc + b.durationSamples, 0);
@@ -428,7 +460,12 @@ export function DashboardPage() {
       map.set(row.label, entry);
     }
     return [...map.entries()]
-      .map(([label, v]) => ({ label, input: v.input, output: v.output, total: v.input + v.output }))
+      .map(([label, v]) => ({
+        label,
+        input: v.input,
+        output: v.output,
+        total: v.input + v.output,
+      }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 6);
   }, [inputByModel, outputByModel]);
@@ -437,7 +474,7 @@ export function DashboardPage() {
   // Top tools sorted
   const topTools = useMemo(
     () => [...toolsByName].sort((a, b) => b.value - a.value).slice(0, 8),
-    [toolsByName]
+    [toolsByName],
   );
   const maxToolValue = Math.max(1, ...topTools.map((t) => t.value));
 
@@ -447,7 +484,7 @@ export function DashboardPage() {
       setLayouts(allLayouts);
       saveLayouts(allLayouts);
     },
-    []
+    [],
   );
 
   const handleResetLayout = useCallback(() => {
@@ -467,7 +504,9 @@ export function DashboardPage() {
   const stats = [
     {
       label: "Total Tokens",
-      value: compactTokens((obs?.inputTokensTotal || 0) + (obs?.outputTokensTotal || 0)),
+      value: compactTokens(
+        (obs?.inputTokensTotal || 0) + (obs?.outputTokensTotal || 0),
+      ),
       icon: Zap,
       color: "text-amber-400",
     },
@@ -491,7 +530,10 @@ export function DashboardPage() {
     },
     {
       label: "Avg Duration",
-      value: avgDurationSecInRange > 0 ? `${avgDurationSecInRange.toFixed(1)}s` : "—",
+      value:
+        avgDurationSecInRange > 0
+          ? `${avgDurationSecInRange.toFixed(1)}s`
+          : "—",
       icon: Clock,
       color: "text-cyan-400",
     },
@@ -514,19 +556,36 @@ export function DashboardPage() {
     durationMode === "p95" ? b.p95DurationSec : b.avgDurationSec;
   const maxDurationY = Math.max(1, ...activity.map((b) => durationFor(b)));
   const maxAgentsY = Math.max(1, ...activity.map((b) => b.agentsInstalled));
-  const barW = Math.max(3, Math.min(14, (activity.length > 0 ? innerW / activity.length : 8) * 0.7));
+  const barW = Math.max(
+    3,
+    Math.min(14, (activity.length > 0 ? innerW / activity.length : 8) * 0.7),
+  );
   const xFor = (idx: number) =>
-    padX + (activity.length <= 1 ? innerW / 2 : (idx / (activity.length - 1)) * innerW);
-  const yForDuration = (value: number) => padY + innerH - (value / maxDurationY) * innerH;
-  const yForAgents = (value: number) => padY + innerH - (value / maxAgentsY) * innerH;
+    padX +
+    (activity.length <= 1
+      ? innerW / 2
+      : (idx / (activity.length - 1)) * innerW);
+  const yForDuration = (value: number) =>
+    padY + innerH - (value / maxDurationY) * innerH;
+  const yForAgents = (value: number) =>
+    padY + innerH - (value / maxAgentsY) * innerH;
   const maxServingY = Math.max(1, ...activity.map((b) => b.serving));
-  const yForServing = (value: number) => padY + innerH - (value / maxServingY) * innerH;
-  const durationPoints = activity.map((b, i) => ({ x: xFor(i), y: yForDuration(durationFor(b)) }));
-  const servingPoints = activity.map((b, i) => ({ x: xFor(i), y: yForServing(b.serving) }));
-  const totalServing = activity.length > 0 ? activity[activity.length - 1].serving : 0;
+  const yForServing = (value: number) =>
+    padY + innerH - (value / maxServingY) * innerH;
+  const durationPoints = activity.map((b, i) => ({
+    x: xFor(i),
+    y: yForDuration(durationFor(b)),
+  }));
+  const servingPoints = activity.map((b, i) => ({
+    x: xFor(i),
+    y: yForServing(b.serving),
+  }));
+  const totalServing =
+    activity.length > 0 ? activity[activity.length - 1].serving : 0;
   const activePoint = hoverIdx !== null ? activity[hoverIdx] : null;
   const activeX = hoverIdx !== null ? xFor(hoverIdx) : null;
-  const activeYDuration = hoverIdx !== null ? yForDuration(durationFor(activity[hoverIdx])) : null;
+  const activeYDuration =
+    hoverIdx !== null ? yForDuration(durationFor(activity[hoverIdx])) : null;
 
   // --- Run status donut geometry ---
   const statusEntries = useMemo(() => {
@@ -569,24 +628,34 @@ export function DashboardPage() {
           <div className="flex flex-1 items-center justify-around gap-4">
             <div className="text-center">
               <div className="text-xs text-muted-foreground">Nodes</div>
-              <div className="text-lg font-semibold text-foreground">{clusterInfo.data?.nodes ?? "—"}</div>
+              <div className="text-lg font-semibold text-foreground">
+                {clusterInfo.data?.nodes ?? "—"}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-muted-foreground">Pods</div>
-              <div className="text-lg font-semibold text-foreground">{clusterInfo.data?.pods ?? "—"}</div>
+              <div className="text-lg font-semibold text-foreground">
+                {clusterInfo.data?.pods ?? "—"}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-muted-foreground">Namespaces</div>
-              <div className="text-lg font-semibold text-foreground">{clusterInfo.data?.namespaces ?? "—"}</div>
+              <div className="text-lg font-semibold text-foreground">
+                {clusterInfo.data?.namespaces ?? "—"}
+              </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-muted-foreground">Agent Pods</div>
-              <div className="text-lg font-semibold text-foreground">{totalAgentPods}</div>
+              <div className="text-lg font-semibold text-foreground">
+                {totalAgentPods}
+              </div>
             </div>
             {clusterInfo.data?.version && (
               <div className="text-center">
                 <div className="text-xs text-muted-foreground">K8s Version</div>
-                <div className="text-lg font-semibold text-foreground">{clusterInfo.data.version}</div>
+                <div className="text-lg font-semibold text-foreground">
+                  {clusterInfo.data.version}
+                </div>
               </div>
             )}
           </div>
@@ -595,11 +664,15 @@ export function DashboardPage() {
 
       {/* Awaiting approval alert */}
       {awaitingApproval.length > 0 && (
-        <div data-testid="gate-approval-alert" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 space-y-3">
+        <div
+          data-testid="gate-approval-alert"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 space-y-3"
+        >
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-amber-400" />
             <span className="text-sm font-medium text-amber-400">
-              {awaitingApproval.length} run{awaitingApproval.length > 1 ? "s" : ""} awaiting approval
+              {awaitingApproval.length} run
+              {awaitingApproval.length > 1 ? "s" : ""} awaiting approval
             </span>
           </div>
           <div className="space-y-2">
@@ -683,7 +756,9 @@ export function DashboardPage() {
                   {runs.isLoading ? (
                     <Skeleton className="mt-1 h-6 w-10" />
                   ) : (
-                    <div className="text-xl font-bold leading-tight">{stat.value}</div>
+                    <div className="text-xl font-bold leading-tight">
+                      {stat.value}
+                    </div>
                   )}
                 </div>
               </div>
@@ -722,414 +797,625 @@ export function DashboardPage() {
 
       {/* Draggable grid panels */}
       <div ref={containerRef}>
-      <ResponsiveGridLayout
-        className="layout"
-        width={containerWidth}
-        layouts={layouts}
-        breakpoints={{ lg: 1200, md: 768, sm: 0 }}
-        cols={{ lg: 12, md: 10, sm: 6 }}
-        rowHeight={40}
-        onLayoutChange={handleLayoutChange}
-        dragConfig={{ enabled: !locked, handle: ".drag-handle" }}
-        resizeConfig={{ enabled: !locked }}
-        containerPadding={[0, 0]}
-        margin={[16, 16]}
-      >
-        {/* ---- Agent Activity ---- */}
-        <div key="activity">
-          <PanelWrapper
-            title="Agent Activity"
-            icon={Activity}
-            locked={locked}
-            actions={
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant={durationMode === "avg" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setDurationMode("avg")}>Avg</Button>
-                <Button size="sm" variant={durationMode === "p95" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setDurationMode("p95")}>P95</Button>
-                <div className="w-px h-4 bg-border/60 mx-1" />
-                <Button size="sm" variant={range === "1h" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setRange("1h")}>1h</Button>
-                <Button size="sm" variant={range === "24h" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setRange("24h")}>24hr</Button>
-                <Button size="sm" variant={range === "7d" ? "default" : "outline"} className="h-6 text-[11px] px-2" onClick={() => setRange("7d")}>7d</Button>
-              </div>
-            }
-          >
-            <div className="mb-2 flex flex-wrap items-center gap-4 text-xs">
-              <span className="text-muted-foreground">
-                Total runs: <span className="text-foreground font-semibold">{totalInRange}</span>
-              </span>
-              <span className="text-cyan-400">
-                {durationMode === "p95" ? "P95 duration" : "Avg duration"}:{" "}
-                <span className="font-semibold">
-                  {(durationMode === "p95" ? p95DurationSecInRange : avgDurationSecInRange).toFixed(1)}s
+        <ResponsiveGridLayout
+          className="layout"
+          width={containerWidth}
+          layouts={layouts}
+          breakpoints={{ lg: 1200, md: 768, sm: 0 }}
+          cols={{ lg: 12, md: 10, sm: 6 }}
+          rowHeight={40}
+          onLayoutChange={handleLayoutChange}
+          dragConfig={{ enabled: !locked, handle: ".drag-handle" }}
+          resizeConfig={{ enabled: !locked }}
+          containerPadding={[0, 0]}
+          margin={[16, 16]}
+        >
+          {/* ---- Agent Activity ---- */}
+          <div key="activity">
+            <PanelWrapper
+              title="Agent Activity"
+              icon={Activity}
+              locked={locked}
+              actions={
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant={durationMode === "avg" ? "default" : "outline"}
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setDurationMode("avg")}
+                  >
+                    Avg
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={durationMode === "p95" ? "default" : "outline"}
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setDurationMode("p95")}
+                  >
+                    P95
+                  </Button>
+                  <div className="w-px h-4 bg-border/60 mx-1" />
+                  <Button
+                    size="sm"
+                    variant={range === "1h" ? "default" : "outline"}
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setRange("1h")}
+                  >
+                    1h
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={range === "24h" ? "default" : "outline"}
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setRange("24h")}
+                  >
+                    24hr
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={range === "7d" ? "default" : "outline"}
+                    className="h-6 text-[11px] px-2"
+                    onClick={() => setRange("7d")}
+                  >
+                    7d
+                  </Button>
+                </div>
+              }
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-4 text-xs">
+                <span className="text-muted-foreground">
+                  Total runs:{" "}
+                  <span className="text-foreground font-semibold">
+                    {totalInRange}
+                  </span>
                 </span>
-              </span>
-              <span className="text-red-400">
-                Failed: <span className="font-semibold">{failedInRange}</span>
-              </span>
-              {totalServing > 0 && (
-                <span className="text-yellow-400">
-                  Serving: <span className="font-semibold">{totalServing}</span>
+                <span className="text-cyan-400">
+                  {durationMode === "p95" ? "P95 duration" : "Avg duration"}:{" "}
+                  <span className="font-semibold">
+                    {(durationMode === "p95"
+                      ? p95DurationSecInRange
+                      : avgDurationSecInRange
+                    ).toFixed(1)}
+                    s
+                  </span>
                 </span>
-              )}
-            </div>
-            {runs.isLoading ? (
-              <Skeleton className="h-full min-h-[180px] w-full" />
-            ) : (
-              <div className="relative h-full min-h-[180px] w-full rounded-lg border border-border/50 bg-background/40 p-2">
-                <svg viewBox={`0 0 ${chartW} ${chartH}`} className="h-full w-full" onMouseLeave={() => setHoverIdx(null)}>
-                  {[0, 0.25, 0.5, 0.75, 1].map((t) => {
-                    const y = padY + innerH - innerH * t;
-                    return <line key={t} x1={padX} x2={chartW - padX} y1={y} y2={y} stroke="currentColor" className="text-border/60" strokeWidth={1} />;
-                  })}
-                  {activeX !== null && (
-                    <line x1={activeX} x2={activeX} y1={padY} y2={chartH - padY} stroke="currentColor" className="text-blue-300/60" strokeDasharray="4 3" strokeWidth={1} />
-                  )}
-                  {activity.map((b, i) => (
-                    <rect key={b.ts} x={xFor(i) - barW / 2} y={yForAgents(b.agentsInstalled)} width={barW} height={padY + innerH - yForAgents(b.agentsInstalled)} className="pointer-events-none fill-cyan-400/15" />
-                  ))}
-                  <path d={linePath(durationPoints)} fill="none" stroke="currentColor" className="text-blue-400" strokeWidth={2.5} />
-                  {totalServing > 0 && (
-                    <path d={linePath(servingPoints)} fill="none" stroke="currentColor" className="text-yellow-400" strokeWidth={2} strokeDasharray="6 3" />
-                  )}
-                  {totalServing > 0 && activity.map((b, i) => (
-                    <circle key={`srv-${b.ts}`} cx={xFor(i)} cy={yForServing(b.serving)} r={hoverIdx === i ? 4 : 2.5} className="fill-yellow-400" />
-                  ))}
-                  {activity.map((b, i) => (
-                    <g key={`pt-${b.ts}`}>
-                      <circle cx={xFor(i)} cy={yForDuration(durationFor(b))} r={hoverIdx === i ? 5 : 3.5} className="cursor-pointer fill-blue-400" onMouseEnter={() => setHoverIdx(i)} />
-                      {b.failed > 0 && (
-                        <circle cx={xFor(i)} cy={yForDuration(durationFor(b))} r={hoverIdx === i ? 7 : 6} className="cursor-pointer fill-transparent stroke-red-400" strokeWidth={2} onMouseEnter={() => setHoverIdx(i)} />
-                      )}
-                    </g>
-                  ))}
-                  {activity.map((b, i) => (
-                    <text key={`x-${b.ts}`} x={xFor(i)} y={chartH - 5} textAnchor="middle" className={`fill-current text-[10px] ${i % Math.ceil(activity.length / 8) === 0 || i === activity.length - 1 ? "text-muted-foreground" : "text-transparent"}`}>
-                      {b.label}
-                    </text>
-                  ))}
-                  {activeX !== null && activeYDuration !== null && (
-                    <circle cx={activeX} cy={activeYDuration} r={6} className="fill-blue-300/30" />
-                  )}
-                </svg>
-                {activePoint && (
-                  <div className="pointer-events-none absolute right-3 top-3 rounded-md border border-white/10 bg-black/70 px-3 py-2 text-xs backdrop-blur">
-                    <div className="font-semibold text-foreground">{activePoint.label}</div>
-                    <div className="text-blue-300">
-                      {durationMode === "p95" ? "P95 duration" : "Avg duration"}:{" "}
-                      {(durationMode === "p95" ? activePoint.p95DurationSec : activePoint.avgDurationSec).toFixed(1)}s
-                    </div>
-                    <div className="text-muted-foreground">Runs: {activePoint.runs}</div>
-                    <div className="text-red-300">Failed: {activePoint.failed}</div>
-                    <div className="text-cyan-300">Agents installed: {activePoint.agentsInstalled}</div>
-                    {activePoint.serving > 0 && (
-                      <div className="text-yellow-300">Serving: {activePoint.serving}</div>
-                    )}
-                  </div>
+                <span className="text-red-400">
+                  Failed: <span className="font-semibold">{failedInRange}</span>
+                </span>
+                {totalServing > 0 && (
+                  <span className="text-yellow-400">
+                    Serving:{" "}
+                    <span className="font-semibold">{totalServing}</span>
+                  </span>
                 )}
-                <div className="mt-1 flex items-center gap-4 px-2 text-xs">
-                  <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <span className="h-2 w-2 rounded-full bg-blue-400" />
-                    {durationMode === "p95" ? "P95 run duration" : "Avg run duration"}
-                  </span>
-                  <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <span className="h-2 w-2 rounded-sm bg-cyan-400/40" />
-                    Agents installed
-                  </span>
-                  <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <span className="h-2 w-2 rounded-full bg-yellow-400" />
-                    Serving
-                  </span>
-                  <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <span className="h-2 w-2 rounded-full bg-red-400" />
-                    Failed
-                  </span>
-                </div>
               </div>
-            )}
-          </PanelWrapper>
-        </div>
-
-        {/* ---- Token Usage by Model ---- */}
-        <div key="tokensByModel">
-          <PanelWrapper title="Token Usage by Model" icon={Zap} locked={locked}>
-            {observability.isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-              </div>
-            ) : modelBreakdown.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No model data yet</p>
-            ) : (
-              <div className="space-y-3">
-                {modelBreakdown.map((m) => (
-                  <div key={m.label}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-mono text-foreground truncate max-w-[60%]">{m.label}</span>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {compactTokens(m.input)} in / {compactTokens(m.output)} out
-                      </span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-background/60 border border-border/50 overflow-hidden">
-                      <div className="h-full flex">
-                        <div
-                          className="bg-blue-400 transition-all"
-                          style={{ width: `${(m.input / maxModelTotal) * 100}%` }}
+              {runs.isLoading ? (
+                <Skeleton className="h-full min-h-[180px] w-full" />
+              ) : (
+                <div className="relative h-full min-h-[180px] w-full rounded-lg border border-border/50 bg-background/40 p-2">
+                  <svg
+                    viewBox={`0 0 ${chartW} ${chartH}`}
+                    className="h-full w-full"
+                    onMouseLeave={() => setHoverIdx(null)}
+                  >
+                    {[0, 0.25, 0.5, 0.75, 1].map((t) => {
+                      const y = padY + innerH - innerH * t;
+                      return (
+                        <line
+                          key={t}
+                          x1={padX}
+                          x2={chartW - padX}
+                          y1={y}
+                          y2={y}
+                          stroke="currentColor"
+                          className="text-border/60"
+                          strokeWidth={1}
                         />
-                        <div
-                          className="bg-emerald-400 transition-all"
-                          style={{ width: `${(m.output / maxModelTotal) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-blue-400" /> Input
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" /> Output
-                  </span>
-                </div>
-              </div>
-            )}
-          </PanelWrapper>
-        </div>
-
-        {/* ---- Top Tools ---- */}
-        <div key="topTools">
-          <PanelWrapper title="Tool Invocations" icon={Wrench} locked={locked}>
-            {observability.isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
-              </div>
-            ) : topTools.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No tool data yet</p>
-            ) : (
-              <div className="space-y-2">
-                {topTools.map((t) => (
-                  <div key={t.label} className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-foreground w-28 truncate shrink-0">{t.label}</span>
-                    <div className="flex-1 h-2 rounded-full bg-background/60 border border-border/50 overflow-hidden">
-                      <div
-                        className="h-full bg-blue-400/70 rounded-full transition-all"
-                        style={{ width: `${(t.value / maxToolValue) * 100}%` }}
+                      );
+                    })}
+                    {activeX !== null && (
+                      <line
+                        x1={activeX}
+                        x2={activeX}
+                        y1={padY}
+                        y2={chartH - padY}
+                        stroke="currentColor"
+                        className="text-blue-300/60"
+                        strokeDasharray="4 3"
+                        strokeWidth={1}
                       />
+                    )}
+                    {activity.map((b, i) => (
+                      <rect
+                        key={b.ts}
+                        x={xFor(i) - barW / 2}
+                        y={yForAgents(b.agentsInstalled)}
+                        width={barW}
+                        height={padY + innerH - yForAgents(b.agentsInstalled)}
+                        className="pointer-events-none fill-cyan-400/15"
+                      />
+                    ))}
+                    <path
+                      d={linePath(durationPoints)}
+                      fill="none"
+                      stroke="currentColor"
+                      className="text-blue-400"
+                      strokeWidth={2.5}
+                    />
+                    {totalServing > 0 && (
+                      <path
+                        d={linePath(servingPoints)}
+                        fill="none"
+                        stroke="currentColor"
+                        className="text-yellow-400"
+                        strokeWidth={2}
+                        strokeDasharray="6 3"
+                      />
+                    )}
+                    {totalServing > 0 &&
+                      activity.map((b, i) => (
+                        <circle
+                          key={`srv-${b.ts}`}
+                          cx={xFor(i)}
+                          cy={yForServing(b.serving)}
+                          r={hoverIdx === i ? 4 : 2.5}
+                          className="fill-yellow-400"
+                        />
+                      ))}
+                    {activity.map((b, i) => (
+                      <g key={`pt-${b.ts}`}>
+                        <circle
+                          cx={xFor(i)}
+                          cy={yForDuration(durationFor(b))}
+                          r={hoverIdx === i ? 5 : 3.5}
+                          className="cursor-pointer fill-blue-400"
+                          onMouseEnter={() => setHoverIdx(i)}
+                        />
+                        {b.failed > 0 && (
+                          <circle
+                            cx={xFor(i)}
+                            cy={yForDuration(durationFor(b))}
+                            r={hoverIdx === i ? 7 : 6}
+                            className="cursor-pointer fill-transparent stroke-red-400"
+                            strokeWidth={2}
+                            onMouseEnter={() => setHoverIdx(i)}
+                          />
+                        )}
+                      </g>
+                    ))}
+                    {activity.map((b, i) => (
+                      <text
+                        key={`x-${b.ts}`}
+                        x={xFor(i)}
+                        y={chartH - 5}
+                        textAnchor="middle"
+                        className={`fill-current text-[10px] ${i % Math.ceil(activity.length / 8) === 0 || i === activity.length - 1 ? "text-muted-foreground" : "text-transparent"}`}
+                      >
+                        {b.label}
+                      </text>
+                    ))}
+                    {activeX !== null && activeYDuration !== null && (
+                      <circle
+                        cx={activeX}
+                        cy={activeYDuration}
+                        r={6}
+                        className="fill-blue-300/30"
+                      />
+                    )}
+                  </svg>
+                  {activePoint && (
+                    <div className="pointer-events-none absolute right-3 top-3 rounded-md border border-white/10 bg-black/70 px-3 py-2 text-xs backdrop-blur">
+                      <div className="font-semibold text-foreground">
+                        {activePoint.label}
+                      </div>
+                      <div className="text-blue-300">
+                        {durationMode === "p95"
+                          ? "P95 duration"
+                          : "Avg duration"}
+                        :{" "}
+                        {(durationMode === "p95"
+                          ? activePoint.p95DurationSec
+                          : activePoint.avgDurationSec
+                        ).toFixed(1)}
+                        s
+                      </div>
+                      <div className="text-muted-foreground">
+                        Runs: {activePoint.runs}
+                      </div>
+                      <div className="text-red-300">
+                        Failed: {activePoint.failed}
+                      </div>
+                      <div className="text-cyan-300">
+                        Agents installed: {activePoint.agentsInstalled}
+                      </div>
+                      {activePoint.serving > 0 && (
+                        <div className="text-yellow-300">
+                          Serving: {activePoint.serving}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs text-muted-foreground font-mono w-12 text-right shrink-0">
-                      {t.value >= 1000 ? compactTokens(t.value) : Math.round(t.value).toLocaleString()}
+                  )}
+                  <div className="mt-1 flex items-center gap-4 px-2 text-xs">
+                    <span className="inline-flex items-center gap-2 text-muted-foreground">
+                      <span className="h-2 w-2 rounded-full bg-blue-400" />
+                      {durationMode === "p95"
+                        ? "P95 run duration"
+                        : "Avg run duration"}
+                    </span>
+                    <span className="inline-flex items-center gap-2 text-muted-foreground">
+                      <span className="h-2 w-2 rounded-sm bg-cyan-400/40" />
+                      Agents installed
+                    </span>
+                    <span className="inline-flex items-center gap-2 text-muted-foreground">
+                      <span className="h-2 w-2 rounded-full bg-yellow-400" />
+                      Serving
+                    </span>
+                    <span className="inline-flex items-center gap-2 text-muted-foreground">
+                      <span className="h-2 w-2 rounded-full bg-red-400" />
+                      Failed
                     </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </PanelWrapper>
-        </div>
+                </div>
+              )}
+            </PanelWrapper>
+          </div>
 
-        {/* ---- Recent Runs ---- */}
-        <div key="recentRuns">
-          <PanelWrapper
-            title="Recent Runs"
-            icon={Play}
-            locked={locked}
-            actions={
-              <Link to="/runs" className="text-[11px] text-muted-foreground hover:text-foreground">
-                View all →
-              </Link>
-            }
-          >
-            {runs.isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
-              </div>
-            ) : recentRuns.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No runs yet</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Instance</TableHead>
-                    <TableHead>Phase</TableHead>
-                    <TableHead>Tokens</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Age</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentRuns.map((run) => (
-                    <TableRow key={run.metadata.name}>
-                      <TableCell className="font-mono text-xs">
-                        <Link to={`/runs/${run.metadata.name}`} className="hover:text-primary">
-                          {truncate(run.metadata.name, 24)}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {run.spec.instanceRef}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge phase={run.status?.phase} />
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">
-                        {run.status?.tokenUsage?.totalTokens
-                          ? compactTokens(run.status.tokenUsage.totalTokens)
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">
-                        {run.status?.tokenUsage?.durationMs
-                          ? `${(run.status.tokenUsage.durationMs / 1000).toFixed(1)}s`
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatAge(run.metadata.creationTimestamp)}
-                      </TableCell>
-                    </TableRow>
+          {/* ---- Token Usage by Model ---- */}
+          <div key="tokensByModel">
+            <PanelWrapper
+              title="Token Usage by Model"
+              icon={Zap}
+              locked={locked}
+            >
+              {observability.isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
                   ))}
-                </TableBody>
-              </Table>
-            )}
-          </PanelWrapper>
-        </div>
-
-        {/* ---- Event Stream ---- */}
-        <div key="eventStream">
-          <PanelWrapper
-            title="Event Stream"
-            icon={Radio}
-            locked={locked}
-            actions={
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">{events.length} events</span>
-                {connected ? (
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                  </span>
-                ) : (
-                  <span className="h-2 w-2 rounded-full bg-red-400" />
-                )}
-              </div>
-            }
-          >
-            <div className="h-full space-y-1 overflow-auto rounded-lg bg-background/50 border border-border/50 p-3 font-mono text-xs">
-              {events.length === 0 ? (
-                <p className="text-muted-foreground">
-                  {connected ? "Waiting for events…" : "Connecting to stream…"}
+                </div>
+              ) : modelBreakdown.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  No model data yet
                 </p>
               ) : (
-                events.slice().reverse().map((evt, i) => (
-                  <div key={i} className="text-muted-foreground">
-                    <span className="text-emerald-400/80">
-                      {new Date(evt.timestamp).toLocaleTimeString()}
-                    </span>{" "}
-                    <span className="text-blue-400">{evt.topic}</span>{" "}
-                    {typeof evt.data === "string"
-                      ? truncate(evt.data, 80)
-                      : truncate(JSON.stringify(evt.data), 80)}
-                  </div>
-                ))
-              )}
-            </div>
-          </PanelWrapper>
-        </div>
-
-        {/* ---- Run Status Breakdown ---- */}
-        <div key="runStatus">
-          <PanelWrapper title="Run Status" icon={CheckCircle2} locked={locked}>
-            {runs.isLoading ? (
-              <Skeleton className="h-32 w-full" />
-            ) : totalRuns === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No runs yet</p>
-            ) : (
-              <div className="flex items-start gap-6">
-                {/* Donut chart */}
-                <div className="shrink-0">
-                  <svg width="100" height="100" viewBox="0 0 100 100">
-                    {(() => {
-                      const cx = 50, cy = 50, r = 38, stroke = 10;
-                      const circumference = 2 * Math.PI * r;
-                      let offset = 0;
-                      return statusEntries.map((entry) => {
-                        const pct = entry.count / totalRuns;
-                        const dash = pct * circumference;
-                        const gap = circumference - dash;
-                        const el = (
-                          <circle
-                            key={entry.phase}
-                            cx={cx}
-                            cy={cy}
-                            r={r}
-                            fill="none"
-                            stroke={entry.color}
-                            strokeWidth={stroke}
-                            strokeDasharray={`${dash} ${gap}`}
-                            strokeDashoffset={-offset}
-                            transform={`rotate(-90 ${cx} ${cy})`}
-                            className="transition-all"
+                <div className="space-y-3">
+                  {modelBreakdown.map((m) => (
+                    <div key={m.label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-mono text-foreground truncate max-w-[60%]">
+                          {m.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {compactTokens(m.input)} in /{" "}
+                          {compactTokens(m.output)} out
+                        </span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-background/60 border border-border/50 overflow-hidden">
+                        <div className="h-full flex">
+                          <div
+                            className="bg-blue-400 transition-all"
+                            style={{
+                              width: `${(m.input / maxModelTotal) * 100}%`,
+                            }}
                           />
-                        );
-                        offset += dash;
-                        return el;
-                      });
-                    })()}
-                    <text x="50" y="50" textAnchor="middle" dominantBaseline="central" className="fill-foreground text-lg font-bold" fontSize="18">
-                      {totalRuns}
-                    </text>
-                  </svg>
+                          <div
+                            className="bg-emerald-400 transition-all"
+                            style={{
+                              width: `${(m.output / maxModelTotal) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-400" />{" "}
+                      Input
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400" />{" "}
+                      Output
+                    </span>
+                  </div>
                 </div>
-                {/* Legend */}
-                <div className="space-y-1.5 min-w-0">
-                  {statusEntries.map((entry) => (
-                    <div key={entry.phase} className="flex items-center gap-2 text-xs">
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                      <span className="text-muted-foreground capitalize">{entry.phase}</span>
-                      <span className="font-semibold text-foreground ml-auto">{entry.count}</span>
+              )}
+            </PanelWrapper>
+          </div>
+
+          {/* ---- Top Tools ---- */}
+          <div key="topTools">
+            <PanelWrapper
+              title="Tool Invocations"
+              icon={Wrench}
+              locked={locked}
+            >
+              {observability.isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : topTools.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  No tool data yet
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {topTools.map((t) => (
+                    <div key={t.label} className="flex items-center gap-3">
+                      <span className="text-xs font-mono text-foreground w-28 truncate shrink-0">
+                        {t.label}
+                      </span>
+                      <div className="flex-1 h-2 rounded-full bg-background/60 border border-border/50 overflow-hidden">
+                        <div
+                          className="h-full bg-blue-400/70 rounded-full transition-all"
+                          style={{
+                            width: `${(t.value / maxToolValue) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground font-mono w-12 text-right shrink-0">
+                        {t.value >= 1000
+                          ? compactTokens(t.value)
+                          : Math.round(t.value).toLocaleString()}
+                      </span>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </PanelWrapper>
-        </div>
+              )}
+            </PanelWrapper>
+          </div>
 
-        {/* ---- Recent Errors ---- */}
-        <div key="recentErrors">
-          <PanelWrapper title="Recent Errors" icon={XCircle} locked={locked}>
-            {runs.isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+          {/* ---- Recent Runs ---- */}
+          <div key="recentRuns">
+            <PanelWrapper
+              title="Recent Runs"
+              icon={Play}
+              locked={locked}
+              actions={
+                <Link
+                  to="/runs"
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  View all →
+                </Link>
+              }
+            >
+              {runs.isLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : recentRuns.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No runs yet</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Instance</TableHead>
+                      <TableHead>Phase</TableHead>
+                      <TableHead>Tokens</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Age</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentRuns.map((run) => (
+                      <TableRow key={run.metadata.name}>
+                        <TableCell className="font-mono text-xs">
+                          <Link
+                            to={`/runs/${run.metadata.name}`}
+                            className="hover:text-primary"
+                          >
+                            {truncate(run.metadata.name, 24)}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {run.spec.instanceRef}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge phase={run.status?.phase} />
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground">
+                          {run.status?.tokenUsage?.totalTokens
+                            ? compactTokens(run.status.tokenUsage.totalTokens)
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-muted-foreground">
+                          {run.status?.tokenUsage?.durationMs
+                            ? `${(run.status.tokenUsage.durationMs / 1000).toFixed(1)}s`
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {formatAge(run.metadata.creationTimestamp)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </PanelWrapper>
+          </div>
+
+          {/* ---- Event Stream ---- */}
+          <div key="eventStream">
+            <PanelWrapper
+              title="Event Stream"
+              icon={Radio}
+              locked={locked}
+              actions={
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">
+                    {events.length} events
+                  </span>
+                  {connected ? (
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-red-400" />
+                  )}
+                </div>
+              }
+            >
+              <div className="h-full space-y-1 overflow-auto rounded-lg bg-background/50 border border-border/50 p-3 font-mono text-xs">
+                {events.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    {connected
+                      ? "Waiting for events…"
+                      : "Connecting to stream…"}
+                  </p>
+                ) : (
+                  events
+                    .slice()
+                    .reverse()
+                    .map((evt, i) => (
+                      <div key={i} className="text-muted-foreground">
+                        <span className="text-emerald-400/80">
+                          {new Date(evt.timestamp).toLocaleTimeString()}
+                        </span>{" "}
+                        <span className="text-blue-400">{evt.topic}</span>{" "}
+                        {typeof evt.data === "string"
+                          ? truncate(evt.data, 80)
+                          : truncate(JSON.stringify(evt.data), 80)}
+                      </div>
+                    ))
+                )}
               </div>
-            ) : failedRuns.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-6 text-muted-foreground">
-                <CheckCircle2 className="h-8 w-8 text-emerald-400/50 mb-2" />
-                <p className="text-sm">No recent errors</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {failedRuns.map((run) => (
-                  <Link
-                    key={run.metadata.name}
-                    to={`/runs/${run.metadata.name}`}
-                    className="block rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 hover:border-red-500/40 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span className="text-xs font-mono text-foreground truncate">
-                        {truncate(run.metadata.name, 36)}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground shrink-0">
-                        {formatAge(run.metadata.creationTimestamp)}
-                      </span>
-                    </div>
-                    {run.status?.error && (
-                      <p className="text-[11px] text-red-400/80 truncate">
-                        {truncate(run.status.error, 100)}
-                      </p>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </PanelWrapper>
-        </div>
-      </ResponsiveGridLayout>
+            </PanelWrapper>
+          </div>
+
+          {/* ---- Run Status Breakdown ---- */}
+          <div key="runStatus">
+            <PanelWrapper
+              title="Run Status"
+              icon={CheckCircle2}
+              locked={locked}
+            >
+              {runs.isLoading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : totalRuns === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  No runs yet
+                </p>
+              ) : (
+                <div className="flex items-start gap-6">
+                  {/* Donut chart */}
+                  <div className="shrink-0">
+                    <svg width="100" height="100" viewBox="0 0 100 100">
+                      {(() => {
+                        const cx = 50,
+                          cy = 50,
+                          r = 38,
+                          stroke = 10;
+                        const circumference = 2 * Math.PI * r;
+                        let offset = 0;
+                        return statusEntries.map((entry) => {
+                          const pct = entry.count / totalRuns;
+                          const dash = pct * circumference;
+                          const gap = circumference - dash;
+                          const el = (
+                            <circle
+                              key={entry.phase}
+                              cx={cx}
+                              cy={cy}
+                              r={r}
+                              fill="none"
+                              stroke={entry.color}
+                              strokeWidth={stroke}
+                              strokeDasharray={`${dash} ${gap}`}
+                              strokeDashoffset={-offset}
+                              transform={`rotate(-90 ${cx} ${cy})`}
+                              className="transition-all"
+                            />
+                          );
+                          offset += dash;
+                          return el;
+                        });
+                      })()}
+                      <text
+                        x="50"
+                        y="50"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="fill-foreground text-lg font-bold"
+                        fontSize="18"
+                      >
+                        {totalRuns}
+                      </text>
+                    </svg>
+                  </div>
+                  {/* Legend */}
+                  <div className="space-y-1.5 min-w-0">
+                    {statusEntries.map((entry) => (
+                      <div
+                        key={entry.phase}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <span
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="text-muted-foreground capitalize">
+                          {entry.phase}
+                        </span>
+                        <span className="font-semibold text-foreground ml-auto">
+                          {entry.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </PanelWrapper>
+          </div>
+
+          {/* ---- Recent Errors ---- */}
+          <div key="recentErrors">
+            <PanelWrapper title="Recent Errors" icon={XCircle} locked={locked}>
+              {runs.isLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : failedRuns.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-muted-foreground">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400/50 mb-2" />
+                  <p className="text-sm">No recent errors</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {failedRuns.map((run) => (
+                    <Link
+                      key={run.metadata.name}
+                      to={`/runs/${run.metadata.name}`}
+                      className="block rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 hover:border-red-500/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <span className="text-xs font-mono text-foreground truncate">
+                          {truncate(run.metadata.name, 36)}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground shrink-0">
+                          {formatAge(run.metadata.creationTimestamp)}
+                        </span>
+                      </div>
+                      {run.status?.error && (
+                        <p className="text-[11px] text-red-400/80 truncate">
+                          {truncate(run.status.error, 100)}
+                        </p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </PanelWrapper>
+          </div>
+        </ResponsiveGridLayout>
       </div>
     </div>
   );

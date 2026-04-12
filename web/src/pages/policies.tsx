@@ -8,12 +8,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -36,9 +31,7 @@ export function PoliciesPage() {
   const [selected, setSelected] = useState<SympoziumPolicy | null>(null);
 
   const filtered = (data || [])
-    .filter((p) =>
-      p.metadata.name.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((p) => p.metadata.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
   return (
@@ -91,16 +84,24 @@ export function PoliciesPage() {
                 </TableCell>
                 <TableCell>
                   {pol.spec.sandboxPolicy?.required ? (
-                    <Badge variant="default" className="bg-amber-600 text-xs">Required</Badge>
+                    <Badge variant="default" className="bg-amber-600 text-xs">
+                      Required
+                    </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">Optional</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Optional
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell>
                   {pol.spec.networkPolicy?.denyAll ? (
-                    <Badge variant="destructive" className="text-xs">Isolated</Badge>
+                    <Badge variant="destructive" className="text-xs">
+                      Isolated
+                    </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">Open</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Open
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
@@ -155,7 +156,11 @@ function PolicyDetail({ policy }: { policy: SympoziumPolicy }) {
             {tg.defaultAction !== undefined && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Default Action</span>
-                <Badge variant={tg.defaultAction === "allow" ? "default" : "destructive"}>
+                <Badge
+                  variant={
+                    tg.defaultAction === "allow" ? "default" : "destructive"
+                  }
+                >
                   {tg.defaultAction}
                 </Badge>
               </div>
@@ -170,7 +175,9 @@ function PolicyDetail({ policy }: { policy: SympoziumPolicy }) {
                         {r.tool}
                       </Badge>
                       <Badge
-                        variant={r.action === "allow" ? "default" : "destructive"}
+                        variant={
+                          r.action === "allow" ? "default" : "destructive"
+                        }
                         className="text-xs"
                       >
                         {r.action}
@@ -245,7 +252,11 @@ function PolicyDetail({ policy }: { policy: SympoziumPolicy }) {
                 <p className="text-muted-foreground mb-1">Allowed Egress</p>
                 <div className="flex flex-wrap gap-1">
                   {net.allowedEgress.map((e, i) => (
-                    <Badge key={i} variant="secondary" className="font-mono text-xs">
+                    <Badge
+                      key={i}
+                      variant="secondary"
+                      className="font-mono text-xs"
+                    >
                       {e.host}:{e.port}
                     </Badge>
                   ))}

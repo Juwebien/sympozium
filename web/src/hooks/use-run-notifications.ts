@@ -52,9 +52,13 @@ export function useRunNotifications() {
       // Phase changed — update and notify.
       phasesRef.current.set(name, phase);
 
-      if (phase === "PostRunning" && run.spec.lifecycle?.postRun?.some((h) => h.gate)) {
+      if (
+        phase === "PostRunning" &&
+        run.spec.lifecycle?.postRun?.some((h) => h.gate)
+      ) {
         toast.warning(`Approval required: ${shortName(name)}`, {
-          description: "A gate hook is holding this run's response. Review and approve or reject.",
+          description:
+            "A gate hook is holding this run's response. Review and approve or reject.",
           duration: 10000,
         });
       } else if (phase === "Succeeded") {

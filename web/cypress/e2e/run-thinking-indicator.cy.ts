@@ -17,9 +17,11 @@ describe("Run Detail — thinking indicator lifecycle", () => {
   });
 
   it("shows Running status while executing, hides it once Succeeded", () => {
-    cy.dispatchRun(INSTANCE, "Reply with exactly: THINKING_DONE").then((name) => {
-      RUN_NAME = name;
-    });
+    cy.dispatchRun(INSTANCE, "Reply with exactly: THINKING_DONE").then(
+      (name) => {
+        RUN_NAME = name;
+      },
+    );
 
     cy.then(() => {
       cy.visit(`/runs/${RUN_NAME}`);

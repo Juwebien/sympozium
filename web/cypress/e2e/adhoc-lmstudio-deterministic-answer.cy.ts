@@ -31,8 +31,12 @@ describe("Ad-hoc LM Studio — deterministic answer end to end", () => {
     cy.contains("button", "New Run", { timeout: 20000 }).click();
 
     // Select our instance in the dropdown.
-    cy.get("[role='dialog']").find("button[role='combobox']").click({ force: true });
-    cy.get("[data-radix-popper-content-wrapper]").contains(INSTANCE).click({ force: true });
+    cy.get("[role='dialog']")
+      .find("button[role='combobox']")
+      .click({ force: true });
+    cy.get("[data-radix-popper-content-wrapper]")
+      .contains(INSTANCE)
+      .click({ force: true });
 
     // Fill in the task — a deterministic echo the model must reproduce
     // verbatim. This proves the end-to-end path: UI dispatch → run
@@ -48,10 +52,15 @@ describe("Ad-hoc LM Studio — deterministic answer end to end", () => {
       );
 
     // Give the run a generous timeout (local inference is slow).
-    cy.get("[role='dialog']").find("input[placeholder='5m']").clear().type("6m");
+    cy.get("[role='dialog']")
+      .find("input[placeholder='5m']")
+      .clear()
+      .type("6m");
 
     // Submit.
-    cy.get("[role='dialog']").contains("button", "Create Run").click({ force: true });
+    cy.get("[role='dialog']")
+      .contains("button", "Create Run")
+      .click({ force: true });
     cy.get("[role='dialog']").should("not.exist", { timeout: 20000 });
 
     // ── Step 2: find the run we just created via its UI row ───────────────
@@ -71,19 +80,21 @@ describe("Ad-hoc LM Studio — deterministic answer end to end", () => {
     // ── Step 3: wait for terminal phase + assert Succeeded with context ───
     cy.then(() => cy.waitForRunTerminal(RUN_NAME, 6 * 60 * 1000));
     cy.then(() =>
-      cy.request({
-        url: `/api/v1/runs/${RUN_NAME}?namespace=default`,
-        headers: {
-          Authorization: `Bearer ${Cypress.env("API_TOKEN") || ""}`,
-        },
-      }).then((resp) => {
-        const phase = resp.body?.status?.phase as string;
-        const err = resp.body?.status?.error as string | undefined;
-        expect(
-          phase,
-          `run ${RUN_NAME} should have Succeeded (error: ${err || "n/a"})`,
-        ).to.eq("Succeeded");
-      }),
+      cy
+        .request({
+          url: `/api/v1/runs/${RUN_NAME}?namespace=default`,
+          headers: {
+            Authorization: `Bearer ${Cypress.env("API_TOKEN") || ""}`,
+          },
+        })
+        .then((resp) => {
+          const phase = resp.body?.status?.phase as string;
+          const err = resp.body?.status?.error as string | undefined;
+          expect(
+            phase,
+            `run ${RUN_NAME} should have Succeeded (error: ${err || "n/a"})`,
+          ).to.eq("Succeeded");
+        }),
     );
 
     // ── Step 4: open the run detail and assert the answer is substantive ──
