@@ -502,10 +502,21 @@ export function OnboardingWizard({
 
   const stepIdx = steps.indexOf(step);
 
+  // RFC 1123 subdomain: lowercase alphanumeric, '-' or '.', must start/end alphanumeric.
+  const rfc1123Re = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/;
+  const nameValid =
+    form.name.length > 0 &&
+    form.name.length <= 253 &&
+    rfc1123Re.test(form.name);
+  const nameError =
+    form.name.length > 0 && !nameValid
+      ? "Must be lowercase alphanumeric, '-' or '.', and start/end with alphanumeric (RFC 1123)"
+      : "";
+
   const canNext = (() => {
     switch (step) {
       case "name":
-        return !!form.name.trim();
+        return nameValid;
       case "provider":
         return !!form.provider;
       case "apikey":
@@ -664,10 +675,20 @@ export function OnboardingWizard({
               <Label>Instance Name</Label>
               <Input
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => {
+                  // Auto-sanitize: lowercase, replace spaces/underscores with hyphens.
+                  const v = e.target.value
+                    .toLowerCase()
+                    .replace(/[\s_]+/g, "-");
+                  setForm({ ...form, name: v });
+                }}
                 placeholder="my-agent"
                 autoFocus
+                className={nameError ? "border-red-500" : ""}
               />
+              {nameError && (
+                <p className="text-xs text-red-500">{nameError}</p>
+              )}
             </div>
           </div>
         )}
