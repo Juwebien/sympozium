@@ -543,6 +543,36 @@ spec:
                   - type
                   type: object
                 type: array
+              delegates:
+                description: |-
+                  Delegates tracks in-flight persona delegations for this run.
+                  Populated when the run enters AwaitingDelegate phase.
+                items:
+                  description: DelegateStatus tracks an in-flight delegation to another
+                    persona.
+                  properties:
+                    childRunName:
+                      description: ChildRunName is the name of the spawned AgentRun.
+                      type: string
+                    error:
+                      description: Error is populated when the child run fails.
+                      type: string
+                    phase:
+                      description: Phase is the child run's current phase.
+                      type: string
+                    result:
+                      description: Result is populated when the child run completes
+                        successfully.
+                      type: string
+                    targetPersona:
+                      description: TargetPersona is the persona name that was delegated
+                        to.
+                      type: string
+                  required:
+                  - childRunName
+                  - targetPersona
+                  type: object
+                type: array
               deploymentName:
                 description: DeploymentName is the name of the Deployment created
                   for server-mode runs.

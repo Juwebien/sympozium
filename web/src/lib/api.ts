@@ -167,6 +167,14 @@ export interface AgentRunSpec {
   lifecycle?: LifecycleHooks;
 }
 
+export interface DelegateStatus {
+  childRunName: string;
+  targetPersona: string;
+  phase?: string;
+  result?: string;
+  error?: string;
+}
+
 export interface AgentRunStatus {
   phase?: string;
   podName?: string;
@@ -181,6 +189,7 @@ export interface AgentRunStatus {
   tokenUsage?: TokenUsage;
   postRunJobName?: string;
   gateVerdict?: string;
+  delegates?: DelegateStatus[];
   conditions?: Condition[];
 }
 

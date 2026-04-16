@@ -213,12 +213,13 @@ type ToolPolicySpec struct {
 type AgentRunPhase string
 
 const (
-	AgentRunPhasePending     AgentRunPhase = "Pending"
-	AgentRunPhaseRunning     AgentRunPhase = "Running"
-	AgentRunPhaseServing     AgentRunPhase = "Serving"
-	AgentRunPhasePostRunning AgentRunPhase = "PostRunning"
-	AgentRunPhaseSucceeded   AgentRunPhase = "Succeeded"
-	AgentRunPhaseFailed      AgentRunPhase = "Failed"
+	AgentRunPhasePending          AgentRunPhase = "Pending"
+	AgentRunPhaseRunning          AgentRunPhase = "Running"
+	AgentRunPhaseServing          AgentRunPhase = "Serving"
+	AgentRunPhasePostRunning      AgentRunPhase = "PostRunning"
+	AgentRunPhaseAwaitingDelegate AgentRunPhase = "AwaitingDelegate"
+	AgentRunPhaseSucceeded        AgentRunPhase = "Succeeded"
+	AgentRunPhaseFailed           AgentRunPhase = "Failed"
 )
 
 // AgentRunStatus defines the observed state of AgentRun.
@@ -291,9 +292,35 @@ type AgentRunStatus struct {
 	// +optional
 	GateVerdict string `json:"gateVerdict,omitempty"`
 
+	// Delegates tracks in-flight persona delegations for this run.
+	// Populated when the run enters AwaitingDelegate phase.
+	// +optional
+	Delegates []DelegateStatus `json:"delegates,omitempty"`
+
 	// Conditions represent the latest available observations.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// DelegateStatus tracks an in-flight delegation to another persona.
+type DelegateStatus struct {
+	// ChildRunName is the name of the spawned AgentRun.
+	ChildRunName string `json:"childRunName"`
+
+	// TargetPersona is the persona name that was delegated to.
+	TargetPersona string `json:"targetPersona"`
+
+	// Phase is the child run's current phase.
+	// +optional
+	Phase AgentRunPhase `json:"phase,omitempty"`
+
+	// Result is populated when the child run completes successfully.
+	// +optional
+	Result string `json:"result,omitempty"`
+
+	// Error is populated when the child run fails.
+	// +optional
+	Error string `json:"error,omitempty"`
 }
 
 // TokenUsage tracks LLM token consumption and timing for an AgentRun.

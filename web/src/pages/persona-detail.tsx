@@ -106,6 +106,10 @@ export function PersonaDetailPage() {
   // Collect all available skill names from SkillPacks
   const availableSkills = skillPacks?.flatMap((sp) => sp.metadata.name) ?? [];
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
+  const setTab = (tab: string) => setSearchParams({ tab }, { replace: true });
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -114,10 +118,6 @@ export function PersonaDetailPage() {
       </div>
     );
   }
-
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "overview";
-  const setTab = (tab: string) => setSearchParams({ tab }, { replace: true });
 
   if (!pack) {
     return <p className="text-muted-foreground">Persona pack not found</p>;
