@@ -138,6 +138,41 @@ graph LR
     style NP stroke:#f5a623,stroke-width:2px
 ```
 
+### Persona Delegation Flow
+
+```mermaid
+graph TB
+    subgraph PACK["PersonaPack 'research-team'"]
+        direction TB
+        LEAD["Lead<br/><small>coordinates team</small>"]
+        RES["Researcher<br/><small>gathers findings</small>"]
+        WRI["Writer<br/><small>produces reports</small>"]
+        REV["Reviewer<br/><small>quality check</small>"]
+        LEAD -- "delegation" --> RES
+        RES -- "delegation" --> WRI
+        WRI -- "sequential" --> REV
+        LEAD -. "supervision" .-> WRI
+        LEAD -. "supervision" .-> REV
+    end
+
+    subgraph RT["Runtime"]
+        AR1["AgentRun (Lead)<br/><small>delegate_to_persona</small>"]
+        AR2["AgentRun (Researcher)"]
+        AR3["AgentRun (Writer)"]
+        IPC["/ipc/spawn/<br/><small>request-*.json</small>"]
+        SPAWNER["Spawner<br/><small>resolvePersonaTarget()</small>"]
+    end
+
+    AR1 -- "writes spawn request" --> IPC
+    IPC -- "event bus" --> SPAWNER
+    SPAWNER -- "creates child AgentRun<br/>validates relationship edge" --> AR2
+
+    style PACK stroke:#7c3aed,stroke-width:2px
+    style RT stroke:#e94560,stroke-width:2px
+```
+
+Agents in a PersonaPack can delegate tasks to other personas using the `delegate_to_persona` tool. The spawner resolves persona names to SympoziumInstances via the PersonaPack CRD and validates that a relationship edge permits the delegation.
+
 ## How It Works
 
 1. **A message arrives** via a channel pod (Telegram, Slack, etc.) and is published to the NATS event bus.
