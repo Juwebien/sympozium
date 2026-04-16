@@ -602,9 +602,6 @@ export function GlobalPersonaCanvas() {
     return { allNodes: nodes, allEdges: edges };
   }, [enabledPacks, runs]);
 
-  const [nodes, , onNodesChange] = useNodesState(allNodes);
-  const [edges, , onEdgesChange] = useEdgesState(allEdges);
-
   if (enabledPacks.length === 0) {
     return (
       <div className="flex items-center justify-center h-[500px] text-sm text-muted-foreground">
@@ -626,10 +623,8 @@ export function GlobalPersonaCanvas() {
       </div>
       <div className="h-[600px] w-full rounded-lg border border-border/40 bg-background">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          nodes={allNodes}
+          edges={allEdges}
           nodeTypes={nodeTypes}
           nodesDraggable
           nodesConnectable={false}
@@ -698,9 +693,6 @@ export function DashboardPersonaCanvas() {
     return { allNodes: nodes, allEdges: edges };
   }, [visiblePacks, runs]);
 
-  const [nodes, , onNodesChange] = useNodesState(allNodes);
-  const [edges, , onEdgesChange] = useEdgesState(allEdges);
-
   if (enabledPacks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-sm text-muted-foreground gap-2">
@@ -731,10 +723,8 @@ export function DashboardPersonaCanvas() {
       {/* Canvas */}
       <div className="flex-1 min-h-0 rounded-lg border border-border/40 bg-background">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          nodes={allNodes}
+          edges={allEdges}
           nodeTypes={nodeTypes}
           nodesDraggable
           nodesConnectable={false}
