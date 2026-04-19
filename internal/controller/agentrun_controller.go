@@ -712,6 +712,15 @@ func (r *AgentRunReconciler) reconcileCompleted(ctx context.Context, log logr.Lo
 		}
 	}
 
+	// Trigger sequential successors: if this run succeeded and belongs to an
+	// ensemble with sequential relationships, create runs for target personas.
+	if agentRun.Status.Phase == sympoziumv1alpha1.AgentRunPhaseSucceeded {
+		if err := r.triggerSequentialSuccessors(ctx, log, agentRun); err != nil {
+			log.Error(err, "Failed to trigger sequential successors")
+			// Non-fatal: don't block cleanup.
+		}
+	}
+
 	// Prune old runs beyond the history limit for this instance.
 	if err := r.pruneOldRuns(ctx, log, agentRun); err != nil {
 		log.Error(err, "Failed to prune old AgentRuns")
@@ -719,6 +728,137 @@ func (r *AgentRunReconciler) reconcileCompleted(ctx context.Context, log logr.Lo
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// triggerSequentialSuccessors looks up the Ensemble that owns this run's
+// instance. For each sequential relationship where the completed persona is the
+// source, it creates a new AgentRun for the target persona — implementing the
+// "pipeline" execution pattern where one persona's completion triggers the next.
+func (r *AgentRunReconciler) triggerSequentialSuccessors(ctx context.Context, log logr.Logger, agentRun *sympoziumv1alpha1.AgentRun) error {
+	// Look up the source instance to get the persona name and ensemble.
+	if agentRun.Spec.InstanceRef == "" {
+		return nil
+	}
+	var sourceInst sympoziumv1alpha1.SympoziumInstance
+	if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.InstanceRef, Namespace: agentRun.Namespace}, &sourceInst); err != nil {
+		return nil // Instance gone — skip.
+	}
+	sourcePersona := sourceInst.Labels["sympozium.ai/persona"]
+	ensembleName := sourceInst.Labels["sympozium.ai/ensemble"]
+	if sourcePersona == "" || ensembleName == "" {
+		return nil // Not part of an ensemble.
+	}
+
+	// Look up the ensemble.
+	var ensemble sympoziumv1alpha1.Ensemble
+	if err := r.Get(ctx, types.NamespacedName{Name: ensembleName, Namespace: agentRun.Namespace}, &ensemble); err != nil {
+		return nil // Ensemble gone — skip.
+	}
+
+	// Check if we already triggered successors for this run (prevent duplicates
+	// from re-reconciliation). We use a label on the completed run as a marker.
+	if agentRun.Labels["sympozium.ai/sequential-triggered"] == "true" {
+		return nil
+	}
+
+	// Find sequential edges where this persona is the source.
+	triggered := false
+	for _, rel := range ensemble.Spec.Relationships {
+		if rel.Type != "sequential" || rel.Source != sourcePersona {
+			continue
+		}
+
+		targetPersona := rel.Target
+		targetInstanceName := ensembleName + "-" + targetPersona
+		log.Info("Triggering sequential successor",
+			"source", sourcePersona, "target", targetPersona,
+			"targetInstance", targetInstanceName)
+
+		// Look up the target instance.
+		var targetInst sympoziumv1alpha1.SympoziumInstance
+		if err := r.Get(ctx, types.NamespacedName{Name: targetInstanceName, Namespace: agentRun.Namespace}, &targetInst); err != nil {
+			log.Error(err, "Sequential target instance not found", "instance", targetInstanceName)
+			continue
+		}
+
+		// Build a task that references the predecessor's result (truncated to
+		// avoid exceeding the model's context window).
+		predecessorResult := agentRun.Status.Result
+		if len(predecessorResult) > 500 {
+			predecessorResult = predecessorResult[:500] + "..."
+		}
+		task := fmt.Sprintf("The previous agent (%s) has completed. Their result:\n\n%s\n\nContinue the workflow as your role requires.",
+			sourcePersona, predecessorResult)
+
+		// Find the target persona spec for its schedule task (if any).
+		for _, p := range ensemble.Spec.Personas {
+			if p.Name == targetPersona && p.Schedule != nil && p.Schedule.Task != "" {
+				task = fmt.Sprintf("The previous agent (%s) has completed. Their result:\n\n%s\n\nYour task: %s",
+					sourcePersona, predecessorResult, p.Schedule.Task)
+				break
+			}
+		}
+
+		// Create the successor AgentRun.
+		runName := fmt.Sprintf("%s-seq-%d", targetInstanceName, time.Now().UnixMilli()%100000)
+		successorRun := &sympoziumv1alpha1.AgentRun{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      runName,
+				Namespace: agentRun.Namespace,
+				Labels: map[string]string{
+					"sympozium.ai/instance":       targetInstanceName,
+					"sympozium.ai/ensemble":       ensembleName,
+					"sympozium.ai/sequential-from": agentRun.Name,
+				},
+			},
+			Spec: sympoziumv1alpha1.AgentRunSpec{
+				InstanceRef: targetInstanceName,
+				Task:        task,
+				AgentID:     fmt.Sprintf("sequential-from-%s", sourcePersona),
+				Model: sympoziumv1alpha1.ModelSpec{
+					Provider:      resolveProvider(&targetInst),
+					Model:         targetInst.Spec.Agents.Default.Model,
+					BaseURL:       targetInst.Spec.Agents.Default.BaseURL,
+					AuthSecretRef: resolveAuthSecret(&targetInst),
+				},
+				ImagePullSecrets: targetInst.Spec.ImagePullSecrets,
+				Lifecycle:        targetInst.Spec.Agents.Default.Lifecycle,
+			},
+		}
+
+		// Copy skills from the target instance.
+		for _, skill := range targetInst.Spec.Skills {
+			if skill.SkillPackRef == "web-endpoint" {
+				continue
+			}
+			successorRun.Spec.Skills = append(successorRun.Spec.Skills, skill)
+		}
+
+		if err := r.Create(ctx, successorRun); err != nil {
+			if errors.IsAlreadyExists(err) {
+				log.Info("Sequential successor already exists", "run", runName)
+				continue
+			}
+			log.Error(err, "Failed to create sequential successor", "run", runName)
+			continue
+		}
+		log.Info("Created sequential successor run", "run", runName, "target", targetPersona)
+		triggered = true
+	}
+
+	// Mark this run as having triggered its successors to prevent duplicates.
+	if triggered {
+		patch := client.MergeFrom(agentRun.DeepCopy())
+		if agentRun.Labels == nil {
+			agentRun.Labels = make(map[string]string)
+		}
+		agentRun.Labels["sympozium.ai/sequential-triggered"] = "true"
+		if err := r.Patch(ctx, agentRun, patch); err != nil {
+			log.Error(err, "Failed to mark run as sequential-triggered")
+		}
+	}
+
+	return nil
 }
 
 // runHistoryLimit returns the effective run history limit.
