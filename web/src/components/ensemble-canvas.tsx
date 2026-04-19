@@ -660,12 +660,11 @@ export function GlobalEnsembleCanvas() {
     [packs],
   );
 
-  // Build combined nodes and edges from all enabled packs
-  const { allNodes, allEdges } = useMemo(() => {
+  // Build layout (positions + edges) only when packs change — NOT on run updates.
+  const { layoutedNodes, allEdges } = useMemo(() => {
     const nodes: Node<PersonaNodeData>[] = [];
     const edges: Edge[] = [];
 
-    // Layout each pack as a cluster, offset horizontally
     const packGapX = 50;
     let currentX = 0;
 
@@ -673,11 +672,6 @@ export function GlobalEnsembleCanvas() {
       const personas = pack.spec.personas || [];
       const relationships = pack.spec.relationships || [];
       const prefix = pack.metadata.name;
-
-      const runPhaseMap = buildRunPhaseMap(
-        runs,
-        pack.status?.installedPersonas,
-      );
 
       const packNodes = layoutNodes(
         personas,
@@ -687,7 +681,6 @@ export function GlobalEnsembleCanvas() {
         prefix,
       );
 
-      // Annotate nodes with pack name, status, and shared memory
       const sharedMemoryEnabled = pack.spec.sharedMemory?.enabled ?? false;
       for (const node of packNodes) {
         node.data.packName = pack.metadata.name;
@@ -697,23 +690,41 @@ export function GlobalEnsembleCanvas() {
           (p) => p.name === personaName,
         );
         if (ip) node.data.instanceName = ip.instanceName;
-        const status = runPhaseMap.get(personaName);
-        if (status) {
-          node.data.runPhase = status.phase;
-          node.data.runTask = status.task;
-        }
       }
 
       nodes.push(...packNodes);
       edges.push(...buildEdges(relationships, prefix));
 
-      // Calculate width of this pack's cluster for offset
       const cols = Math.max(2, Math.ceil(Math.sqrt(personas.length)));
       currentX += cols * 260 + packGapX;
     }
 
-    return { allNodes: nodes, allEdges: edges };
-  }, [enabledPacks, runs]);
+    return { layoutedNodes: nodes, allEdges: edges };
+  }, [enabledPacks]);
+
+  // Merge run status into nodes without recalculating positions.
+  const allNodes = useMemo(() => {
+    const runPhaseMaps = new Map<
+      string,
+      Map<string, { phase?: string; task?: string }>
+    >();
+    for (const pack of enabledPacks) {
+      runPhaseMaps.set(
+        pack.metadata.name,
+        buildRunPhaseMap(runs, pack.status?.installedPersonas),
+      );
+    }
+    return layoutedNodes.map((node) => {
+      const packName = node.data.packName || "";
+      const personaName = node.id.split("/")[1] || node.id;
+      const status = runPhaseMaps.get(packName)?.get(personaName);
+      if (!status) return node;
+      return {
+        ...node,
+        data: { ...node.data, runPhase: status.phase, runTask: status.task },
+      };
+    });
+  }, [layoutedNodes, runs, enabledPacks]);
 
   if (enabledPacks.length === 0) {
     return (
@@ -775,7 +786,8 @@ export function DashboardEnsembleCanvas() {
     [enabledPacks, selectedPack],
   );
 
-  const { allNodes, allEdges } = useMemo(() => {
+  // Build layout only when packs change — NOT on run updates.
+  const { layoutedNodes: dashLayoutNodes, allEdges } = useMemo(() => {
     const nodes: Node<PersonaNodeData>[] = [];
     const edges: Edge[] = [];
     let currentX = 0;
@@ -784,10 +796,6 @@ export function DashboardEnsembleCanvas() {
       const personas = pack.spec.personas || [];
       const relationships = pack.spec.relationships || [];
       const prefix = pack.metadata.name;
-      const runPhaseMap = buildRunPhaseMap(
-        runs,
-        pack.status?.installedPersonas,
-      );
 
       const packNodes = layoutNodes(
         personas,
@@ -806,11 +814,6 @@ export function DashboardEnsembleCanvas() {
           (p) => p.name === personaName,
         );
         if (ip) node.data.instanceName = ip.instanceName;
-        const status = runPhaseMap.get(personaName);
-        if (status) {
-          node.data.runPhase = status.phase;
-          node.data.runTask = status.task;
-        }
       }
 
       nodes.push(...packNodes);
@@ -819,8 +822,32 @@ export function DashboardEnsembleCanvas() {
       currentX += cols * 260 + 50;
     }
 
-    return { allNodes: nodes, allEdges: edges };
-  }, [visiblePacks, runs]);
+    return { layoutedNodes: nodes, allEdges: edges };
+  }, [visiblePacks]);
+
+  // Merge run status without recalculating positions.
+  const allNodes = useMemo(() => {
+    const runPhaseMaps = new Map<
+      string,
+      Map<string, { phase?: string; task?: string }>
+    >();
+    for (const pack of visiblePacks) {
+      runPhaseMaps.set(
+        pack.metadata.name,
+        buildRunPhaseMap(runs, pack.status?.installedPersonas),
+      );
+    }
+    return dashLayoutNodes.map((node) => {
+      const packName = node.data.packName || "";
+      const personaName = node.id.split("/")[1] || node.id;
+      const status = runPhaseMaps.get(packName)?.get(personaName);
+      if (!status) return node;
+      return {
+        ...node,
+        data: { ...node.data, runPhase: status.phase, runTask: status.task },
+      };
+    });
+  }, [dashLayoutNodes, runs, visiblePacks]);
 
   if (enabledPacks.length === 0) {
     return (
