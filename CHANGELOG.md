@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.2](https://github.com/sympozium-ai/sympozium/compare/v0.9.1...v0.9.2) (2026-04-22)
+
+
+### Bug Fixes
+
+* per-persona Discord channel routing and truncated run results ([9407420](https://github.com/sympozium-ai/sympozium/commit/9407420c06c64b3289800c83d804a8f62f4acd31))
+* per-persona Discord channel routing and truncated run results ([822f9ab](https://github.com/sympozium-ai/sympozium/commit/822f9ab02891673e59cbe2b45d2c6d2071d269fd)), closes [#106](https://github.com/sympozium-ai/sympozium/issues/106) [#107](https://github.com/sympozium-ai/sympozium/issues/107)
+
 ## [0.9.1](https://github.com/sympozium-ai/sympozium/compare/v0.9.0...v0.9.1) (2026-04-19)
 
 
