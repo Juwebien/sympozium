@@ -722,7 +722,10 @@ export function setNamespace(ns: string) {
   localStorage.setItem(NS_KEY, ns);
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function apiFetch<T>(
+  path: string,
+  init?: RequestInit & { skipNamespace?: boolean },
+): Promise<T> {
   const token = getToken();
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type")) {
@@ -735,9 +738,12 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Authorization", `Bearer ${safeToken}`);
   }
 
-  const ns = getNamespace();
-  const separator = path.includes("?") ? "&" : "?";
-  const url = `${path}${separator}namespace=${ns}`;
+  let url = path;
+  if (!init?.skipNamespace) {
+    const ns = getNamespace();
+    const separator = path.includes("?") ? "&" : "?";
+    url = `${path}${separator}namespace=${ns}`;
+  }
 
   // Retry network errors (port-forward drops, transient failures) up to 2
   // times with a short delay.  Non-network errors (4xx, 5xx) are NOT retried
@@ -1039,10 +1045,12 @@ export const api = {
     list: (namespace?: string) =>
       apiFetch<Model[]>(
         `/api/v1/models${namespace ? `?namespace=${namespace}` : ""}`,
+        { skipNamespace: true },
       ),
     get: (name: string, namespace?: string) =>
       apiFetch<Model>(
         `/api/v1/models/${name}${namespace ? `?namespace=${namespace}` : ""}`,
+        { skipNamespace: true },
       ),
     create: (data: {
       name: string;
@@ -1064,11 +1072,12 @@ export const api = {
       apiFetch<Model>("/api/v1/models", {
         method: "POST",
         body: JSON.stringify(data),
+        skipNamespace: true,
       }),
     delete: (name: string, namespace?: string) =>
       apiFetch<void>(
         `/api/v1/models/${name}${namespace ? `?namespace=${namespace}` : ""}`,
-        { method: "DELETE" },
+        { method: "DELETE", skipNamespace: true },
       ),
   },
 
