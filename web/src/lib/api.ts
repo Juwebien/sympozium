@@ -967,6 +967,7 @@ export const api = {
       personas: PersonaSpec[];
       relationships?: PersonaRelationship[];
       sharedMemory?: SharedMemorySpec;
+      modelRef?: string;
     }) =>
       apiFetch<Ensemble>("/api/v1/ensembles", {
         method: "POST",

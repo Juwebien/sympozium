@@ -54,7 +54,7 @@ import {
   type EnsembleSettings,
 } from "@/components/ensemble-settings-panel";
 import { PROVIDERS } from "@/components/onboarding-wizard";
-import { useCreateEnsemble } from "@/hooks/use-api";
+import { useCreateEnsemble, useModels } from "@/hooks/use-api";
 import { useProviderNodes } from "@/hooks/use-provider-nodes";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -66,6 +66,7 @@ export interface ProviderContext {
   provider: string;
   apiKey: string;
   baseURL: string;
+  modelRef?: string;
 }
 
 // ── Node data ──────────────────────────────────────────────────────────────
@@ -169,8 +170,13 @@ function ProviderSetup({
   const [provider, setProvider] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [baseURL, setBaseURL] = useState("");
+  const [selectedModelRef, setSelectedModelRef] = useState("");
   const [inferenceMode, setInferenceMode] = useState<"workload" | "node">(
     "workload",
+  );
+  const { data: models } = useModels();
+  const readyModels = (models || []).filter(
+    (m) => m.status?.phase === "Ready",
   );
 
   const selectedProvider = PROVIDERS.find((p) => p.value === provider);
@@ -216,10 +222,12 @@ function ProviderSetup({
     userOverrodeInferenceMode.current = false;
   }, [provider]);
 
+  const isLocalModel = provider === "local-model";
   const canContinue =
     provider !== "" &&
-    (!needsKey || apiKey !== "") &&
-    (!isLocal || baseURL !== "");
+    (isLocalModel
+      ? selectedModelRef !== ""
+      : (!needsKey || apiKey !== "") && (!isLocal || baseURL !== ""));
 
   return (
     <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
@@ -234,6 +242,28 @@ function ProviderSetup({
 
         {/* Provider grid */}
         <div className="grid grid-cols-3 gap-2">
+          {/* Local Model option */}
+          <button
+            onClick={() => {
+              setProvider("local-model");
+              setBaseURL("");
+              setApiKey("");
+            }}
+            className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs transition-colors
+              ${
+                provider === "local-model"
+                  ? "border-violet-500/60 bg-violet-500/10 text-violet-400"
+                  : "border-border/50 hover:border-border hover:bg-white/5"
+              }`}
+          >
+            <Cpu className="h-5 w-5" />
+            Local Model
+            {readyModels.length > 0 && (
+              <span className="text-[9px] text-muted-foreground">
+                {readyModels.length} ready
+              </span>
+            )}
+          </button>
           {PROVIDERS.map((p) => {
             const Icon = p.icon;
             return (
@@ -242,6 +272,7 @@ function ProviderSetup({
                 onClick={() => {
                   setProvider(p.value);
                   setBaseURL(p.defaultBaseURL || "");
+                  setSelectedModelRef("");
                 }}
                 className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs transition-colors
                   ${
@@ -256,6 +287,64 @@ function ProviderSetup({
             );
           })}
         </div>
+
+        {/* Local Model selector */}
+        {isLocalModel && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Select Model</Label>
+            {readyModels.length === 0 ? (
+              <div className="rounded-md border border-border/50 bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
+                No models are ready. Deploy a model first on the{" "}
+                <a href="/models" className="text-blue-400 hover:underline">
+                  Models page
+                </a>
+                .
+              </div>
+            ) : (
+              <ScrollArea className="h-40 rounded-md border border-border/50">
+                <div className="p-1 space-y-0.5">
+                  {readyModels.map((model) => {
+                    const isSelected =
+                      selectedModelRef === model.metadata.name;
+                    return (
+                      <button
+                        key={`${model.metadata.namespace}/${model.metadata.name}`}
+                        type="button"
+                        onClick={() =>
+                          setSelectedModelRef(model.metadata.name)
+                        }
+                        className={cn(
+                          "flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left text-xs transition-colors",
+                          isSelected
+                            ? "bg-violet-500/15 text-violet-400 border border-violet-500/30"
+                            : "text-foreground hover:bg-white/5 border border-transparent",
+                        )}
+                      >
+                        <Cpu className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-mono truncate">
+                            {model.metadata.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {model.metadata.namespace}
+                            {model.spec.resources?.gpu
+                              ? ` · GPU: ${model.spec.resources.gpu}`
+                              : " · CPU"}
+                            {model.status?.placedNode &&
+                              ` · ${model.status.placedNode}`}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <Check className="h-3 w-3 shrink-0 mt-0.5 ml-auto" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
 
         {/* API key (for cloud providers) */}
         {needsKey && (
@@ -410,7 +499,14 @@ function ProviderSetup({
         <Button
           className="w-full"
           disabled={!canContinue}
-          onClick={() => onComplete({ provider, apiKey, baseURL })}
+          onClick={() =>
+            onComplete({
+              provider: isLocalModel ? "openai" : provider,
+              apiKey,
+              baseURL,
+              modelRef: isLocalModel ? selectedModelRef : undefined,
+            })
+          }
         >
           Continue to Builder
           <ArrowRight className="h-4 w-4 ml-2" />
@@ -721,6 +817,7 @@ function BuilderCanvas({
         sharedMemory: settings.sharedMemory?.enabled
           ? settings.sharedMemory
           : undefined,
+        modelRef: providerCtx.modelRef || undefined,
       },
       { onSuccess: () => navigate(`/ensembles/${settings.name}`) },
     );
@@ -783,7 +880,14 @@ function BuilderCanvas({
           </button>
           <div className="flex-1" />
           <Badge variant="outline" className="text-[10px] font-mono">
-            {providerLabel}
+            {providerCtx.modelRef ? (
+              <span className="flex items-center gap-1">
+                <Cpu className="h-2.5 w-2.5" />
+                {providerCtx.modelRef}
+              </span>
+            ) : (
+              providerLabel
+            )}
           </Badge>
           <Button
             size="sm"
