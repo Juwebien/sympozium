@@ -69,7 +69,8 @@ export function AgentConfigPanel({
 
   const availableSkills = (skills || [])
     .map((s) => (typeof s === "string" ? s : s.metadata?.name || ""))
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort();
 
   function toggleSkill(skill: string) {
     const current = draft.skills || [];
@@ -135,63 +136,76 @@ export function AgentConfigPanel({
         {/* Model selector — provider-aware */}
         <div className="space-y-1.5">
           <Label className="text-xs">Model</Label>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={modelSearch}
-              onChange={(e) => setModelSearch(e.target.value)}
-              placeholder="Search models..."
-              className="h-8 pl-7 text-sm"
-            />
-          </div>
-          {modelsLoading ? (
-            <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground justify-center">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Fetching models...
+          {providerCtx.modelRef ? (
+            <div className="rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs">
+              <p className="font-mono text-violet-400">
+                {providerCtx.modelRef}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Using cluster-local model via ensemble modelRef
+              </p>
             </div>
           ) : (
-            <ScrollArea className="h-28 rounded-md border border-border/50">
-              <div className="p-1 space-y-0.5">
-                {filteredModels.length === 0 ? (
-                  <p className="py-2 text-center text-[10px] text-muted-foreground">
-                    {modelSearch
-                      ? `No models match "${modelSearch}"`
-                      : "No models available"}
-                  </p>
-                ) : (
-                  filteredModels.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setDraft({ ...draft, model: m })}
-                      className={`flex w-full items-center gap-1.5 rounded px-2 py-1 text-[11px] font-mono text-left transition-colors
-                        ${
-                          m === draft.model
-                            ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                            : "text-foreground hover:bg-white/5 border border-transparent"
-                        }`}
-                    >
-                      {m === draft.model && (
-                        <Check className="h-2.5 w-2.5 shrink-0" />
-                      )}
-                      <span className="truncate">{m}</span>
-                    </button>
-                  ))
-                )}
+            <>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={modelSearch}
+                  onChange={(e) => setModelSearch(e.target.value)}
+                  placeholder="Search models..."
+                  className="h-8 pl-7 text-sm"
+                />
               </div>
-            </ScrollArea>
-          )}
-          {/* Custom model input */}
-          <Input
-            value={draft.model || ""}
-            onChange={(e) => setDraft({ ...draft, model: e.target.value })}
-            placeholder="Or type a custom model name"
-            className="h-7 text-[11px] font-mono"
-          />
-          {isLive && (
-            <p className="text-[9px] text-green-500/70">
-              Live models from {providerCtx.provider}
-            </p>
+              {modelsLoading ? (
+                <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground justify-center">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Fetching models...
+                </div>
+              ) : (
+                <ScrollArea className="h-28 rounded-md border border-border/50">
+                  <div className="p-1 space-y-0.5">
+                    {filteredModels.length === 0 ? (
+                      <p className="py-2 text-center text-[10px] text-muted-foreground">
+                        {modelSearch
+                          ? `No models match "${modelSearch}"`
+                          : "No models available"}
+                      </p>
+                    ) : (
+                      filteredModels.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => setDraft({ ...draft, model: m })}
+                          className={`flex w-full items-center gap-1.5 rounded px-2 py-1 text-[11px] font-mono text-left transition-colors
+                            ${
+                              m === draft.model
+                                ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                : "text-foreground hover:bg-white/5 border border-transparent"
+                            }`}
+                        >
+                          {m === draft.model && (
+                            <Check className="h-2.5 w-2.5 shrink-0" />
+                          )}
+                          <span className="truncate">{m}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
+              {/* Custom model input */}
+              <Input
+                value={draft.model || ""}
+                onChange={(e) => setDraft({ ...draft, model: e.target.value })}
+                placeholder="Or type a custom model name"
+                className="h-7 text-[11px] font-mono"
+              />
+              {isLive && (
+                <p className="text-[9px] text-green-500/70">
+                  Live models from {providerCtx.provider}
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -205,7 +219,7 @@ export function AgentConfigPanel({
             onChange={(e) =>
               setDraft({ ...draft, systemPrompt: e.target.value })
             }
-            placeholder="Describe this persona's role, responsibilities, and behaviour..."
+            placeholder="Describe this agent's role, responsibilities, and behaviour..."
             className="min-h-[120px] text-sm"
           />
         </div>

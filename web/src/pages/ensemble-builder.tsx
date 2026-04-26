@@ -17,7 +17,7 @@ export function EnsembleBuilderPage() {
         />
         <h1 className="text-2xl font-bold font-mono">New Ensemble</h1>
         <p className="text-sm text-muted-foreground">
-          Add personas, draw relationships, and configure your agent team.
+          Add agents, draw relationships, and configure your agent team.
         </p>
       </div>
 

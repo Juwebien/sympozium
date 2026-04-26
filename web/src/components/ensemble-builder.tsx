@@ -236,7 +236,7 @@ function ProviderSetup({
           <h2 className="text-xl font-bold">Choose AI Provider</h2>
           <p className="text-sm text-muted-foreground">
             Select the provider your ensemble will use. This determines which
-            models are available for your personas.
+            models are available for your agents.
           </p>
         </div>
 
@@ -848,7 +848,7 @@ function BuilderCanvas({
           />
           <Button size="sm" variant="outline" onClick={addPersona}>
             <Plus className="h-3.5 w-3.5 mr-1" />
-            Add Persona
+            Add Agent
           </Button>
           <Button
             size="sm"
