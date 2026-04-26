@@ -1,5 +1,5 @@
 // Package main is the entry point for the Sympozium controller manager.
-// It starts all CRD controllers: SympoziumInstance, AgentRun, SympoziumPolicy, SkillPack.
+// It starts all CRD controllers: Agent, AgentRun, SympoziumPolicy, SkillPack.
 package main
 
 import (
@@ -90,13 +90,13 @@ func main() {
 	}
 
 	// Register controllers
-	if err := (&controller.SympoziumInstanceReconciler{
+	if err := (&controller.AgentReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Log:      ctrl.Log.WithName("controllers").WithName("SympoziumInstance"),
+		Log:      ctrl.Log.WithName("controllers").WithName("Agent"),
 		ImageTag: imageTag,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SympoziumInstance")
+		setupLog.Error(err, "unable to create controller", "controller", "Agent")
 		os.Exit(1)
 	}
 

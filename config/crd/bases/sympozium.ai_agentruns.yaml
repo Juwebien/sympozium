@@ -60,6 +60,9 @@ spec:
               agentId:
                 description: AgentID identifies the agent configuration to use.
                 type: string
+              agentRef:
+                description: AgentRef is the name of the Agent this run belongs to.
+                type: string
               agentSandbox:
                 description: |-
                   AgentSandbox configures the Kubernetes Agent Sandbox (CRD) execution backend.
@@ -129,10 +132,6 @@ spec:
                   type: object
                   x-kubernetes-map-type: atomic
                 type: array
-              instanceRef:
-                description: InstanceRef is the name of the SympoziumInstance this
-                  run belongs to.
-                type: string
               lifecycle:
                 description: |-
                   Lifecycle defines pre and post run hooks for this agent run.
@@ -446,7 +445,7 @@ spec:
                       description: |-
                         Params are per-instance key/value pairs injected as SKILL_<KEY> environment
                         variables into the skill sidecar container. This allows the same SkillPack to
-                        be configured differently per SympoziumInstance (e.g. different GitHub repos).
+                        be configured differently per Agent (e.g. different GitHub repos).
                       type: object
                     skillPackRef:
                       description: SkillPackRef references a SkillPack CRD by name.
@@ -479,7 +478,7 @@ spec:
                 type: object
             required:
             - agentId
-            - instanceRef
+            - agentRef
             - model
             - sessionKey
             - task

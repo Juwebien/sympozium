@@ -1,5 +1,5 @@
 {{- if .Values.defaultPersonas.enabled }}
-{{- range $path, $_ := .Files.Glob "files/personas/*.yaml" }}
+{{- range $path, $_ := .Files.Glob "files/agent-configs/*.yaml" }}
 ---
 {{ $content := $.Files.Get $path | replace "namespace: sympozium-system" (printf "namespace: %s" (include "sympozium.namespace" $)) -}}
 {{ $content }}

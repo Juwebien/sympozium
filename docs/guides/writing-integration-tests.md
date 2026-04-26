@@ -38,7 +38,7 @@ kubectl create secret generic inttest-openai-key --from-literal=OPENAI_API_KEY=s
 
 Each test follows the same pattern:
 
-1. **Create resources** — a test `SympoziumInstance` and `AgentRun` with a deterministic task
+1. **Create resources** — a test `Agent` and `AgentRun` with a deterministic task
 2. **Wait for completion** — poll `status.phase` until `Succeeded` or `Failed`
 3. **Validate results** — check pod logs, `status.result`, or the pod filesystem
 4. **Clean up** — delete all test resources
@@ -84,7 +84,7 @@ failures=0
 cleanup() {
     info "Cleaning up..."
     kubectl delete agentrun "$RUN_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
-    kubectl delete sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
+    kubectl delete agent "$INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete jobs -n "$NAMESPACE" -l "sympozium.ai/agentrun=$RUN_NAME" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete pods -n "$NAMESPACE" -l "sympozium.ai/agentrun=$RUN_NAME" --ignore-not-found >/dev/null 2>&1 || true
 }
@@ -102,10 +102,10 @@ fi
 cleanup 2>/dev/null || true
 sleep 2
 
-# --- Create SympoziumInstance ---
+# --- Create Agent ---
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -127,7 +127,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-$(date +%s)"
   task: |

@@ -79,7 +79,7 @@ Rate limiting is enforced by the web-proxy sidecar using a token-bucket algorith
 - `rate_limit_rpm`: Maximum requests per minute (default: 60)
 - `rate_limit_burst`: Burst size above the sustained rate (default: 10)
 
-Configure via skill parameters on the SympoziumInstance:
+Configure via skill parameters on the Agent:
 
 ```yaml
 spec:
@@ -126,7 +126,7 @@ Press `s` on an instance → `Space` to toggle `web-endpoint`.
 ## Enabling via kubectl
 
 ```bash
-kubectl patch sympoziuminstance <name> --type=merge -p '{
+kubectl patch agent <name> --type=merge -p '{
   "spec": {
     "skills": [{"skillPackRef": "web-endpoint"}]
   }

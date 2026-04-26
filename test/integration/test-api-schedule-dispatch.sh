@@ -54,7 +54,7 @@ cleanup() {
   info "Cleaning up schedule-dispatch API test resources..."
   [[ -n "$RUN_NAME" ]] && api_request DELETE "/api/v1/runs/${RUN_NAME}" >/dev/null 2>&1 || true
   api_request DELETE "/api/v1/schedules/${SCHEDULE_NAME}" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1 || true
   # kubectl fallback: agentruns (schedule may dispatch multiple), schedule, instance, secret, configmaps
   kubectl delete agentrun -n "$NAMESPACE" -l "sympozium.ai/instance=${INSTANCE_NAME}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete sympoziumschedule "$SCHEDULE_NAME" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
@@ -167,10 +167,10 @@ main() {
 
   # Provide apiKey so the apiserver creates/auth-wires a provider secret; this
   # lets us assert schedule->run inheritance of provider/auth metadata.
-  api_request POST "/api/v1/instances" "{\"name\":\"${INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\"}" >/dev/null
+  api_request POST "/api/v1/agents" "{\"name\":\"${INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\"}" >/dev/null
   pass "Created ad-hoc instance '${INSTANCE_NAME}'"
 
-  api_request POST "/api/v1/schedules" "{\"name\":\"${SCHEDULE_NAME}\",\"instanceRef\":\"${INSTANCE_NAME}\",\"schedule\":\"* * * * *\",\"task\":\"dispatch smoke\",\"type\":\"scheduled\"}" >/dev/null
+  api_request POST "/api/v1/schedules" "{\"name\":\"${SCHEDULE_NAME}\",\"agentRef\":\"${INSTANCE_NAME}\",\"schedule\":\"* * * * *\",\"task\":\"dispatch smoke\",\"type\":\"scheduled\"}" >/dev/null
   pass "Created schedule '${SCHEDULE_NAME}'"
 
   # SympoziumSchedule is implemented by the Sympozium controller, not by

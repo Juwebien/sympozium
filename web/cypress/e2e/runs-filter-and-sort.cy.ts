@@ -9,8 +9,8 @@ let RUN_B = "";
 
 describe("Runs list — filter and sort", () => {
   before(() => {
-    cy.createLMStudioInstance(A);
-    cy.createLMStudioInstance(B);
+    cy.createLMStudioAgent(A);
+    cy.createLMStudioAgent(B);
     cy.dispatchRun(A, "Reply: FILT_A").then((n) => {
       RUN_A = n;
     });
@@ -22,14 +22,14 @@ describe("Runs list — filter and sort", () => {
   after(() => {
     if (RUN_A) cy.deleteRun(RUN_A);
     if (RUN_B) cy.deleteRun(RUN_B);
-    cy.deleteInstance(A);
-    cy.deleteInstance(B);
+    cy.deleteAgent(A);
+    cy.deleteAgent(B);
   });
 
   it("shows both runs and filters by instance name", () => {
     cy.visit("/runs");
 
-    // Both runs visible (identified by instanceRef in the rows).
+    // Both runs visible (identified by agentRef in the rows).
     cy.contains("td", A, { timeout: 20000 }).should("be.visible");
     cy.contains("td", B, { timeout: 20000 }).should("be.visible");
 

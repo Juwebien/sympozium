@@ -78,7 +78,7 @@ describe("Dashboard -- Awaiting Approval widget", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows the gated run in the dashboard widget and approves it", () => {

@@ -7,12 +7,12 @@ let RUN_NAME = "";
 
 describe("Run Notifications & Watermark", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
   });
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows sidebar badge and toast when a run is created after page load", () => {

@@ -5,7 +5,7 @@ const INSTANCE = `cy-webep-wiz-${Date.now()}`;
 
 describe("Create Instance — web-endpoint skill", () => {
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("walks the wizard, enables web-endpoint, and creates the instance", () => {

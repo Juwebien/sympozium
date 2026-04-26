@@ -30,20 +30,20 @@ declare global {
       /** Click the Back button in the onboarding wizard. */
       wizardBack(): Chainable<void>;
       /** Delete an instance by name via API (cleanup helper). */
-      deleteInstance(name: string): Chainable<void>;
+      deleteAgent(name: string): Chainable<void>;
       /** Create a minimal LM Studio SympoziumInstance via API. */
-      createLMStudioInstance(
+      createLMStudioAgent(
         name: string,
         opts?: { skills?: string[] },
       ): Chainable<void>;
       /** Create a minimal llama-server SympoziumInstance via API. */
-      createLlamaServerInstance(
+      createLlamaServerAgent(
         name: string,
         opts?: { skills?: string[] },
       ): Chainable<void>;
       /** Dispatch an ad-hoc run against an instance via API. Returns the created run name. */
       dispatchRun(
-        instanceRef: string,
+        agentRef: string,
         task: string,
         opts?: { name?: string },
       ): Chainable<string>;
@@ -85,10 +85,10 @@ Cypress.Commands.add("wizardBack", () => {
   cy.contains("button", "Back").click({ force: true });
 });
 
-Cypress.Commands.add("deleteInstance", (name: string) => {
+Cypress.Commands.add("deleteAgent", (name: string) => {
   cy.request({
     method: "DELETE",
-    url: `/api/v1/instances/${name}?namespace=default`,
+    url: `/api/v1/agents/${name}?namespace=default`,
     headers: authHeaders(),
     failOnStatusCode: false,
   });
@@ -139,7 +139,7 @@ Cypress.Commands.add("deleteModel", (name: string) => {
   });
 });
 
-Cypress.Commands.add("createLMStudioInstance", (name: string, opts) => {
+Cypress.Commands.add("createLMStudioAgent", (name: string, opts) => {
   const body: Record<string, unknown> = {
     name,
     provider: "lm-studio",
@@ -151,20 +151,20 @@ Cypress.Commands.add("createLMStudioInstance", (name: string, opts) => {
   }
   cy.request({
     method: "POST",
-    url: "/api/v1/instances?namespace=default",
+    url: "/api/v1/agents?namespace=default",
     headers: authHeaders(),
     body,
     failOnStatusCode: false,
   }).then((resp) => {
     if (resp.status >= 400 && resp.status !== 409) {
       throw new Error(
-        `createLMStudioInstance failed (${resp.status}): ${JSON.stringify(resp.body)}`,
+        `createLMStudioAgent failed (${resp.status}): ${JSON.stringify(resp.body)}`,
       );
     }
   });
 });
 
-Cypress.Commands.add("createLlamaServerInstance", (name: string, opts) => {
+Cypress.Commands.add("createLlamaServerAgent", (name: string, opts) => {
   const body: Record<string, unknown> = {
     name,
     provider: "llama-server",
@@ -176,14 +176,14 @@ Cypress.Commands.add("createLlamaServerInstance", (name: string, opts) => {
   }
   cy.request({
     method: "POST",
-    url: "/api/v1/instances?namespace=default",
+    url: "/api/v1/agents?namespace=default",
     headers: authHeaders(),
     body,
     failOnStatusCode: false,
   }).then((resp) => {
     if (resp.status >= 400 && resp.status !== 409) {
       throw new Error(
-        `createLlamaServerInstance failed (${resp.status}): ${JSON.stringify(resp.body)}`,
+        `createLlamaServerAgent failed (${resp.status}): ${JSON.stringify(resp.body)}`,
       );
     }
   });
@@ -191,14 +191,14 @@ Cypress.Commands.add("createLlamaServerInstance", (name: string, opts) => {
 
 Cypress.Commands.add(
   "dispatchRun",
-  (instanceRef: string, task: string, opts) => {
+  (agentRef: string, task: string, opts) => {
     return cy
       .request({
         method: "POST",
         url: "/api/v1/runs?namespace=default",
         headers: authHeaders(),
         body: {
-          instanceRef,
+          agentRef,
           task,
           ...(opts?.name ? { name: opts.name } : {}),
         },

@@ -9,7 +9,7 @@ graph TB
     ADMIN(["Operator / SRE"]) -- "TUI · Web UI · kubectl" --> CP
 
     subgraph CP["Control Plane"]
-        CM["Controller Manager<br/><small>SympoziumInstance · AgentRun<br/>Ensemble · SkillPack · Model<br/>SympoziumPolicy · MCPServer</small>"]
+        CM["Controller Manager<br/><small>Agent · AgentRun<br/>Ensemble · SkillPack · Model<br/>SympoziumPolicy · MCPServer</small>"]
         API["API Server<br/><small>HTTP + WebSocket</small>"]
         WH["Admission Webhook<br/><small>Policy enforcement</small>"]
         NATS[("NATS JetStream<br/><small>Event bus</small>")]
@@ -214,7 +214,7 @@ graph TB
     style RT stroke:#e94560,stroke-width:2px
 ```
 
-Agents in a Ensemble can delegate tasks to other personas using the `delegate_to_persona` tool. The spawner resolves persona names to SympoziumInstances via the Ensemble CRD and validates that a relationship edge permits the delegation.
+Agents in a Ensemble can delegate tasks to other personas using the `delegate_to_persona` tool. The spawner resolves persona names to Agents via the Ensemble CRD and validates that a relationship edge permits the delegation.
 
 ## How It Works
 
@@ -264,7 +264,7 @@ Agents in a Ensemble can delegate tasks to other personas using the `delegate_to
 | **Schedule-as-CRD** | CronJob analogy | `SympoziumSchedule` resources define recurring tasks with cron expressions — the controller creates AgentRuns, not the user |
 | **Skills-as-ConfigMap** | ConfigMap volume | SkillPacks generate ConfigMaps mounted into agent pods — portable, versionable, namespace-scoped |
 | **Skill sidecars with auto-RBAC** | Role / ClusterRole | SkillPacks can declare sidecar containers with RBAC rules — the controller injects the container and provisions ephemeral, least-privilege RBAC per run |
-| **Ensembles** | Operator Bundle | Pre-configured agent bundles — the controller stamps out SympoziumInstances, Schedules, and memory ConfigMaps. Activating a pack is a single TUI action |
+| **Ensembles** | Operator Bundle | Pre-configured agent bundles — the controller stamps out Agents, Schedules, and memory ConfigMaps. Activating a pack is a single TUI action |
 | **MCP servers as CRD** | Deployment + Service | `MCPServer` resources declare external tool providers — the controller manages deployment lifecycle, probes for tools, and the bridge sidecar translates MCP protocol to agent tool calls. Prefixed tool names prevent collisions across providers |
 | **Node probe DaemonSet** | DaemonSet | Discovers host-installed inference providers (Ollama, vLLM) by probing localhost ports — annotates nodes so the control plane can offer model selection and node pinning without manual configuration |
 

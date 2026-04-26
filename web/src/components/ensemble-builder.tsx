@@ -6,7 +6,7 @@
  * 2. Canvas: add persona nodes, drag edges, configure via side panels
  * 3. Save → POST /api/v1/ensembles
  *
- * The provider context flows down to PersonaConfigPanel so the model
+ * The provider context flows down to AgentConfigPanel so the model
  * selector can show provider-specific model lists.
  */
 
@@ -44,11 +44,11 @@ import {
   Check,
 } from "lucide-react";
 import type {
-  PersonaSpec,
-  PersonaRelationship,
+  AgentConfigSpec,
+  AgentConfigRelationship,
   SharedMemorySpec,
 } from "@/lib/api";
-import { PersonaConfigPanel } from "@/components/persona-config-panel";
+import { AgentConfigPanel } from "@/components/agent-config-panel";
 import {
   EnsembleSettingsPanel,
   type EnsembleSettings,
@@ -60,7 +60,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
-// ── Provider context shared with PersonaConfigPanel ────────────────────────
+// ── Provider context shared with AgentConfigPanel ────────────────────────
 
 export interface ProviderContext {
   provider: string;
@@ -72,7 +72,7 @@ export interface ProviderContext {
 // ── Node data ──────────────────────────────────────────────────────────────
 
 interface BuilderNodeData {
-  persona: PersonaSpec;
+  persona: AgentConfigSpec;
   isConfigured: boolean;
   label: string;
   [key: string]: unknown;
@@ -529,8 +529,8 @@ function ProviderSetup({
 // ── Main builder ───────────────────────────────────────────────────────────
 
 interface EnsembleBuilderProps {
-  initialPersonas?: PersonaSpec[];
-  initialRelationships?: PersonaRelationship[];
+  initialPersonas?: AgentConfigSpec[];
+  initialRelationships?: AgentConfigRelationship[];
   initialSettings?: Partial<EnsembleSettings>;
 }
 
@@ -547,10 +547,10 @@ export function EnsembleBuilder({
 
   // ── State ──────────────────────────────────────────────────────────────
 
-  const [personas, setPersonas] = useState<PersonaSpec[]>(
+  const [personas, setPersonas] = useState<AgentConfigSpec[]>(
     initialPersonas || [],
   );
-  const [relationships, setRelationships] = useState<PersonaRelationship[]>(
+  const [relationships, setRelationships] = useState<AgentConfigRelationship[]>(
     initialRelationships || [],
   );
   const [settings, setSettings] = useState<EnsembleSettings>({
@@ -619,10 +619,10 @@ function BuilderCanvas({
   navigate,
 }: {
   providerCtx: ProviderContext;
-  personas: PersonaSpec[];
-  setPersonas: React.Dispatch<React.SetStateAction<PersonaSpec[]>>;
-  relationships: PersonaRelationship[];
-  setRelationships: React.Dispatch<React.SetStateAction<PersonaRelationship[]>>;
+  personas: AgentConfigSpec[];
+  setPersonas: React.Dispatch<React.SetStateAction<AgentConfigSpec[]>>;
+  relationships: AgentConfigRelationship[];
+  setRelationships: React.Dispatch<React.SetStateAction<AgentConfigRelationship[]>>;
   settings: EnsembleSettings;
   setSettings: React.Dispatch<React.SetStateAction<EnsembleSettings>>;
   selectedPersona: string | null;
@@ -724,7 +724,7 @@ function BuilderCanvas({
       ? ""
       : PROVIDERS.find((p) => p.value === providerCtx.provider)?.defaultModel ||
         "";
-    const newPersona: PersonaSpec = {
+    const newPersona: AgentConfigSpec = {
       name,
       displayName: "",
       systemPrompt: "",
@@ -747,7 +747,7 @@ function BuilderCanvas({
     setShowSettings(false);
   }
 
-  function updatePersona(updated: PersonaSpec) {
+  function updatePersona(updated: AgentConfigSpec) {
     const oldName = selectedPersona;
     setPersonas((prev) => prev.map((p) => (p.name === oldName ? updated : p)));
     setNodes((prev) =>
@@ -972,7 +972,7 @@ function BuilderCanvas({
 
       {/* Side panels */}
       {selectedPersonaData && (
-        <PersonaConfigPanel
+        <AgentConfigPanel
           persona={selectedPersonaData}
           providerCtx={providerCtx}
           onSave={updatePersona}

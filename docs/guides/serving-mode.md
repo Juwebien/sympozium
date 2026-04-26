@@ -160,7 +160,7 @@ The command:
 
 ```bash
 # 1. Enable web-endpoint skill on an instance
-kubectl patch sympoziuminstance my-agent --type=merge -p '{
+kubectl patch agent my-agent --type=merge -p '{
   "spec": {
     "skills": [{"skillPackRef": "web-endpoint", "params": {"rate_limit_rpm": "120"}}]
   }

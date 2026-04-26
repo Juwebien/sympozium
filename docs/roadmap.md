@@ -19,7 +19,7 @@ Last updated: 2026-02-25
 | # | Feature | Description | Status |
 |---|---------|-------------|--------|
 | 4 | **Webhook triggers** | New CRD or API endpoint that creates AgentRuns on inbound HTTP | Planned |
-| 5 | **Model failover** | Fallback provider chain in SympoziumInstance spec | Planned |
+| 5 | **Model failover** | Fallback provider chain in Agent spec | Planned |
 | 6 | **Agent-to-agent comms** | `send_agent_message` tool + cross-instance NATS routing | Planned |
 | 7 | **Session compaction** | Summarise memory when context grows too large | Planned |
 
@@ -55,7 +55,7 @@ Last updated: 2026-02-25
 
 These are areas where Sympozium is ahead due to its Kubernetes-native architecture:
 
-- **CRD-based declarative config** — SympoziumInstance, AgentRun, SympoziumPolicy, SympoziumSchedule, SkillPack
+- **CRD-based declarative config** — Agent, AgentRun, SympoziumPolicy, SympoziumSchedule, SkillPack
 - **Multi-tenant isolation** — multiple instances with separate RBAC
 - **Admission webhook policy enforcement** — SympoziumPolicy + tool gating
 - **Ephemeral compute** — agents run as K8s Jobs with auto-cleanup

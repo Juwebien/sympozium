@@ -43,16 +43,16 @@ kubectl create secret generic local-key \
 
 ---
 
-## Step 2: Create a SympoziumInstance
+## Step 2: Create a Agent
 
-A SympoziumInstance is the per-user/per-tenant configuration that declares
+A Agent is the per-user/per-tenant configuration that declares
 which model to use, which skills to mount, and which policy to follow.
 
 Save this as `instance.yaml`:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: my-first-agent
 spec:
@@ -76,7 +76,7 @@ kubectl apply -f instance.yaml
 Verify it's ready:
 
 ```bash
-kubectl get sympoziuminstance my-first-agent
+kubectl get agent my-first-agent
 ```
 
 You should see `Phase: Running` (or `Pending` briefly while the controller reconciles).
@@ -105,7 +105,7 @@ kind: AgentRun
 metadata:
   name: my-first-run
 spec:
-  instanceRef: my-first-agent
+  agentRef: my-first-agent
   agentId: primary
   sessionKey: "session-001"
   task: "List all pods in every namespace and summarise their health. Report any pods that are not Running."
@@ -207,7 +207,7 @@ kubectl delete agentrun my-first-run
 To keep the instance for future runs, leave it in place. To remove everything:
 
 ```bash
-kubectl delete sympoziuminstance my-first-agent
+kubectl delete agent my-first-agent
 kubectl delete agentrun my-first-run
 ```
 
@@ -219,7 +219,7 @@ kubectl delete agentrun my-first-run
 
 ```yaml
 spec:
-  instanceRef: my-first-agent
+  agentRef: my-first-agent
   task: "Check cluster health."
   model:
     provider: anthropic
@@ -235,7 +235,7 @@ spec:
 
 ```yaml
 spec:
-  instanceRef: my-first-agent
+  agentRef: my-first-agent
   task: "Analyse the deployment manifests in /workspace."
   model:
     provider: openai
@@ -251,7 +251,7 @@ spec:
 
 ```yaml
 spec:
-  instanceRef: my-first-agent
+  agentRef: my-first-agent
   task: "Debug the failing cronjob."
   model:
     provider: openai
@@ -277,7 +277,7 @@ SympoziumSchedule or use a Ensemble with a schedule — see
 1. You apply the AgentRun CR
    └── Controller picks it up
 
-2. Controller resolves the SympoziumInstance
+2. Controller resolves the Agent
    └── Finds model config, skills, policy
 
 3. Controller creates a Job

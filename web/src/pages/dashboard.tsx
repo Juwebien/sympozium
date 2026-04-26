@@ -11,7 +11,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import {
-  useInstances,
+  useAgents,
   useRuns,
   useClusterInfo,
   useObservabilityMetrics,
@@ -166,7 +166,7 @@ type RangeKey = "1h" | "24h" | "7d";
 
 function buildActivityBuckets(
   runs: NonNullable<ReturnType<typeof useRuns>["data"]>,
-  instances: NonNullable<ReturnType<typeof useInstances>["data"]>,
+  instances: NonNullable<ReturnType<typeof useAgents>["data"]>,
   range: RangeKey,
 ): ActivityBucket[] {
   const now = new Date();
@@ -411,7 +411,7 @@ function LocalModelsPanel() {
 // ---------------------------------------------------------------------------
 
 export function DashboardPage() {
-  const instances = useInstances();
+  const instances = useAgents();
   const runs = useRuns();
   const clusterInfo = useClusterInfo();
   const observability = useObservabilityMetrics();
@@ -616,7 +616,7 @@ export function DashboardPage() {
       color: "text-cyan-400",
     },
     {
-      label: "Instances",
+      label: "Agents",
       value: instances.data?.length ?? "—",
       icon: Server,
       color: "text-purple-400",
@@ -1292,7 +1292,7 @@ export function DashboardPage() {
                           </Link>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {run.spec.instanceRef}
+                          {run.spec.agentRef}
                         </TableCell>
                         <TableCell>
                           <StatusBadge phase={run.status?.phase} />

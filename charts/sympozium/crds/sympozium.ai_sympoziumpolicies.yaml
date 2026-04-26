@@ -27,7 +27,7 @@ spec:
         description: |-
           SympoziumPolicy is the Schema for the sympoziumpolicies API.
           It enforces governance, sandbox requirements, network isolation,
-          and tool access for bound SympoziumInstances.
+          and tool access for bound Agents.
         properties:
           apiVersion:
             description: |-
@@ -213,8 +213,8 @@ spec:
             description: SympoziumPolicyStatus defines the observed state of SympoziumPolicy.
             properties:
               boundInstances:
-                description: BoundInstances is the number of SympoziumInstances bound
-                  to this policy.
+                description: BoundInstances is the number of Agents bound to this
+                  policy.
                 type: integer
               conditions:
                 description: Conditions represent the latest available observations.

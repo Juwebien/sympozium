@@ -19,7 +19,7 @@ export interface Condition {
   lastTransitionTime: string;
 }
 
-// ── SympoziumInstance ────────────────────────────────────────────────────────
+// ── Agent ────────────────────────────────────────────────────────
 
 export interface SecretRef {
   provider?: string;
@@ -106,7 +106,7 @@ export interface ChannelStatus {
   message?: string;
 }
 
-export interface SympoziumInstanceSpec {
+export interface AgentSpec {
   channels?: ChannelSpec[];
   agents: AgentsSpec;
   skills?: SkillRef[];
@@ -115,7 +115,7 @@ export interface SympoziumInstanceSpec {
   memory?: MemorySpec;
 }
 
-export interface SympoziumInstanceStatus {
+export interface AgentStatus {
   phase?: string;
   channels?: ChannelStatus[];
   activeAgentPods?: number;
@@ -123,10 +123,10 @@ export interface SympoziumInstanceStatus {
   conditions?: Condition[];
 }
 
-export interface SympoziumInstance {
+export interface Agent {
   metadata: ObjectMeta;
-  spec: SympoziumInstanceSpec;
-  status?: SympoziumInstanceStatus;
+  spec: AgentSpec;
+  status?: AgentStatus;
 }
 
 // ── AgentRun ─────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export interface TokenUsage {
 }
 
 export interface AgentRunSpec {
-  instanceRef: string;
+  agentRef: string;
   agentId: string;
   sessionKey: string;
   task: string;
@@ -383,7 +383,7 @@ export interface SkillPack {
 // ── SympoziumSchedule ────────────────────────────────────────────────────────
 
 export interface SympoziumScheduleSpec {
-  instanceRef: string;
+  agentRef: string;
   schedule: string;
   task: string;
   type?: string;
@@ -409,29 +409,29 @@ export interface SympoziumSchedule {
 
 // ── Ensemble ──────────────────────────────────────────────────────────────
 
-export interface PersonaToolPolicy {
+export interface AgentConfigToolPolicy {
   allow?: string[];
   deny?: string[];
 }
 
-export interface PersonaSchedule {
+export interface AgentConfigSchedule {
   type: string;
   interval?: string;
   cron?: string;
   task: string;
 }
 
-export interface PersonaMemory {
+export interface AgentConfigMemory {
   enabled: boolean;
   seeds?: string[];
 }
 
-export interface PersonaWebEndpoint {
+export interface AgentConfigWebEndpoint {
   enabled: boolean;
   hostname?: string;
 }
 
-export interface PersonaSpec {
+export interface AgentConfigSpec {
   name: string;
   displayName?: string;
   systemPrompt: string;
@@ -439,22 +439,22 @@ export interface PersonaSpec {
   provider?: string;
   baseURL?: string;
   skills?: string[];
-  toolPolicy?: PersonaToolPolicy;
-  schedule?: PersonaSchedule;
-  memory?: PersonaMemory;
+  toolPolicy?: AgentConfigToolPolicy;
+  schedule?: AgentConfigSchedule;
+  memory?: AgentConfigMemory;
   channels?: string[];
-  webEndpoint?: PersonaWebEndpoint;
+  webEndpoint?: AgentConfigWebEndpoint;
   lifecycle?: LifecycleHooks;
 }
 
-export interface InstalledPersona {
+export interface InstalledAgentConfig {
   name: string;
-  instanceName: string;
+  agentName: string;
   scheduleName?: string;
 }
 
 export interface SharedMemoryAccessRule {
-  persona: string;
+  agentConfig: string;
   access: "read-write" | "read-only";
 }
 
@@ -464,7 +464,7 @@ export interface SharedMemorySpec {
   accessRules?: SharedMemoryAccessRule[];
 }
 
-export interface PersonaRelationship {
+export interface AgentConfigRelationship {
   source: string;
   target: string;
   type: "delegation" | "sequential" | "supervision";
@@ -478,14 +478,14 @@ export interface EnsembleSpec {
   description?: string;
   category?: string;
   version?: string;
-  personas: PersonaSpec[];
+  agentConfigs: AgentConfigSpec[];
   authRefs?: SecretRef[];
-  excludePersonas?: string[];
+  excludeAgentConfigs?: string[];
   channelConfigs?: Record<string, string>;
   policyRef?: string;
   skillParams?: Record<string, Record<string, string>>;
   taskOverride?: string;
-  relationships?: PersonaRelationship[];
+  relationships?: AgentConfigRelationship[];
   workflowType?: "autonomous" | "pipeline" | "delegation";
   sharedMemory?: SharedMemorySpec;
   /** Base URL for the inference endpoint. */
@@ -496,9 +496,9 @@ export interface EnsembleSpec {
 
 export interface EnsembleStatus {
   phase?: string;
-  personaCount?: number;
+  agentConfigCount?: number;
   installedCount?: number;
-  installedPersonas?: InstalledPersona[];
+  installedAgentConfigs?: InstalledAgentConfig[];
   sharedMemoryReady?: boolean;
   conditions?: Condition[];
 }
@@ -642,7 +642,7 @@ export interface PodInfo {
   startTime?: string;
   restartCount: number;
   labels?: Record<string, string>;
-  instanceRef?: string;
+  agentRef?: string;
 }
 
 // ── Cluster Info ─────────────────────────────────────────────────────────
@@ -798,15 +798,15 @@ async function apiFetch<T>(
   throw lastError;
 }
 
-// ── Instances ────────────────────────────────────────────────────────────────
+// ── Agents ────────────────────────────────────────────────────────────────
 
 export const api = {
-  instances: {
-    list: () => apiFetch<SympoziumInstance[]>("/api/v1/instances"),
+  agents: {
+    list: () => apiFetch<Agent[]>("/api/v1/agents"),
     get: (name: string) =>
-      apiFetch<SympoziumInstance>(`/api/v1/instances/${name}`),
+      apiFetch<Agent>(`/api/v1/agents/${name}`),
     delete: (name: string) =>
-      apiFetch<void>(`/api/v1/instances/${name}`, { method: "DELETE" }),
+      apiFetch<void>(`/api/v1/agents/${name}`, { method: "DELETE" }),
     patch: (
       name: string,
       data: {
@@ -819,7 +819,7 @@ export const api = {
         requireApproval?: boolean;
       },
     ) =>
-      apiFetch<SympoziumInstance>(`/api/v1/instances/${name}`, {
+      apiFetch<Agent>(`/api/v1/agents/${name}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
@@ -843,7 +843,7 @@ export const api = {
       runTimeout?: string;
       requireApproval?: boolean;
     }) =>
-      apiFetch<SympoziumInstance>("/api/v1/instances", {
+      apiFetch<Agent>("/api/v1/agents", {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -853,7 +853,7 @@ export const api = {
     list: () => apiFetch<AgentRun[]>("/api/v1/runs"),
     get: (name: string) => apiFetch<AgentRun>(`/api/v1/runs/${name}`),
     create: (data: {
-      instanceRef: string;
+      agentRef: string;
       task: string;
       model?: string;
       timeout?: string;
@@ -889,7 +889,7 @@ export const api = {
     get: (name: string) =>
       apiFetch<SympoziumSchedule>(`/api/v1/schedules/${name}`),
     create: (data: {
-      instanceRef: string;
+      agentRef: string;
       schedule: string;
       task: string;
       type?: string;
@@ -942,7 +942,7 @@ export const api = {
           skills?: string[];
         }>;
         agentSandbox?: { enabled: boolean; runtimeClass?: string };
-        relationships?: PersonaRelationship[];
+        relationships?: AgentConfigRelationship[];
         workflowType?: string;
         sharedMemory?: SharedMemorySpec;
       },
@@ -968,8 +968,8 @@ export const api = {
       description?: string;
       category?: string;
       workflowType?: string;
-      personas: PersonaSpec[];
-      relationships?: PersonaRelationship[];
+      agentConfigs: AgentConfigSpec[];
+      relationships?: AgentConfigRelationship[];
       sharedMemory?: SharedMemorySpec;
       modelRef?: string;
     }) =>

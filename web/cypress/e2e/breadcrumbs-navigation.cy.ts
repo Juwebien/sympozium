@@ -6,7 +6,7 @@ let RUN_NAME = "";
 
 describe("Breadcrumbs — detail page navigation", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
     cy.dispatchRun(INSTANCE, "Breadcrumb nav test").then((name) => {
       RUN_NAME = name;
     });
@@ -14,19 +14,19 @@ describe("Breadcrumbs — detail page navigation", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows breadcrumbs on the instance detail page", () => {
-    cy.visit(`/instances/${INSTANCE}`);
+    cy.visit(`/agents/${INSTANCE}`);
 
     // Breadcrumb trail should contain Ensembles, Instances, and the name.
     cy.contains("nav", "Ensembles", { timeout: 20000 }).should("exist");
-    cy.contains("nav", "Instances").should("exist");
+    cy.contains("nav", "Agents").should("exist");
     cy.contains("nav", INSTANCE).should("exist");
 
-    // Clicking "Instances" breadcrumb should navigate to the list.
-    cy.get("nav").contains("a", "Instances").click();
+    // Clicking "Agents" breadcrumb should navigate to the list.
+    cy.get("nav").contains("a", "Agents").click();
     cy.url().should("include", "/instances");
   });
 
@@ -39,7 +39,7 @@ describe("Breadcrumbs — detail page navigation", () => {
 
     // Clicking the instance breadcrumb should navigate to instance detail.
     cy.get("nav").contains("a", INSTANCE).click();
-    cy.url().should("include", `/instances/${INSTANCE}`);
+    cy.url().should("include", `/agents/${INSTANCE}`);
   });
 });
 

@@ -116,7 +116,7 @@ func (r *AgentRunReconciler) imageRef(name string) string {
 
 // resolveOTelEndpoint returns the OTLP endpoint for agent pods.
 // Priority: instance CRD → controller's own env → empty (noop).
-func resolveOTelEndpoint(instance *sympoziumv1alpha1.SympoziumInstance) string {
+func resolveOTelEndpoint(instance *sympoziumv1alpha1.Agent) string {
 	if instance != nil && instance.Spec.Observability != nil {
 		if !instance.Spec.Observability.Enabled {
 			return ""
@@ -193,7 +193,7 @@ func (r *AgentRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			attribute.String("agentrun.name", req.Name),
 			attribute.String("namespace", req.Namespace),
 			attribute.String("agentrun.phase", string(agentRun.Status.Phase)),
-			attribute.String("instance.name", agentRun.Spec.InstanceRef),
+			attribute.String("instance.name", agentRun.Spec.AgentRef),
 		),
 	)
 	defer span.End()
@@ -253,7 +253,7 @@ func (r *AgentRunReconciler) reconcilePending(ctx context.Context, log logr.Logg
 	ctx, span := controllerTracer.Start(ctx, "agentrun.create_job",
 		trace.WithAttributes(
 			attribute.String("agentrun.name", agentRun.Name),
-			attribute.String("instance.name", agentRun.Spec.InstanceRef),
+			attribute.String("instance.name", agentRun.Spec.AgentRef),
 		),
 	)
 	defer span.End()
@@ -301,14 +301,14 @@ func (r *AgentRunReconciler) reconcilePending(ctx context.Context, log logr.Logg
 		return ctrl.Result{}, fmt.Errorf("creating input ConfigMap: %w", err)
 	}
 
-	// Look up the SympoziumInstance to check for memory configuration.
-	instance := &sympoziumv1alpha1.SympoziumInstance{}
+	// Look up the Agent to check for memory configuration.
+	instance := &sympoziumv1alpha1.Agent{}
 	memoryEnabled := false
 	var observability *sympoziumv1alpha1.ObservabilitySpec
 	var mcpServers []sympoziumv1alpha1.MCPServerRef
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: agentRun.Namespace,
-		Name:      agentRun.Spec.InstanceRef,
+		Name:      agentRun.Spec.AgentRef,
 	}, instance); err == nil {
 		if instance.Spec.Memory != nil && instance.Spec.Memory.Enabled {
 			memoryEnabled = true
@@ -323,7 +323,7 @@ func (r *AgentRunReconciler) reconcilePending(ctx context.Context, log logr.Logg
 			}
 			observability = &obsCopy
 		}
-		// If the AgentRun has no skills, inherit from the SympoziumInstance.
+		// If the AgentRun has no skills, inherit from the Agent.
 		// This is a safety net — tuiCreateRun and the schedule controller
 		// should already copy skills, but older runs or manual CRs may not.
 		// Skip inheritance for web-proxy child runs — they intentionally omit
@@ -400,7 +400,7 @@ func (r *AgentRunReconciler) reconcilePending(ctx context.Context, log logr.Logg
 	// a pod that hangs on the wait-for-memory init container.
 	// Give up after 120s to avoid infinite requeue loops.
 	if agentRunHasMemorySkill(agentRun) {
-		memoryDeployName := fmt.Sprintf("%s-memory", agentRun.Spec.InstanceRef)
+		memoryDeployName := fmt.Sprintf("%s-memory", agentRun.Spec.AgentRef)
 		var memoryDeploy appsv1.Deployment
 		if err := r.Get(ctx, client.ObjectKey{
 			Namespace: agentRun.Namespace,
@@ -506,7 +506,7 @@ func (r *AgentRunReconciler) reconcileRunning(ctx context.Context, log logr.Logg
 	ctx, span := controllerTracer.Start(ctx, "agentrun.extract_result",
 		trace.WithAttributes(
 			attribute.String("agentrun.name", agentRun.Name),
-			attribute.String("instance.name", agentRun.Spec.InstanceRef),
+			attribute.String("instance.name", agentRun.Spec.AgentRef),
 		),
 	)
 	defer span.End()
@@ -752,14 +752,14 @@ func (r *AgentRunReconciler) reconcileCompleted(ctx context.Context, log logr.Lo
 // "pipeline" execution pattern where one persona's completion triggers the next.
 func (r *AgentRunReconciler) triggerSequentialSuccessors(ctx context.Context, log logr.Logger, agentRun *sympoziumv1alpha1.AgentRun) error {
 	// Look up the source instance to get the persona name and ensemble.
-	if agentRun.Spec.InstanceRef == "" {
+	if agentRun.Spec.AgentRef == "" {
 		return nil
 	}
-	var sourceInst sympoziumv1alpha1.SympoziumInstance
-	if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.InstanceRef, Namespace: agentRun.Namespace}, &sourceInst); err != nil {
+	var sourceInst sympoziumv1alpha1.Agent
+	if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.AgentRef, Namespace: agentRun.Namespace}, &sourceInst); err != nil {
 		return nil // Instance gone — skip.
 	}
-	sourcePersona := sourceInst.Labels["sympozium.ai/persona"]
+	sourcePersona := sourceInst.Labels["sympozium.ai/agent-config"]
 	ensembleName := sourceInst.Labels["sympozium.ai/ensemble"]
 	if sourcePersona == "" || ensembleName == "" {
 		return nil // Not part of an ensemble.
@@ -785,15 +785,15 @@ func (r *AgentRunReconciler) triggerSequentialSuccessors(ctx context.Context, lo
 		}
 
 		targetPersona := rel.Target
-		targetInstanceName := ensembleName + "-" + targetPersona
+		targetAgentName := ensembleName + "-" + targetPersona
 		log.Info("Triggering sequential successor",
 			"source", sourcePersona, "target", targetPersona,
-			"targetInstance", targetInstanceName)
+			"targetAgent", targetAgentName)
 
 		// Look up the target instance.
-		var targetInst sympoziumv1alpha1.SympoziumInstance
-		if err := r.Get(ctx, types.NamespacedName{Name: targetInstanceName, Namespace: agentRun.Namespace}, &targetInst); err != nil {
-			log.Error(err, "Sequential target instance not found", "instance", targetInstanceName)
+		var targetInst sympoziumv1alpha1.Agent
+		if err := r.Get(ctx, types.NamespacedName{Name: targetAgentName, Namespace: agentRun.Namespace}, &targetInst); err != nil {
+			log.Error(err, "Sequential target instance not found", "instance", targetAgentName)
 			continue
 		}
 
@@ -807,7 +807,7 @@ func (r *AgentRunReconciler) triggerSequentialSuccessors(ctx context.Context, lo
 			sourcePersona, predecessorResult)
 
 		// Find the target persona spec for its schedule task (if any).
-		for _, p := range ensemble.Spec.Personas {
+		for _, p := range ensemble.Spec.AgentConfigs {
 			if p.Name == targetPersona && p.Schedule != nil && p.Schedule.Task != "" {
 				task = fmt.Sprintf("The previous agent (%s) has completed. Their result:\n\n%s\n\nYour task: %s",
 					sourcePersona, predecessorResult, p.Schedule.Task)
@@ -816,19 +816,19 @@ func (r *AgentRunReconciler) triggerSequentialSuccessors(ctx context.Context, lo
 		}
 
 		// Create the successor AgentRun.
-		runName := fmt.Sprintf("%s-seq-%d", targetInstanceName, time.Now().UnixMilli()%100000)
+		runName := fmt.Sprintf("%s-seq-%d", targetAgentName, time.Now().UnixMilli()%100000)
 		successorRun := &sympoziumv1alpha1.AgentRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      runName,
 				Namespace: agentRun.Namespace,
 				Labels: map[string]string{
-					"sympozium.ai/instance":        targetInstanceName,
+					"sympozium.ai/instance":        targetAgentName,
 					"sympozium.ai/ensemble":        ensembleName,
 					"sympozium.ai/sequential-from": agentRun.Name,
 				},
 			},
 			Spec: sympoziumv1alpha1.AgentRunSpec{
-				InstanceRef: targetInstanceName,
+				AgentRef: targetAgentName,
 				Task:        task,
 				AgentID:     fmt.Sprintf("sequential-from-%s", sourcePersona),
 				Model: sympoziumv1alpha1.ModelSpec{
@@ -888,7 +888,7 @@ func (r *AgentRunReconciler) runHistoryLimit() int {
 // pruneOldRuns lists all completed runs for the same instance and deletes the
 // oldest ones when the total exceeds the configured RunHistoryLimit.
 func (r *AgentRunReconciler) pruneOldRuns(ctx context.Context, log logr.Logger, agentRun *sympoziumv1alpha1.AgentRun) error {
-	instanceRef := agentRun.Spec.InstanceRef
+	instanceRef := agentRun.Spec.AgentRef
 	if instanceRef == "" {
 		return nil
 	}
@@ -967,7 +967,7 @@ func (r *AgentRunReconciler) reconcileDelete(ctx context.Context, log logr.Logge
 			return ctrl.Result{}, err
 		}
 		webEndpointServing.Add(ctx, -1, metric.WithAttributes(
-			attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+			attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 		))
 	}
 	if agentRun.Status.ServiceName != "" {
@@ -1044,7 +1044,7 @@ func (r *AgentRunReconciler) reconcilePendingServer(ctx context.Context, log log
 		envVars = append(envVars, corev1.EnvVar{Name: e.Name, Value: e.Value})
 	}
 	envVars = append(envVars,
-		corev1.EnvVar{Name: "INSTANCE_NAME", Value: agentRun.Spec.InstanceRef},
+		corev1.EnvVar{Name: "INSTANCE_NAME", Value: agentRun.Spec.AgentRef},
 		corev1.EnvVar{
 			Name: "WEB_PROXY_API_KEY",
 			ValueFrom: &corev1.EnvVarSource{
@@ -1097,7 +1097,7 @@ func (r *AgentRunReconciler) reconcilePendingServer(ctx context.Context, log log
 
 	labels := map[string]string{
 		"sympozium.ai/agent-run":       agentRun.Name,
-		"sympozium.ai/instance":        agentRun.Spec.InstanceRef,
+		"sympozium.ai/instance":        agentRun.Spec.AgentRef,
 		"sympozium.ai/component":       "agent-server",
 		"app.kubernetes.io/part-of":    "sympozium",
 		"app.kubernetes.io/managed-by": "sympozium-controller",
@@ -1241,7 +1241,7 @@ func (r *AgentRunReconciler) reconcilePendingServer(ctx context.Context, log log
 	}
 
 	webEndpointServing.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+		attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 	))
 	log.Info("Server-mode AgentRun is now Serving", "deployment", deployName, "service", svcName)
 
@@ -1255,7 +1255,7 @@ func (r *AgentRunReconciler) ensureServerAPIKeySecret(ctx context.Context, agent
 		return ref, nil
 	}
 
-	secretName := agentRun.Spec.InstanceRef + "-web-proxy-key"
+	secretName := agentRun.Spec.AgentRef + "-web-proxy-key"
 	var secret corev1.Secret
 	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: agentRun.Namespace}, &secret)
 	if err == nil {
@@ -1278,7 +1278,7 @@ func (r *AgentRunReconciler) ensureServerAPIKeySecret(ctx context.Context, agent
 			Namespace: agentRun.Namespace,
 			Labels: map[string]string{
 				"sympozium.ai/component": "web-proxy",
-				"sympozium.ai/instance":  agentRun.Spec.InstanceRef,
+				"sympozium.ai/instance":  agentRun.Spec.AgentRef,
 			},
 		},
 		StringData: map[string]string{
@@ -1351,7 +1351,7 @@ func (r *AgentRunReconciler) maybeCreateHTTPRoute(ctx context.Context, log logr.
 	if config.Status.Gateway == nil || !config.Status.Gateway.Ready {
 		log.Info("Gateway not ready, skipping HTTPRoute creation")
 		webEndpointGatewayNotReady.Add(ctx, 1, metric.WithAttributes(
-			attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+			attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 		))
 		return
 	}
@@ -1362,7 +1362,7 @@ func (r *AgentRunReconciler) maybeCreateHTTPRoute(ctx context.Context, log logr.
 		hostname = params["hostname"]
 	}
 	if hostname == "" && config.Spec.Gateway.BaseDomain != "" {
-		hostname = agentRun.Spec.InstanceRef + "." + config.Spec.Gateway.BaseDomain
+		hostname = agentRun.Spec.AgentRef + "." + config.Spec.Gateway.BaseDomain
 	}
 	if hostname == "" {
 		log.V(1).Info("No hostname available for HTTPRoute")
@@ -1390,7 +1390,7 @@ func (r *AgentRunReconciler) maybeCreateHTTPRoute(ctx context.Context, log logr.
 			Namespace: agentRun.Namespace,
 			Labels: map[string]string{
 				"sympozium.ai/agent-run": agentRun.Name,
-				"sympozium.ai/instance":  agentRun.Spec.InstanceRef,
+				"sympozium.ai/instance":  agentRun.Spec.AgentRef,
 				"sympozium.ai/component": "agent-server",
 			},
 		},
@@ -1434,20 +1434,20 @@ func (r *AgentRunReconciler) maybeCreateHTTPRoute(ctx context.Context, log logr.
 	}
 
 	webEndpointRouteCreated.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+		attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 	))
 	log.Info("Created HTTPRoute for server-mode AgentRun", "route", routeName, "hostname", hostname)
 }
 
 // validatePolicy checks the AgentRun against the applicable SympoziumPolicy.
 func (r *AgentRunReconciler) validatePolicy(ctx context.Context, agentRun *sympoziumv1alpha1.AgentRun) error {
-	// Look up the SympoziumInstance to find the policy
-	instance := &sympoziumv1alpha1.SympoziumInstance{}
+	// Look up the Agent to find the policy
+	instance := &sympoziumv1alpha1.Agent{}
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: agentRun.Namespace,
-		Name:      agentRun.Spec.InstanceRef,
+		Name:      agentRun.Spec.AgentRef,
 	}, instance); err != nil {
-		return fmt.Errorf("instance %q not found: %w", agentRun.Spec.InstanceRef, err)
+		return fmt.Errorf("instance %q not found: %w", agentRun.Spec.AgentRef, err)
 	}
 
 	if instance.Spec.PolicyRef == "" {
@@ -1475,7 +1475,7 @@ func (r *AgentRunReconciler) validatePolicy(ctx context.Context, agentRun *sympo
 		activeRuns := &sympoziumv1alpha1.AgentRunList{}
 		if err := r.List(ctx, activeRuns,
 			client.InNamespace(agentRun.Namespace),
-			client.MatchingLabels{"sympozium.ai/instance": agentRun.Spec.InstanceRef},
+			client.MatchingLabels{"sympozium.ai/instance": agentRun.Spec.AgentRef},
 		); err == nil {
 			running := 0
 			for _, run := range activeRuns.Items {
@@ -1547,7 +1547,7 @@ func (r *AgentRunReconciler) buildJob(
 ) *batchv1.Job {
 	labels := map[string]string{
 		"sympozium.ai/agent-run":       agentRun.Name,
-		"sympozium.ai/instance":        agentRun.Spec.InstanceRef,
+		"sympozium.ai/instance":        agentRun.Spec.AgentRef,
 		"sympozium.ai/component":       "agent-run",
 		"app.kubernetes.io/part-of":    "sympozium",
 		"app.kubernetes.io/managed-by": "sympozium-controller",
@@ -1643,7 +1643,7 @@ func (r *AgentRunReconciler) buildContainers(
 
 	ipcEnv := []corev1.EnvVar{
 		{Name: "AGENT_RUN_ID", Value: agentRun.Name},
-		{Name: "INSTANCE_NAME", Value: agentRun.Spec.InstanceRef},
+		{Name: "INSTANCE_NAME", Value: agentRun.Spec.AgentRef},
 		{Name: "EVENT_BUS_URL", Value: "nats://nats.sympozium-system.svc:4222"},
 	}
 
@@ -1680,7 +1680,7 @@ func (r *AgentRunReconciler) buildContainers(
 				{Name: "AGENT_RUN_ID", Value: agentRun.Name},
 				{Name: "AGENT_ID", Value: agentRun.Spec.AgentID},
 				{Name: "SESSION_KEY", Value: agentRun.Spec.SessionKey},
-				{Name: "INSTANCE_NAME", Value: agentRun.Spec.InstanceRef},
+				{Name: "INSTANCE_NAME", Value: agentRun.Spec.AgentRef},
 				{Name: "ENSEMBLE_NAME", Value: agentRun.Labels["sympozium.ai/ensemble"]},
 				{Name: "AGENT_NAMESPACE", Value: agentRun.Namespace},
 				{Name: "TASK", Value: agentRun.Spec.Task},
@@ -1722,7 +1722,7 @@ func (r *AgentRunReconciler) buildContainers(
 			Env: func() []corev1.EnvVar {
 				env := []corev1.EnvVar{
 					{Name: "AGENT_RUN_ID", Value: agentRun.Name},
-					{Name: "INSTANCE_NAME", Value: agentRun.Spec.InstanceRef},
+					{Name: "INSTANCE_NAME", Value: agentRun.Spec.AgentRef},
 					{Name: "AGENT_NAMESPACE", Value: agentRun.Namespace},
 					{Name: "EVENT_BUS_URL", Value: "nats://nats.sympozium-system.svc:4222"},
 				}
@@ -1772,7 +1772,7 @@ func (r *AgentRunReconciler) buildContainers(
 
 	// Inject MEMORY_SERVER_URL for the standalone memory server.
 	if agentRunHasMemorySkill(agentRun) {
-		memoryURL := fmt.Sprintf("http://%s-memory.%s.svc:8080", agentRun.Spec.InstanceRef, agentRun.Namespace)
+		memoryURL := fmt.Sprintf("http://%s-memory.%s.svc:8080", agentRun.Spec.AgentRef, agentRun.Namespace)
 		containers[0].Env = append(containers[0].Env,
 			corev1.EnvVar{Name: "MEMORY_SERVER_URL", Value: memoryURL},
 		)
@@ -2118,7 +2118,7 @@ func (r *AgentRunReconciler) buildContainers(
 				},
 				Env: []corev1.EnvVar{
 					{Name: "AGENT_RUN_ID", Value: agentRun.Name},
-					{Name: "INSTANCE_NAME", Value: agentRun.Spec.InstanceRef},
+					{Name: "INSTANCE_NAME", Value: agentRun.Spec.AgentRef},
 					{Name: "AGENT_NAMESPACE", Value: agentRun.Namespace},
 				},
 				Resources: corev1.ResourceRequirements{
@@ -2177,7 +2177,7 @@ func buildObservabilityEnv(agentRun *sympoziumv1alpha1.AgentRun, obs *sympoziumv
 	}
 
 	attrs := map[string]string{
-		"sympozium.instance.name": agentRun.Spec.InstanceRef,
+		"sympozium.instance.name": agentRun.Spec.AgentRef,
 		"sympozium.agent_run.id":  agentRun.Name,
 		"k8s.namespace.name":      agentRun.Namespace,
 	}
@@ -2224,12 +2224,12 @@ func (r *AgentRunReconciler) injectSharedMemory(ctx context.Context, agentRun *s
 
 	// Resolve access mode for this persona from the instance's label.
 	accessMode := "read-write"
-	if agentRun.Spec.InstanceRef != "" {
-		var inst sympoziumv1alpha1.SympoziumInstance
-		if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.InstanceRef, Namespace: agentRun.Namespace}, &inst); err == nil {
-			personaName := inst.Labels["sympozium.ai/persona"]
+	if agentRun.Spec.AgentRef != "" {
+		var inst sympoziumv1alpha1.Agent
+		if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.AgentRef, Namespace: agentRun.Namespace}, &inst); err == nil {
+			personaName := inst.Labels["sympozium.ai/agent-config"]
 			for _, rule := range pack.Spec.SharedMemory.AccessRules {
-				if rule.Persona == personaName {
+				if rule.AgentConfig == personaName {
 					accessMode = rule.Access
 					break
 				}
@@ -2373,7 +2373,7 @@ func (r *AgentRunReconciler) buildVolumes(agentRun *sympoziumv1alpha1.AgentRun, 
 
 	// Add memory ConfigMap volume if legacy memory is enabled.
 	if memoryEnabled {
-		cmName := fmt.Sprintf("%s-memory", agentRun.Spec.InstanceRef)
+		cmName := fmt.Sprintf("%s-memory", agentRun.Spec.AgentRef)
 		volumes = append(volumes, corev1.Volume{
 			Name: "memory",
 			VolumeSource: corev1.VolumeSource{
@@ -2545,7 +2545,7 @@ func (r *AgentRunReconciler) succeedRun(ctx context.Context, agentRun *sympozium
 	// Record run metrics.
 	runAttrs := metric.WithAttributes(
 		attribute.String("sympozium.agent.status", "succeeded"),
-		attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+		attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 	)
 	agentRunsTotal.Add(ctx, 1, runAttrs)
 	if usage != nil && usage.DurationMs > 0 {
@@ -2555,7 +2555,7 @@ func (r *AgentRunReconciler) succeedRun(ctx context.Context, agentRun *sympozium
 	// Logging
 	logAttrs := []any{
 		"agent_run", agentRun.Name,
-		"instance", agentRun.Spec.InstanceRef,
+		"instance", agentRun.Spec.AgentRef,
 		"status", "succeeded",
 	}
 	if usage != nil {
@@ -2751,7 +2751,7 @@ func (r *AgentRunReconciler) extractAndPersistMemory(ctx context.Context, log lo
 	}
 
 	// Patch the memory ConfigMap.
-	cmName := fmt.Sprintf("%s-memory", agentRun.Spec.InstanceRef)
+	cmName := fmt.Sprintf("%s-memory", agentRun.Spec.AgentRef)
 	var cm corev1.ConfigMap
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: agentRun.Namespace,
@@ -2785,18 +2785,18 @@ func (r *AgentRunReconciler) failRun(ctx context.Context, agentRun *sympoziumv1a
 	// Record failure metrics
 	failAttrs := metric.WithAttributes(
 		attribute.String("sympozium.agent.status", "failed"),
-		attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+		attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 	)
 	agentRunsTotal.Add(ctx, 1, failAttrs)
 	controllerErrors.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("error.type", "agent_run_failed"),
-		attribute.String("sympozium.instance", agentRun.Spec.InstanceRef),
+		attribute.String("sympozium.instance", agentRun.Spec.AgentRef),
 	))
 
 	// Logging
 	slog.ErrorContext(ctx, "agent.run.failed",
 		"agent_run", agentRun.Name,
-		"instance", agentRun.Spec.InstanceRef,
+		"instance", agentRun.Spec.AgentRef,
 		"error", reason,
 	)
 
@@ -2804,7 +2804,7 @@ func (r *AgentRunReconciler) failRun(ctx context.Context, agentRun *sympoziumv1a
 	if r.EventBus != nil {
 		metadata := map[string]string{
 			"agentRunID":   agentRun.Name,
-			"instanceName": agentRun.Spec.InstanceRef,
+			"instanceName": agentRun.Spec.AgentRef,
 		}
 		data := map[string]string{"error": reason}
 		event, err := eventbus.NewEvent(eventbus.TopicAgentRunFailed, metadata, data)
@@ -3189,7 +3189,7 @@ func (r *AgentRunReconciler) ensureMCPConfigMap(ctx context.Context, agentRun *s
 			Namespace: agentRun.Namespace,
 			Labels: map[string]string{
 				"sympozium.ai/agent-run": agentRun.Name,
-				"sympozium.ai/instance":  agentRun.Spec.InstanceRef,
+				"sympozium.ai/instance":  agentRun.Spec.AgentRef,
 				"sympozium.ai/component": "mcp-config",
 			},
 		},
@@ -3402,7 +3402,7 @@ func (r *AgentRunReconciler) buildPostRunJob(
 ) *batchv1.Job {
 	labels := map[string]string{
 		"sympozium.ai/agent-run":       agentRun.Name,
-		"sympozium.ai/instance":        agentRun.Spec.InstanceRef,
+		"sympozium.ai/instance":        agentRun.Spec.AgentRef,
 		"sympozium.ai/component":       "post-run",
 		"app.kubernetes.io/part-of":    "sympozium",
 		"app.kubernetes.io/managed-by": "sympozium-controller",
@@ -3433,7 +3433,7 @@ func (r *AgentRunReconciler) buildPostRunJob(
 	// Build base env vars available to all postRun containers.
 	baseEnv := []corev1.EnvVar{
 		{Name: "AGENT_RUN_ID", Value: agentRun.Name},
-		{Name: "INSTANCE_NAME", Value: agentRun.Spec.InstanceRef},
+		{Name: "INSTANCE_NAME", Value: agentRun.Spec.AgentRef},
 		{Name: "AGENT_NAMESPACE", Value: agentRun.Namespace},
 		{Name: "AGENT_EXIT_CODE", Value: fmt.Sprintf("%d", exitCode)},
 		{Name: "AGENT_RESULT", Value: truncatedResult},
@@ -3811,7 +3811,7 @@ func (r *AgentRunReconciler) publishGatedCompletion(ctx context.Context, agentRu
 	}
 	metadata := map[string]string{
 		"agentRunID":   agentRun.Name,
-		"instanceName": agentRun.Spec.InstanceRef,
+		"instanceName": agentRun.Spec.AgentRef,
 	}
 	data := map[string]string{
 		"status":   "success",

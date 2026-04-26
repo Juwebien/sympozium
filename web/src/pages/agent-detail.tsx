@@ -3,7 +3,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   useInstance,
   useCapabilities,
-  usePatchInstance,
+  usePatchAgent,
   useRuns,
 } from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
@@ -11,7 +11,7 @@ import { GithubAuthDialog } from "@/components/github-auth-dialog";
 import {
   api,
   type SkillRef,
-  type SympoziumInstance,
+  type Agent,
   type AgentSandboxInstanceSpec,
   type CapabilityStatus,
   type LifecycleHooks,
@@ -62,12 +62,12 @@ export function InstanceDetailPage() {
     paramTab && allowedTabs.has(paramTab) ? paramTab : "overview",
   );
   const connectGithub = searchParams.get("connect") === "github";
-  const { data: inst, isLoading } = useInstance(name || "");
+  const { data: inst, isLoading } = useAgent(name || "");
   const { data: capabilities } = useCapabilities();
   const { data: allRuns } = useRuns();
   const { isUnseen } = useRunsSeen();
   const instanceRuns = (allRuns || [])
-    .filter((r) => r.spec.instanceRef === name)
+    .filter((r) => r.spec.agentRef === name)
     .sort(
       (a, b) =>
         new Date(b.metadata.creationTimestamp || "").getTime() -
@@ -108,7 +108,7 @@ export function InstanceDetailPage() {
         <Breadcrumbs
           items={[
             { label: "Ensembles", to: "/ensembles" },
-            { label: "Instances", to: "/instances" },
+            { label: "Agents", to: "/instances" },
             { label: inst.metadata.name },
           ]}
         />
@@ -239,7 +239,7 @@ export function InstanceDetailPage() {
                       </div>
                     </Link>
                   ))}
-                  {(allRuns || []).filter((r) => r.spec.instanceRef === name)
+                  {(allRuns || []).filter((r) => r.spec.agentRef === name)
                     .length > 20 && (
                     <Link
                       to={`/runs?search=${name}`}
@@ -360,7 +360,7 @@ export function InstanceDetailPage() {
 
         <TabsContent value="lifecycle">
           <LifecycleTab
-            instanceName={inst.metadata.name}
+            agentName={inst.metadata.name}
             lifecycle={inst.spec.agents?.default?.lifecycle}
           />
         </TabsContent>
@@ -372,12 +372,12 @@ export function InstanceDetailPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-3">
-                View the equivalent SympoziumInstance manifest for this
+                View the equivalent Agent manifest for this
                 resource.
               </p>
               <YamlButton
                 yaml={instanceYamlFromResource(inst)}
-                title={`SympoziumInstance — ${inst.metadata.name}`}
+                title={`Agent — ${inst.metadata.name}`}
               />
             </CardContent>
           </Card>
@@ -450,8 +450,8 @@ function AgentSandboxCard({
   );
 }
 
-function ResponseGateCard({ inst }: { inst: SympoziumInstance }) {
-  const patchInstance = usePatchInstance();
+function ResponseGateCard({ inst }: { inst: Agent }) {
+  const patchInstance = usePatchAgent();
   const enabled =
     inst.spec.agents?.default?.lifecycle?.postRun?.some((h) => h.gate) ?? false;
 
@@ -498,7 +498,7 @@ function ResponseGateCard({ inst }: { inst: SympoziumInstance }) {
   );
 }
 
-function WebEndpointTab({ inst }: { inst: SympoziumInstance }) {
+function WebEndpointTab({ inst }: { inst: Agent }) {
   const webSkill = inst.spec.skills?.find(
     (s) =>
       s.skillPackRef === "web-endpoint" ||
@@ -681,7 +681,7 @@ function SkillsTab({
 
 const lifecycleEnvVars = [
   { name: "AGENT_RUN_ID", desc: "Unique run identifier", scope: "all" },
-  { name: "INSTANCE_NAME", desc: "SympoziumInstance name", scope: "all" },
+  { name: "INSTANCE_NAME", desc: "Agent name", scope: "all" },
   { name: "AGENT_NAMESPACE", desc: "Kubernetes namespace", scope: "all" },
   {
     name: "AGENT_EXIT_CODE",
@@ -703,13 +703,13 @@ const emptyHook: LifecycleHookContainer = {
 };
 
 function LifecycleTab({
-  instanceName,
+  agentName,
   lifecycle,
 }: {
-  instanceName: string;
+  agentName: string;
   lifecycle?: LifecycleHooks;
 }) {
-  const patchMutation = usePatchInstance();
+  const patchMutation = usePatchAgent();
   const [editingHook, setEditingHook] = useState<{
     hook: LifecycleHookContainer;
     phase: "preRun" | "postRun";
@@ -722,7 +722,7 @@ function LifecycleTab({
   const rbac = lifecycle?.rbac ?? [];
 
   const saveLifecycle = (updated: LifecycleHooks) => {
-    patchMutation.mutate({ name: instanceName, data: { lifecycle: updated } });
+    patchMutation.mutate({ name: agentName, data: { lifecycle: updated } });
   };
 
   const openAddHook = (phase: "preRun" | "postRun") => {

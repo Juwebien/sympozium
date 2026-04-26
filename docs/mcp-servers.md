@@ -168,11 +168,11 @@ This reduces the exposed tools from 42 to 12, saving ~9K tokens per agent run.
 
 ### Filtering on MCPServerRef (Per-Instance)
 
-You can also set `toolsAllow`/`toolsDeny` on individual `mcpServers` entries in a `SympoziumInstance`. This lets different agents use different subsets of the same MCP server:
+You can also set `toolsAllow`/`toolsDeny` on individual `mcpServers` entries in a `Agent`. This lets different agents use different subsets of the same MCP server:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: network-triage-agent
 spec:
@@ -192,7 +192,7 @@ spec:
 
 ### Inheritance Behavior
 
-If an `MCPServerRef` in your `SympoziumInstance` does **not** set `toolsAllow` or `toolsDeny`, the values from the `MCPServer` CRD spec are inherited automatically. If the ref sets its own values, they take precedence (no merging — the ref's list fully replaces the CRD default).
+If an `MCPServerRef` in your `Agent` does **not** set `toolsAllow` or `toolsDeny`, the values from the `MCPServer` CRD spec are inherited automatically. If the ref sets its own values, they take precedence (no merging — the ref's list fully replaces the CRD default).
 
 | MCPServer CRD | MCPServerRef | Result |
 |---------------|-------------|--------|
@@ -205,11 +205,11 @@ The same logic applies to `toolsDeny`.
 
 ## Connecting Agents to MCP Servers
 
-In your `SympoziumInstance`, reference MCP servers by name:
+In your `Agent`, reference MCP servers by name:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: my-agent
 spec:
@@ -536,7 +536,7 @@ EOF
 kubectl get mcpservers -n sympozium-system
 
 # 4. Reference in your instance
-kubectl patch sympoziuminstance my-agent --type merge -p '
+kubectl patch agent my-agent --type merge -p '
 spec:
   mcpServers:
     - name: dynatrace-mcp

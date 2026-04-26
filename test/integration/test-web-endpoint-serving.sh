@@ -2,7 +2,7 @@
 # Integration test: web-endpoint AgentRun serving mode (end-to-end).
 #
 # What it does:
-#   1. Creates a SympoziumInstance with web-endpoint skill and ollama provider
+#   1. Creates a Agent with web-endpoint skill and ollama provider
 #   2. Waits for the web-endpoint AgentRun to reach "Serving" phase
 #   3. Retrieves the auto-generated API key from the Secret
 #   4. Port-forwards to the web-proxy Service and hits /healthz
@@ -104,10 +104,10 @@ setup_secret() {
 }
 
 create_instance() {
-  info "Creating SympoziumInstance: $INSTANCE_NAME (provider=ollama, model=$MODEL)"
+  info "Creating Agent: $INSTANCE_NAME (provider=ollama, model=$MODEL)"
   cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -122,7 +122,7 @@ spec:
   skills:
     - skillPackRef: web-endpoint
 EOF
-  pass "SympoziumInstance created"
+  pass "Agent created"
 }
 
 wait_for_serving() {
@@ -363,7 +363,7 @@ main() {
   info "  Model:      $MODEL"
 
   # Pre-flight checks
-  if ! kubectl get crd sympoziuminstances.sympozium.ai >/dev/null 2>&1; then
+  if ! kubectl get crd agents.sympozium.ai >/dev/null 2>&1; then
     fail "Sympozium CRDs not installed. Is the cluster set up?"
     exit 1
   fi

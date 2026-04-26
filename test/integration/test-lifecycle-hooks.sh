@@ -54,11 +54,11 @@ trap cleanup EXIT
 info "Creating test resources in namespace '$NAMESPACE'"
 info "Using LM Studio model '${LM_STUDIO_MODEL}' at ${LM_STUDIO_BASE_URL}"
 
-# ── Create SympoziumInstance (LM Studio — no API key needed) ─────────────────
+# ── Create Agent (LM Studio — no API key needed) ─────────────────
 
 cat <<EOF | kubectl apply -n "$NAMESPACE" -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
 spec:
@@ -82,7 +82,7 @@ kind: AgentRun
 metadata:
   name: ${RUN_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: primary
   sessionKey: lifecycle-test
   task: "Respond with exactly: hello lifecycle"

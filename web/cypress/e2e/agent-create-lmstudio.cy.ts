@@ -4,7 +4,7 @@ const INSTANCE = `cypress-lmstudio-${Date.now()}`;
 
 describe("Create Instance — LM Studio", () => {
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("walks through the wizard and creates the instance", () => {

@@ -63,7 +63,7 @@ func (r *AgentRunReconciler) reconcilePendingAgentSandbox(
 	ctx, span := controllerTracer.Start(ctx, "agentrun.create_sandbox",
 		trace.WithAttributes(
 			attribute.String("agentrun.name", agentRun.Name),
-			attribute.String("instance.name", agentRun.Spec.InstanceRef),
+			attribute.String("instance.name", agentRun.Spec.AgentRef),
 			attribute.String("runtime.class", agentRun.Spec.AgentSandbox.RuntimeClass),
 		),
 	)
@@ -75,14 +75,14 @@ func (r *AgentRunReconciler) reconcilePendingAgentSandbox(
 
 	log.Info("Creating Agent Sandbox CR for AgentRun")
 
-	// Look up the SympoziumInstance for memory/observability config.
-	instance := &sympoziumv1alpha1.SympoziumInstance{}
+	// Look up the Agent for memory/observability config.
+	instance := &sympoziumv1alpha1.Agent{}
 	memoryEnabled := false
 	var observability *sympoziumv1alpha1.ObservabilitySpec
 	var mcpServers []sympoziumv1alpha1.MCPServerRef
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: agentRun.Namespace,
-		Name:      agentRun.Spec.InstanceRef,
+		Name:      agentRun.Spec.AgentRef,
 	}, instance); err == nil {
 		if instance.Spec.Memory != nil && instance.Spec.Memory.Enabled {
 			memoryEnabled = true
@@ -140,7 +140,7 @@ func (r *AgentRunReconciler) reconcilePendingAgentSandbox(
 
 	// Wait for memory server if memory skill is attached.
 	if agentRunHasMemorySkill(agentRun) {
-		memoryDeployName := fmt.Sprintf("%s-memory", agentRun.Spec.InstanceRef)
+		memoryDeployName := fmt.Sprintf("%s-memory", agentRun.Spec.AgentRef)
 		var memoryDeploy appsv1.Deployment
 		if err := r.Get(ctx, client.ObjectKey{
 			Namespace: agentRun.Namespace,
@@ -373,7 +373,7 @@ func (r *AgentRunReconciler) buildSandboxCR(
 ) *unstructured.Unstructured {
 	labels := map[string]interface{}{
 		"sympozium.ai/agent-run":       agentRun.Name,
-		"sympozium.ai/instance":        agentRun.Spec.InstanceRef,
+		"sympozium.ai/instance":        agentRun.Spec.AgentRef,
 		"sympozium.ai/component":       "agent-run",
 		"sympozium.ai/agent-sandbox":   "true",
 		"app.kubernetes.io/part-of":    "sympozium",
@@ -470,7 +470,7 @@ func (r *AgentRunReconciler) buildSandboxClaimCR(
 ) *unstructured.Unstructured {
 	labels := map[string]interface{}{
 		"sympozium.ai/agent-run":       agentRun.Name,
-		"sympozium.ai/instance":        agentRun.Spec.InstanceRef,
+		"sympozium.ai/instance":        agentRun.Spec.AgentRef,
 		"sympozium.ai/component":       "agent-run",
 		"sympozium.ai/agent-sandbox":   "true",
 		"app.kubernetes.io/part-of":    "sympozium",
@@ -509,12 +509,12 @@ func (r *AgentRunReconciler) buildSandboxClaimCR(
 	return obj
 }
 
-// EnsureWarmPool creates or updates a SandboxWarmPool CR for a SympoziumInstance
+// EnsureWarmPool creates or updates a SandboxWarmPool CR for a Agent
 // that has agent-sandbox warm pool configuration.
 func (r *AgentRunReconciler) EnsureWarmPool(
 	ctx context.Context,
 	log logr.Logger,
-	instance *sympoziumv1alpha1.SympoziumInstance,
+	instance *sympoziumv1alpha1.Agent,
 	dynamicClient dynamic.Interface,
 ) error {
 	agentSandbox := instance.Spec.Agents.Default.AgentSandbox
@@ -571,7 +571,7 @@ func (r *AgentRunReconciler) EnsureWarmPool(
 	ownerRefs := []interface{}{
 		map[string]interface{}{
 			"apiVersion":         "sympozium.ai/v1alpha1",
-			"kind":               "SympoziumInstance",
+			"kind":               "Agent",
 			"name":               instance.Name,
 			"uid":                string(instance.UID),
 			"controller":         true,

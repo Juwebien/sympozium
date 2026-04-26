@@ -2,7 +2,7 @@
 # Integration test: verify the llmfit skill works end-to-end.
 #
 # What it does:
-#   1. Creates a test SympoziumInstance + AgentRun with the llmfit skill
+#   1. Creates a test Agent + AgentRun with the llmfit skill
 #   2. The AgentRun task tells the LLM to run llmfit-cluster-fit.sh for a model
 #   3. Waits for AgentRun completion
 #   4. Validates the result includes ranked_nodes JSON evidence
@@ -88,10 +88,10 @@ info "Cluster nodes detected: $NODE_COUNT"
 cleanup 2>/dev/null || true
 sleep 2
 
-info "Creating SympoziumInstance: $INSTANCE_NAME (with llmfit skill)"
+info "Creating Agent: $INSTANCE_NAME (with llmfit skill)"
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -115,7 +115,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-llmfit-$(date +%s)"
   task: |

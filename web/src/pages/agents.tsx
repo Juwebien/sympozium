@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  useInstances,
-  useDeleteInstance,
-  useCreateInstance,
+  useAgents,
+  useDeleteAgent,
+  useCreateAgent,
   useSkills,
 } from "@/hooks/use-api";
 import { StatusBadge } from "@/components/status-badge";
@@ -28,10 +28,10 @@ import { Plus, Trash2, ExternalLink, ShieldAlert } from "lucide-react";
 import { formatAge } from "@/lib/utils";
 
 export function InstancesPage() {
-  const { data, isLoading } = useInstances();
+  const { data, isLoading } = useAgents();
   const { data: skillPacks } = useSkills();
-  const deleteInstance = useDeleteInstance();
-  const createInstance = useCreateInstance();
+  const deleteAgent = useDeleteAgent();
+  const createAgent = useCreateAgent();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [whatsAppInstance, setWhatsAppInstance] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function InstancesPage() {
     .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
 
   function handleComplete(result: WizardResult) {
-    createInstance.mutate(
+    createAgent.mutate(
       {
         name: result.name,
         provider: result.provider,
@@ -104,7 +104,7 @@ export function InstancesPage() {
         <div>
           <h1 className="text-2xl font-bold">Instances</h1>
           <p className="text-sm text-muted-foreground">
-            Manage SympoziumInstances — each represents an agent identity
+            Manage Agents — each represents an agent identity
           </p>
         </div>
         <Button
@@ -175,7 +175,7 @@ export function InstancesPage() {
                 <TableCell className="font-mono text-sm">
                   <div className="flex items-center gap-2">
                     <Link
-                      to={`/instances/${inst.metadata.name}`}
+                      to={`/agents/${inst.metadata.name}`}
                       className="hover:text-primary flex items-center gap-1"
                     >
                       {inst.metadata.name}
@@ -241,8 +241,8 @@ export function InstancesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteInstance.mutate(inst.metadata.name)}
-                    disabled={deleteInstance.isPending}
+                    onClick={() => deleteAgent.mutate(inst.metadata.name)}
+                    disabled={deleteAgent.isPending}
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -266,13 +266,13 @@ export function InstancesPage() {
           skills: ["k8s-ops", "llmfit", "memory"],
         }}
         onComplete={handleComplete}
-        isPending={createInstance.isPending}
+        isPending={createAgent.isPending}
       />
 
       <WhatsAppQRModal
         open={!!whatsAppInstance}
         onClose={() => setWhatsAppInstance(null)}
-        instanceName={whatsAppInstance || undefined}
+        agentName={whatsAppInstance || undefined}
       />
     </div>
   );

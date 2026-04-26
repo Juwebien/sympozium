@@ -3,8 +3,8 @@
 #
 # Proves that `.status.result` is populated (non-empty) across three flows:
 #   A) Ensemble activation → stamped instance → dispatched AgentRun
-#   B) Ad-hoc SympoziumInstance + AgentRun with tool-calling (k8s-ops skill)
-#   C) Ad-hoc SympoziumInstance with multiple (3) sequential AgentRuns
+#   B) Ad-hoc Agent + AgentRun with tool-calling (k8s-ops skill)
+#   C) Ad-hoc Agent with multiple (3) sequential AgentRuns
 #
 # This guards against the regression where the tool-call circuit breaker
 # returned an error with empty response even after LM Studio executed.
@@ -161,7 +161,7 @@ assert_nonempty_result() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SCENARIO B: Ad-hoc SympoziumInstance + AgentRun with execute_command tool
+# SCENARIO B: Ad-hoc Agent + AgentRun with execute_command tool
 # ═══════════════════════════════════════════════════════════════════════════════
 
 info ""
@@ -174,7 +174,7 @@ RESOURCES_AGENTRUN+=("$B_RUN")
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${B_INSTANCE}
   namespace: ${NAMESPACE}
@@ -199,7 +199,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${B_INSTANCE}
 spec:
-  instanceRef: ${B_INSTANCE}
+  agentRef: ${B_INSTANCE}
   agentId: default
   sessionKey: "regr-B-${SUFFIX}"
   task: |
@@ -233,7 +233,7 @@ RESOURCES_INSTANCE+=("$C_INSTANCE")
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${C_INSTANCE}
   namespace: ${NAMESPACE}
@@ -267,7 +267,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${C_INSTANCE}
 spec:
-  instanceRef: ${C_INSTANCE}
+  agentRef: ${C_INSTANCE}
   agentId: default
   sessionKey: "regr-C-${i}-${SUFFIX}"
   task: "${PROMPT}"
@@ -333,7 +333,7 @@ spec:
   authRefs:
     - provider: lm-studio
       secret: ${SHARED_SECRET}
-  personas:
+  agentConfigs:
     - name: ${A_PERSONA}
       displayName: "Regression Analyst"
       systemPrompt: "You are a terse analyst. Respond with single sentences."
@@ -366,7 +366,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${A_INSTANCE}
 spec:
-  instanceRef: ${A_INSTANCE}
+  agentRef: ${A_INSTANCE}
   agentId: default
   sessionKey: "regr-A-${SUFFIX}"
   task: "Say exactly: PERSONA_PACK_OK_A. Do not call any tools."

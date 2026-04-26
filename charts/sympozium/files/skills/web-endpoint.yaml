@@ -98,7 +98,7 @@ spec:
         resources: ["agentruns"]
         verbs: ["get", "list", "watch", "create"]
       - apiGroups: ["sympozium.ai"]
-        resources: ["sympoziuminstances"]
+        resources: ["agents"]
         verbs: ["get", "list", "watch"]
       - apiGroups: [""]
         resources: ["configmaps", "secrets"]

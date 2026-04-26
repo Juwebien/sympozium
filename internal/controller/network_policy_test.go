@@ -10,14 +10,14 @@ import (
 	sympoziumv1alpha1 "github.com/sympozium-ai/sympozium/api/v1alpha1"
 )
 
-// newTestInstance builds a minimal SympoziumInstance for testing.
-func newTestInstance() *sympoziumv1alpha1.SympoziumInstance {
-	return &sympoziumv1alpha1.SympoziumInstance{
+// newTestInstance builds a minimal Agent for testing.
+func newTestInstance() *sympoziumv1alpha1.Agent {
+	return &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-instance",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Channels: []sympoziumv1alpha1.ChannelSpec{
 				{
 					Type:      "telegram",
@@ -33,7 +33,7 @@ func newTestInstance() *sympoziumv1alpha1.SympoziumInstance {
 // NetworkPolicy selectors so that egress (DNS, NATS, HTTPS) is allowed.
 
 func TestBuildChannelDeployment_HasComponentLabel(t *testing.T) {
-	r := &SympoziumInstanceReconciler{}
+	r := &AgentReconciler{}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 	deploy := r.buildChannelDeployment(instance, ch, "test-instance-channel-telegram")
@@ -46,7 +46,7 @@ func TestBuildChannelDeployment_HasComponentLabel(t *testing.T) {
 }
 
 func TestBuildChannelDeployment_LabelsMatchSelector(t *testing.T) {
-	r := &SympoziumInstanceReconciler{}
+	r := &AgentReconciler{}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 	deploy := r.buildChannelDeployment(instance, ch, "test-instance-channel-telegram")
@@ -62,7 +62,7 @@ func TestBuildChannelDeployment_LabelsMatchSelector(t *testing.T) {
 }
 
 func TestBuildChannelDeployment_ChannelTypeLabel(t *testing.T) {
-	r := &SympoziumInstanceReconciler{}
+	r := &AgentReconciler{}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 	deploy := r.buildChannelDeployment(instance, ch, "test-instance-channel-telegram")
@@ -74,7 +74,7 @@ func TestBuildChannelDeployment_ChannelTypeLabel(t *testing.T) {
 }
 
 func TestBuildChannelDeployment_InstanceLabel(t *testing.T) {
-	r := &SympoziumInstanceReconciler{}
+	r := &AgentReconciler{}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 	deploy := r.buildChannelDeployment(instance, ch, "test-instance-channel-telegram")
@@ -92,7 +92,7 @@ func TestBuildChannelDeployment_AllChannelTypes(t *testing.T) {
 
 	for _, chType := range channelTypes {
 		t.Run(chType, func(t *testing.T) {
-			r := &SympoziumInstanceReconciler{}
+			r := &AgentReconciler{}
 			instance := newTestInstance()
 			ch := sympoziumv1alpha1.ChannelSpec{
 				Type:      chType,
@@ -113,7 +113,7 @@ func TestBuildChannelDeployment_AllChannelTypes(t *testing.T) {
 
 func TestBuildChannelDeployment_EventBusEnvVar(t *testing.T) {
 	// Channel pods must be able to reach the NATS event bus to deliver messages.
-	r := &SympoziumInstanceReconciler{}
+	r := &AgentReconciler{}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 	deploy := r.buildChannelDeployment(instance, ch, "test-instance-channel-telegram")
@@ -135,7 +135,7 @@ func TestBuildChannelDeployment_EventBusEnvVar(t *testing.T) {
 }
 
 func TestBuildChannelDeployment_ImageRegistry(t *testing.T) {
-	r := &SympoziumInstanceReconciler{ImageTag: "v0.1.5"}
+	r := &AgentReconciler{ImageTag: "v0.1.5"}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 
@@ -181,7 +181,7 @@ func TestBuildJob_AgentRunInstanceLabel(t *testing.T) {
 
 func TestComponentLabels_ChannelAndAgentRunAreDifferent(t *testing.T) {
 	// Build a channel deployment
-	ir := &SympoziumInstanceReconciler{}
+	ir := &AgentReconciler{}
 	instance := newTestInstance()
 	ch := instance.Spec.Channels[0]
 	deploy := ir.buildChannelDeployment(instance, ch, "test-instance-channel-telegram")

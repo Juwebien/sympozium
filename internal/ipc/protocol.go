@@ -52,7 +52,7 @@ type SpawnRequest struct {
 	Skills       []string `json:"skills,omitempty"`
 
 	// TargetPersona enables persona-aware delegation. When set, the spawner
-	// resolves this to the correct SympoziumInstance via the Ensemble.
+	// resolves this to the correct Agent via the Ensemble.
 	TargetPersona string `json:"targetPersona,omitempty"`
 
 	// PackName is the Ensemble containing both the source and target personas.

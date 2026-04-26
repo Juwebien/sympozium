@@ -40,7 +40,7 @@ func main() {
 	var rpm int
 	var burst int
 
-	flag.StringVar(&instanceName, "instance", envStr("INSTANCE_NAME", envStr("SKILL_INSTANCE_NAME", "")), "SympoziumInstance name")
+	flag.StringVar(&instanceName, "instance", envStr("INSTANCE_NAME", envStr("SKILL_INSTANCE_NAME", "")), "Agent name")
 	flag.StringVar(&eventBusURL, "event-bus-url", os.Getenv("EVENT_BUS_URL"), "Event bus (NATS) URL")
 	flag.StringVar(&apiKey, "api-key", os.Getenv("WEB_PROXY_API_KEY"), "API key for authentication")
 	flag.StringVar(&addr, "addr", ":8080", "HTTP listen address")

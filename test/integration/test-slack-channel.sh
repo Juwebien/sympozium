@@ -4,7 +4,7 @@
 # This test has two modes:
 #
 # Mode 1 (no SLACK_BOT_TOKEN): Deployment pipeline only
-#   - Creates a SympoziumInstance with a slack channel
+#   - Creates a Agent with a slack channel
 #   - Verifies the controller creates a channel-slack Deployment
 #   - Checks the Deployment has the correct image, labels, and config
 #   - Verifies the pod is created (may restart without real tokens)
@@ -59,7 +59,7 @@ cleanup() {
     kubectl delete sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete jobs -n "$NAMESPACE" -l "sympozium.ai/agentrun=$RUN_NAME" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete pods -n "$NAMESPACE" -l "sympozium.ai/agentrun=$RUN_NAME" --ignore-not-found >/dev/null 2>&1 || true
-    # Wait for the controller to clean up channel deployments (owned by SympoziumInstance)
+    # Wait for the controller to clean up channel deployments (owned by Agent)
     sleep 3
     kubectl delete deployment "$INSTANCE_NAME-channel-slack" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete secret "$SLACK_SECRET_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
@@ -112,7 +112,7 @@ sleep 2
 # ============================================================
 # Part 1: Channel Deployment Pipeline
 # ============================================================
-info "Creating SympoziumInstance with slack channel: $INSTANCE_NAME"
+info "Creating Agent with slack channel: $INSTANCE_NAME"
 
 # Build the channel config — use real or dummy tokens
 if $FULL_MODE; then
@@ -127,7 +127,7 @@ fi
 
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -202,13 +202,13 @@ if $deploy_found; then
     fi
 fi
 
-# Verify SympoziumInstance status shows the channel
+# Verify Agent status shows the channel
 channel_status=$(kubectl get sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" \
     -o jsonpath='{.status.channels[0].type}' 2>/dev/null || echo "")
 if [[ "$channel_status" == "slack" ]]; then
-    pass "SympoziumInstance status shows slack channel"
+    pass "Agent status shows slack channel"
 else
-    info "SympoziumInstance channel status: $channel_status (may need reconcile)"
+    info "Agent channel status: $channel_status (may need reconcile)"
 fi
 
 # Wait for pod to start (or at least be created)
@@ -275,7 +275,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-slack-$(date +%s)"
   task: |

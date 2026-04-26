@@ -54,8 +54,8 @@ cleanup() {
   info "Cleaning up AgentRun container-shape resources..."
   [[ -n "$PLAIN_RUN" ]] && api_request DELETE "/api/v1/runs/${PLAIN_RUN}" >/dev/null 2>&1 || true
   [[ -n "$SKILL_RUN" ]] && api_request DELETE "/api/v1/runs/${SKILL_RUN}" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${PLAIN_INSTANCE}" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${SKILL_INSTANCE}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${PLAIN_INSTANCE}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${SKILL_INSTANCE}" >/dev/null 2>&1 || true
   # kubectl fallback: secrets, agentruns, configmaps, instances
   kubectl delete secret "${PLAIN_INSTANCE}-openai-key" "${SKILL_INSTANCE}-openai-key" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
   [[ -n "$PLAIN_RUN" ]] && kubectl delete agentrun "$PLAIN_RUN" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
@@ -189,12 +189,12 @@ main() {
   start_port_forward_if_needed
   resolve_apiserver_token
 
-  api_request POST "/api/v1/instances" "{\"name\":\"${PLAIN_INSTANCE}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\"}" >/dev/null
-  api_request POST "/api/v1/instances" "{\"name\":\"${SKILL_INSTANCE}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\",\"skills\":[{\"skillPackRef\":\"k8s-ops\"}]}" >/dev/null
+  api_request POST "/api/v1/agents" "{\"name\":\"${PLAIN_INSTANCE}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\"}" >/dev/null
+  api_request POST "/api/v1/agents" "{\"name\":\"${SKILL_INSTANCE}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\",\"skills\":[{\"skillPackRef\":\"k8s-ops\"}]}" >/dev/null
 
-  plain_run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${PLAIN_INSTANCE}\",\"task\":\"pod shape plain\"}")"
+  plain_run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${PLAIN_INSTANCE}\",\"task\":\"pod shape plain\"}")"
   PLAIN_RUN="$(printf "%s" "$plain_run_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("metadata",{}).get("name",""))')"
-  skill_run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${SKILL_INSTANCE}\",\"task\":\"pod shape skill\"}")"
+  skill_run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${SKILL_INSTANCE}\",\"task\":\"pod shape skill\"}")"
   SKILL_RUN="$(printf "%s" "$skill_run_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("metadata",{}).get("name",""))')"
 
   plain_pod="$(wait_for_pod_name "$PLAIN_RUN" || true)"

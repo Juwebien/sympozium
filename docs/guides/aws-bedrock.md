@@ -137,7 +137,7 @@ kubectl create secret generic my-instance-bedrock-key -n sympozium \
   --from-literal=AWS_SESSION_TOKEN=<session-token>
 ```
 
-## Step 4: Create SympoziumInstance
+## Step 4: Create Agent
 
 ### Using the CLI Wizard
 ```bash
@@ -149,7 +149,7 @@ sympozium create instance my-bedrock-agent
 ### Manual YAML Configuration
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: my-bedrock-agent
   namespace: sympozium
@@ -251,10 +251,10 @@ eksctl create iamserviceaccount \
 kubectl create secret generic bedrock-agent-key -n sympozium \
   --from-literal=AWS_REGION=us-east-1
 
-# 3. Deploy SympoziumInstance
+# 3. Deploy Agent
 kubectl apply -f - <<EOF
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: bedrock-assistant
   namespace: sympozium
@@ -280,12 +280,12 @@ metadata:
   name: test-bedrock
   namespace: sympozium
 spec:
-  instanceRef: bedrock-assistant
+  agentRef: bedrock-assistant
   task: "Say hello in one sentence"
 EOF
 
 # 5. Check results
-kubectl get sympoziuminstance bedrock-assistant -n sympozium
+kubectl get agent bedrock-assistant -n sympozium
 kubectl get agentrun test-bedrock -n sympozium -o yaml
 ```
 

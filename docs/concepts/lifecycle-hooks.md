@@ -52,7 +52,7 @@ All lifecycle hook containers receive these env vars:
 | Env Var | Description |
 |---------|-------------|
 | `AGENT_RUN_ID` | Unique identifier for this agent run |
-| `INSTANCE_NAME` | The SympoziumInstance this run belongs to |
+| `INSTANCE_NAME` | The Agent this run belongs to |
 | `AGENT_NAMESPACE` | Kubernetes namespace |
 | Custom env vars | Any `spec.env` entries from the AgentRun |
 
@@ -86,7 +86,7 @@ The controller creates a namespace-scoped Role and RoleBinding for the run, boun
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: oncall-agent
 spec:
@@ -185,7 +185,7 @@ Add `gate: true` to one PostRun hook in your instance's lifecycle config. At mos
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: gated-agent
 spec:

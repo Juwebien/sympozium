@@ -13,7 +13,7 @@ function authHeaders(): Record<string, string> {
 
 describe("Schedule — delete", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
     // Create a schedule that would fire every minute.
     cy.request({
       method: "POST",
@@ -21,7 +21,7 @@ describe("Schedule — delete", () => {
       headers: authHeaders(),
       body: {
         name: SCHEDULE,
-        instanceRef: INSTANCE,
+        agentRef: INSTANCE,
         schedule: "* * * * *",
         type: "scheduled",
         task: "test schedule task",
@@ -32,7 +32,7 @@ describe("Schedule — delete", () => {
 
   after(() => {
     cy.deleteSchedule(SCHEDULE);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("deletes schedule and removes it from the UI list", () => {

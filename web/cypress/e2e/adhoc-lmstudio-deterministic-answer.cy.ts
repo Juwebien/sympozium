@@ -17,12 +17,12 @@ describe("Ad-hoc LM Studio — deterministic answer end to end", () => {
     // (The wizard defaults to http://localhost:1234 which doesn't work
     // from inside kind pods; the wizard's node-mode flow is covered in
     // a separate spec.)
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
   });
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("asks 'how many namespaces' via the UI and renders the answer", () => {

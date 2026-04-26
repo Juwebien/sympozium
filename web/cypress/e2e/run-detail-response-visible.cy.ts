@@ -8,12 +8,12 @@ let RUN_NAME = "";
 
 describe("Run Detail — response visibility", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
   });
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows status.result text on the Result tab when populated", () => {

@@ -64,8 +64,8 @@ cleanup() {
   [[ -n "$ADHOC_RUN_NAME" ]] && api_request DELETE "/api/v1/runs/${ADHOC_RUN_NAME}" >/dev/null 2>&1 || true
   [[ -n "$PACK_RUN_NAME" ]] && api_request DELETE "/api/v1/runs/${PACK_RUN_NAME}" >/dev/null 2>&1 || true
 
-  api_request DELETE "/api/v1/instances/${ADHOC_INSTANCE_NAME}" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${PACK_INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${ADHOC_INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${PACK_INSTANCE_NAME}" >/dev/null 2>&1 || true
   api_request DELETE "/api/v1/ensembles/${PACK_NAME}" >/dev/null 2>&1 || true
 
   kubectl delete ensemble "$PACK_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
@@ -207,7 +207,7 @@ main() {
   # ──────────────────────────────────────────────────────────────
   info "Part 1: Ad-hoc instance with github-gitops repo param"
 
-  api_request POST "/api/v1/instances" "{
+  api_request POST "/api/v1/agents" "{
     \"name\": \"${ADHOC_INSTANCE_NAME}\",
     \"provider\": \"openai\",
     \"model\": \"${MODEL_NAME}\",
@@ -220,7 +220,7 @@ main() {
   pass "Created ad-hoc instance '${ADHOC_INSTANCE_NAME}'"
 
   # Verify instance has github-gitops skill with repo param.
-  adhoc_inst_json="$(api_request GET "/api/v1/instances/${ADHOC_INSTANCE_NAME}")"
+  adhoc_inst_json="$(api_request GET "/api/v1/agents/${ADHOC_INSTANCE_NAME}")"
 
   got_skill="$(has_github_skill "$adhoc_inst_json")"
   if [[ "$got_skill" != "yes" ]]; then
@@ -237,7 +237,7 @@ main() {
   fi
 
   # Verify repo param survives into a run.
-  adhoc_run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${ADHOC_INSTANCE_NAME}\",\"task\":\"test github repo param\"}")"
+  adhoc_run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${ADHOC_INSTANCE_NAME}\",\"task\":\"test github repo param\"}")"
   ADHOC_RUN_NAME="$(printf "%s" "$adhoc_run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))')"
 
   run_repo="$(extract_github_repo "$adhoc_run_json")"
@@ -267,7 +267,7 @@ spec:
     github-gitops:
       repo: "${GITHUB_REPO}"
   taskOverride: "${TEAM_TASK}"
-  personas:
+  agentConfigs:
     - name: ${PERSONA_NAME}
       displayName: "Test Developer"
       systemPrompt: "Integration test developer persona"
@@ -295,7 +295,7 @@ EOF
   # Wait for the controller to stamp out the instance.
   elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    if api_request GET "/api/v1/instances/${PACK_INSTANCE_NAME}" >/dev/null 2>&1; then
+    if api_request GET "/api/v1/agents/${PACK_INSTANCE_NAME}" >/dev/null 2>&1; then
       break
     fi
     sleep 5
@@ -308,7 +308,7 @@ EOF
   pass "Ensemble controller created instance '${PACK_INSTANCE_NAME}'"
 
   # Verify instance has github-gitops with repo param.
-  pack_inst_json="$(api_request GET "/api/v1/instances/${PACK_INSTANCE_NAME}")"
+  pack_inst_json="$(api_request GET "/api/v1/agents/${PACK_INSTANCE_NAME}")"
 
   got_skill="$(has_github_skill "$pack_inst_json")"
   if [[ "$got_skill" != "yes" ]]; then
@@ -325,7 +325,7 @@ EOF
   fi
 
   # Verify repo param survives into a run.
-  pack_run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${PACK_INSTANCE_NAME}\",\"task\":\"test pack github repo\"}")"
+  pack_run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${PACK_INSTANCE_NAME}\",\"task\":\"test pack github repo\"}")"
   PACK_RUN_NAME="$(printf "%s" "$pack_run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))')"
 
   run_repo="$(extract_github_repo "$pack_run_json")"

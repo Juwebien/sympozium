@@ -32,7 +32,7 @@ func main() {
 	var eventBusURL string
 	var botToken string
 
-	flag.StringVar(&instanceName, "instance", os.Getenv("INSTANCE_NAME"), "SympoziumInstance name")
+	flag.StringVar(&instanceName, "instance", os.Getenv("INSTANCE_NAME"), "Agent name")
 	flag.StringVar(&eventBusURL, "event-bus-url", os.Getenv("EVENT_BUS_URL"), "Event bus URL")
 	flag.StringVar(&botToken, "bot-token", os.Getenv("TELEGRAM_BOT_TOKEN"), "Telegram Bot API token")
 	flag.Parse()

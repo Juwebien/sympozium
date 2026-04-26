@@ -4,10 +4,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SympoziumScheduleSpec defines a recurring task for a SympoziumInstance.
+// SympoziumScheduleSpec defines a recurring task for a Agent.
 type SympoziumScheduleSpec struct {
-	// InstanceRef is the name of the SympoziumInstance this schedule belongs to.
-	InstanceRef string `json:"instanceRef"`
+	// AgentRef is the name of the Agent this schedule belongs to.
+	AgentRef string `json:"agentRef"`
 
 	// Schedule is a cron expression (e.g. "0 * * * *").
 	Schedule string `json:"schedule"`
@@ -72,7 +72,7 @@ type SympoziumScheduleStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // SympoziumSchedule is the Schema for the sympoziumschedules API.
-// It defines recurring tasks (heartbeats, scheduled jobs, sweeps) for a SympoziumInstance.
+// It defines recurring tasks (heartbeats, scheduled jobs, sweeps) for a Agent.
 type SympoziumSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

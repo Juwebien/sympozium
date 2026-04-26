@@ -36,8 +36,8 @@ func (r *SympoziumPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	// Count SympoziumInstances that reference this policy
-	var instances sympoziumv1alpha1.SympoziumInstanceList
+	// Count Agents that reference this policy
+	var instances sympoziumv1alpha1.AgentList
 	if err := r.List(ctx, &instances, client.InNamespace(req.Namespace)); err != nil {
 		return ctrl.Result{}, err
 	}

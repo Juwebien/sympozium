@@ -53,14 +53,14 @@ func TestBuildInstance_ChannelAccessControlPrecedence(t *testing.T) {
 					ChannelAccessControl: tt.packAC,
 				},
 			}
-			persona := &sympoziumv1alpha1.PersonaSpec{
+			persona := &sympoziumv1alpha1.AgentConfigSpec{
 				Name:                 "tech-lead",
 				SystemPrompt:         "You are a tech lead.",
 				Channels:             []string{"discord"},
 				ChannelAccessControl: tt.personaAC,
 			}
 
-			inst := r.buildInstance(pack, persona, "test-pack-tech-lead", "")
+			inst := r.buildAgent(pack, persona, "test-pack-tech-lead", "")
 
 			if len(inst.Spec.Channels) != 1 {
 				t.Fatalf("expected 1 channel, got %d", len(inst.Spec.Channels))

@@ -17,7 +17,7 @@ function authHeaders(): Record<string, string> {
 describe("Model Deploy & Use", () => {
   after(() => {
     // Cleanup in reverse order: run, instance, model
-    cy.deleteInstance(INSTANCE_NAME);
+    cy.deleteAgent(INSTANCE_NAME);
     cy.request({
       method: "DELETE",
       url: `/api/v1/models/${MODEL_NAME}`,

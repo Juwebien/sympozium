@@ -57,7 +57,7 @@ func main() {
 	var appToken string
 	var listenAddr string
 
-	flag.StringVar(&instanceName, "instance", os.Getenv("INSTANCE_NAME"), "SympoziumInstance name")
+	flag.StringVar(&instanceName, "instance", os.Getenv("INSTANCE_NAME"), "Agent name")
 	flag.StringVar(&eventBusURL, "event-bus-url", os.Getenv("EVENT_BUS_URL"), "Event bus URL")
 	flag.StringVar(&botToken, "bot-token", os.Getenv("SLACK_BOT_TOKEN"), "Slack bot token (xoxb-...)")
 	flag.StringVar(&appToken, "app-token", os.Getenv("SLACK_APP_TOKEN"), "Slack app token (xapp-...) for Socket Mode")

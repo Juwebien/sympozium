@@ -93,12 +93,12 @@ func (s *Server) buildMux(frontendFS fs.FS, token string) http.Handler {
 	mux := http.NewServeMux()
 
 	// Instance endpoints
-	mux.HandleFunc("GET /api/v1/instances", s.listInstances)
-	mux.HandleFunc("GET /api/v1/instances/{name}", s.getInstance)
-	mux.HandleFunc("POST /api/v1/instances", s.createInstance)
-	mux.HandleFunc("DELETE /api/v1/instances/{name}", s.deleteInstance)
-	mux.HandleFunc("PATCH /api/v1/instances/{name}", s.patchInstance)
-	mux.HandleFunc("GET /api/v1/instances/{name}/web-endpoint", s.getWebEndpointStatus)
+	mux.HandleFunc("GET /api/v1/agents", s.listAgents)
+	mux.HandleFunc("GET /api/v1/agents/{name}", s.getAgent)
+	mux.HandleFunc("POST /api/v1/agents", s.createAgent)
+	mux.HandleFunc("DELETE /api/v1/agents/{name}", s.deleteAgent)
+	mux.HandleFunc("PATCH /api/v1/agents/{name}", s.patchAgent)
+	mux.HandleFunc("GET /api/v1/agents/{name}/web-endpoint", s.getWebEndpointStatus)
 
 	// Run endpoints
 	mux.HandleFunc("GET /api/v1/runs", s.listRuns)
@@ -280,13 +280,13 @@ func (s *Server) spaHandler(frontendFS fs.FS) http.HandlerFunc {
 
 // --- Instance handlers ---
 
-func (s *Server) listInstances(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listAgents(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
 	if ns == "" {
 		ns = "default"
 	}
 
-	var list sympoziumv1alpha1.SympoziumInstanceList
+	var list sympoziumv1alpha1.AgentList
 	if err := s.client.List(r.Context(), &list, client.InNamespace(ns)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -295,14 +295,14 @@ func (s *Server) listInstances(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, list.Items)
 }
 
-func (s *Server) getInstance(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getAgent(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ns := r.URL.Query().Get("namespace")
 	if ns == "" {
 		ns = "default"
 	}
 
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := s.client.Get(r.Context(), types.NamespacedName{Name: name, Namespace: ns}, &inst); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -311,14 +311,14 @@ func (s *Server) getInstance(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, inst)
 }
 
-func (s *Server) deleteInstance(w http.ResponseWriter, r *http.Request) {
+func (s *Server) deleteAgent(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ns := r.URL.Query().Get("namespace")
 	if ns == "" {
 		ns = "default"
 	}
 
-	inst := &sympoziumv1alpha1.SympoziumInstance{
+	inst := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
 	}
 	if err := s.client.Delete(r.Context(), inst); err != nil {
@@ -329,7 +329,7 @@ func (s *Server) deleteInstance(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// PatchInstanceRequest is the request body for partially updating a SympoziumInstance.
+// PatchInstanceRequest is the request body for partially updating a Agent.
 type PatchInstanceRequest struct {
 	WebEndpoint     *PatchWebEndpoint                 `json:"webEndpoint,omitempty"`
 	Lifecycle       *sympoziumv1alpha1.LifecycleHooks `json:"lifecycle,omitempty"`
@@ -345,7 +345,7 @@ type PatchWebEndpoint struct {
 	} `json:"rateLimit,omitempty"`
 }
 
-func (s *Server) patchInstance(w http.ResponseWriter, r *http.Request) {
+func (s *Server) patchAgent(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ns := r.URL.Query().Get("namespace")
 	if ns == "" {
@@ -358,7 +358,7 @@ func (s *Server) patchInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := s.client.Get(r.Context(), types.NamespacedName{Name: name, Namespace: ns}, &inst); err != nil {
 		if k8serrors.IsNotFound(err) {
 			http.Error(w, "instance not found", http.StatusNotFound)
@@ -447,7 +447,7 @@ func (s *Server) getWebEndpointStatus(w http.ResponseWriter, r *http.Request) {
 		ns = "default"
 	}
 
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := s.client.Get(r.Context(), types.NamespacedName{Name: name, Namespace: ns}, &inst); err != nil {
 		if k8serrors.IsNotFound(err) {
 			http.Error(w, "instance not found", http.StatusNotFound)
@@ -498,7 +498,7 @@ func (s *Server) getWebEndpointStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, resp)
 }
 
-// CreateInstanceRequest is the request body for creating a new SympoziumInstance.
+// CreateInstanceRequest is the request body for creating a new Agent.
 type CreateInstanceRequest struct {
 	Name               string                                      `json:"name"`
 	Provider           string                                      `json:"provider"`
@@ -515,12 +515,12 @@ type CreateInstanceRequest struct {
 	Channels           []sympoziumv1alpha1.ChannelSpec             `json:"channels,omitempty"`
 	HeartbeatInterval  string                                      `json:"heartbeatInterval,omitempty"`
 	NodeSelector       map[string]string                           `json:"nodeSelector,omitempty"`
-	AgentSandbox       *sympoziumv1alpha1.AgentSandboxInstanceSpec `json:"agentSandbox,omitempty"`
+	AgentSandbox       *sympoziumv1alpha1.AgentSandboxDefaults `json:"agentSandbox,omitempty"`
 	RunTimeout         string                                      `json:"runTimeout,omitempty"`
 	RequireApproval    bool                                        `json:"requireApproval,omitempty"`
 }
 
-func (s *Server) createInstance(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createAgent(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
 	if ns == "" {
 		ns = "default"
@@ -537,12 +537,12 @@ func (s *Server) createInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inst := &sympoziumv1alpha1.SympoziumInstance{
+	inst := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      req.Name,
 			Namespace: ns,
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: req.Model,
@@ -692,7 +692,7 @@ func (s *Server) createInstance(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 			Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-				InstanceRef:       req.Name,
+				AgentRef:       req.Name,
 				Schedule:          cron,
 				Task:              "heartbeat",
 				Type:              "heartbeat",
@@ -776,7 +776,7 @@ func (s *Server) getRun(w http.ResponseWriter, r *http.Request) {
 
 // CreateRunRequest is the request body for creating a new AgentRun.
 type CreateRunRequest struct {
-	InstanceRef string `json:"instanceRef"`
+	AgentRef string `json:"agentRef"`
 	Task        string `json:"task"`
 	AgentID     string `json:"agentId,omitempty"`
 	SessionKey  string `json:"sessionKey,omitempty"`
@@ -796,8 +796,8 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.InstanceRef == "" || req.Task == "" {
-		http.Error(w, "instanceRef and task are required", http.StatusBadRequest)
+	if req.AgentRef == "" || req.Task == "" {
+		http.Error(w, "agentRef and task are required", http.StatusBadRequest)
 		return
 	}
 
@@ -811,11 +811,11 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 		req.Timeout = "5m"
 	}
 
-	// Look up the SympoziumInstance to inherit auth, model, and skills.
-	var inst sympoziumv1alpha1.SympoziumInstance
-	if err := s.client.Get(r.Context(), types.NamespacedName{Name: req.InstanceRef, Namespace: ns}, &inst); err != nil {
+	// Look up the Agent to inherit auth, model, and skills.
+	var inst sympoziumv1alpha1.Agent
+	if err := s.client.Get(r.Context(), types.NamespacedName{Name: req.AgentRef, Namespace: ns}, &inst); err != nil {
 		if k8serrors.IsNotFound(err) {
-			http.Error(w, fmt.Sprintf("instance %q not found in namespace %q", req.InstanceRef, ns), http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("instance %q not found in namespace %q", req.AgentRef, ns), http.StatusNotFound)
 		} else {
 			http.Error(w, "failed to get instance: "+err.Error(), http.StatusInternalServerError)
 		}
@@ -847,7 +847,7 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 
 	// Cloud providers require an API key; local providers with a baseURL do not.
 	if authSecret == "" && inst.Spec.Agents.Default.BaseURL == "" {
-		http.Error(w, fmt.Sprintf("instance %q has no API key configured (authRefs is empty)", req.InstanceRef), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("instance %q has no API key configured (authRefs is empty)", req.AgentRef), http.StatusBadRequest)
 		return
 	}
 
@@ -859,14 +859,14 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 
 	run := &sympoziumv1alpha1.AgentRun{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: req.InstanceRef + "-",
+			GenerateName: req.AgentRef + "-",
 			Namespace:    ns,
 			Labels: map[string]string{
-				"sympozium.ai/instance": req.InstanceRef,
+				"sympozium.ai/instance": req.AgentRef,
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: req.InstanceRef,
+			AgentRef: req.AgentRef,
 			AgentID:     req.AgentID,
 			SessionKey:  req.SessionKey,
 			Task:        req.Task,
@@ -915,7 +915,7 @@ const manualGateHookName = "manual-approval-gate"
 // applyRequireApproval adds or removes a built-in manual approval gate hook
 // on the instance's lifecycle. When enabled, all runs from this instance will
 // pause in PostRunning until an operator approves via the UI or API.
-func applyRequireApproval(inst *sympoziumv1alpha1.SympoziumInstance, enable bool) {
+func applyRequireApproval(inst *sympoziumv1alpha1.Agent, enable bool) {
 	lc := inst.Spec.Agents.Default.Lifecycle
 
 	if enable {
@@ -1330,8 +1330,8 @@ func (s *Server) getSchedule(w http.ResponseWriter, r *http.Request) {
 type CreateScheduleRequest struct {
 	// Name is the schedule resource name. If empty, a name is generated from instanceRef.
 	Name string `json:"name,omitempty"`
-	// InstanceRef is the name of the SympoziumInstance this schedule belongs to.
-	InstanceRef string `json:"instanceRef"`
+	// InstanceRef is the name of the Agent this schedule belongs to.
+	AgentRef string `json:"agentRef"`
 	// Schedule is a cron expression (e.g. "0 * * * *").
 	Schedule string `json:"schedule"`
 	// Task is the task description sent to the agent on each trigger.
@@ -1356,8 +1356,8 @@ func (s *Server) createSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.InstanceRef == "" || req.Schedule == "" || req.Task == "" {
-		http.Error(w, "instanceRef, schedule, and task are required", http.StatusBadRequest)
+	if req.AgentRef == "" || req.Schedule == "" || req.Task == "" {
+		http.Error(w, "agentRef, schedule, and task are required", http.StatusBadRequest)
 		return
 	}
 
@@ -1366,7 +1366,7 @@ func (s *Server) createSchedule(w http.ResponseWriter, r *http.Request) {
 			Namespace: ns,
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef: req.InstanceRef,
+			AgentRef: req.AgentRef,
 			Schedule:    req.Schedule,
 			Task:        req.Task,
 			Suspend:     req.Suspend,
@@ -1376,7 +1376,7 @@ func (s *Server) createSchedule(w http.ResponseWriter, r *http.Request) {
 	if req.Name != "" {
 		sched.ObjectMeta.Name = req.Name
 	} else {
-		sched.ObjectMeta.GenerateName = req.InstanceRef + "-schedule-"
+		sched.ObjectMeta.GenerateName = req.AgentRef + "-schedule-"
 	}
 
 	if req.Type != "" {
@@ -1516,17 +1516,17 @@ type PatchEnsembleRequest struct {
 	HeartbeatInterval    string                                             `json:"heartbeatInterval,omitempty"`
 	SkillParams          map[string]map[string]string                       `json:"skillParams,omitempty"`
 	GithubToken          string                                             `json:"githubToken,omitempty"`
-	Personas             []PersonaPatchSpec                                 `json:"personas,omitempty"`
+	AgentConfigs         []AgentConfigPatchSpec                                 `json:"agentConfigs,omitempty"`
 	ChannelAccessControl map[string]*sympoziumv1alpha1.ChannelAccessControl `json:"channelAccessControl,omitempty"`
-	AgentSandbox         *sympoziumv1alpha1.AgentSandboxInstanceSpec        `json:"agentSandbox,omitempty"`
-	Relationships        []sympoziumv1alpha1.PersonaRelationship            `json:"relationships,omitempty"`
+	AgentSandbox         *sympoziumv1alpha1.AgentSandboxDefaults        `json:"agentSandbox,omitempty"`
+	Relationships        []sympoziumv1alpha1.AgentConfigRelationship            `json:"relationships,omitempty"`
 	WorkflowType         string                                             `json:"workflowType,omitempty"`
 	SharedMemory         *sympoziumv1alpha1.SharedMemorySpec                `json:"sharedMemory,omitempty"`
 	ModelRef             string                                             `json:"modelRef,omitempty"`
 }
 
-// PersonaPatchSpec allows partial updates to individual personas by name.
-type PersonaPatchSpec struct {
+// AgentConfigPatchSpec allows partial updates to individual personas by name.
+type AgentConfigPatchSpec struct {
 	Name         string   `json:"name"`
 	SystemPrompt *string  `json:"systemPrompt,omitempty"`
 	Skills       []string `json:"skills,omitempty"`
@@ -1643,8 +1643,8 @@ func (s *Server) patchEnsemble(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Model != "" {
-		for i := range pp.Spec.Personas {
-			pp.Spec.Personas[i].Model = req.Model
+		for i := range pp.Spec.AgentConfigs {
+			pp.Spec.AgentConfigs[i].Model = req.Model
 		}
 	}
 
@@ -1662,8 +1662,8 @@ func (s *Server) patchEnsemble(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(req.Channels) > 0 {
-		for i := range pp.Spec.Personas {
-			pp.Spec.Personas[i].Channels = req.Channels
+		for i := range pp.Spec.AgentConfigs {
+			pp.Spec.AgentConfigs[i].Channels = req.Channels
 		}
 	}
 
@@ -1680,10 +1680,10 @@ func (s *Server) patchEnsemble(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.HeartbeatInterval != "" {
-		for i := range pp.Spec.Personas {
-			if pp.Spec.Personas[i].Schedule != nil {
-				pp.Spec.Personas[i].Schedule.Interval = req.HeartbeatInterval
-				pp.Spec.Personas[i].Schedule.Cron = "" // clear cron so interval takes precedence
+		for i := range pp.Spec.AgentConfigs {
+			if pp.Spec.AgentConfigs[i].Schedule != nil {
+				pp.Spec.AgentConfigs[i].Schedule.Interval = req.HeartbeatInterval
+				pp.Spec.AgentConfigs[i].Schedule.Cron = "" // clear cron so interval takes precedence
 			}
 		}
 	}
@@ -1698,23 +1698,23 @@ func (s *Server) patchEnsemble(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Apply per-persona patches.
-	for _, patch := range req.Personas {
-		for i := range pp.Spec.Personas {
-			if pp.Spec.Personas[i].Name == patch.Name {
+	for _, patch := range req.AgentConfigs {
+		for i := range pp.Spec.AgentConfigs {
+			if pp.Spec.AgentConfigs[i].Name == patch.Name {
 				if patch.SystemPrompt != nil {
-					pp.Spec.Personas[i].SystemPrompt = *patch.SystemPrompt
+					pp.Spec.AgentConfigs[i].SystemPrompt = *patch.SystemPrompt
 				}
 				if patch.Skills != nil {
-					pp.Spec.Personas[i].Skills = patch.Skills
+					pp.Spec.AgentConfigs[i].Skills = patch.Skills
 				}
 				if patch.Model != nil {
-					pp.Spec.Personas[i].Model = *patch.Model
+					pp.Spec.AgentConfigs[i].Model = *patch.Model
 				}
 				if patch.Provider != nil {
-					pp.Spec.Personas[i].Provider = *patch.Provider
+					pp.Spec.AgentConfigs[i].Provider = *patch.Provider
 				}
 				if patch.BaseURL != nil {
-					pp.Spec.Personas[i].BaseURL = *patch.BaseURL
+					pp.Spec.AgentConfigs[i].BaseURL = *patch.BaseURL
 				}
 				break
 			}
@@ -1777,8 +1777,8 @@ type CreateEnsembleRequest struct {
 	Description   string                                  `json:"description,omitempty"`
 	Category      string                                  `json:"category,omitempty"`
 	WorkflowType  string                                  `json:"workflowType,omitempty"`
-	Personas      []sympoziumv1alpha1.PersonaSpec         `json:"personas"`
-	Relationships []sympoziumv1alpha1.PersonaRelationship `json:"relationships,omitempty"`
+	AgentConfigs  []sympoziumv1alpha1.AgentConfigSpec         `json:"agentConfigs"`
+	Relationships []sympoziumv1alpha1.AgentConfigRelationship `json:"relationships,omitempty"`
 	SharedMemory  *sympoziumv1alpha1.SharedMemorySpec     `json:"sharedMemory,omitempty"`
 	ModelRef      string                                  `json:"modelRef,omitempty"`
 }
@@ -1799,7 +1799,7 @@ func (s *Server) createEnsemble(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "name is required", http.StatusBadRequest)
 		return
 	}
-	if len(req.Personas) == 0 {
+	if len(req.AgentConfigs) == 0 {
 		http.Error(w, "at least one persona is required", http.StatusBadRequest)
 		return
 	}
@@ -1813,7 +1813,7 @@ func (s *Server) createEnsemble(w http.ResponseWriter, r *http.Request) {
 			Description:   req.Description,
 			Category:      req.Category,
 			WorkflowType:  req.WorkflowType,
-			Personas:      req.Personas,
+			AgentConfigs:      req.AgentConfigs,
 			Relationships: req.Relationships,
 			SharedMemory:  req.SharedMemory,
 			ModelRef:      req.ModelRef,
@@ -1877,7 +1877,7 @@ func (s *Server) cloneEnsemble(w http.ResponseWriter, r *http.Request) {
 			Description:   source.Spec.Description + " (cloned from " + sourceName + ")",
 			Category:      source.Spec.Category,
 			Version:       source.Spec.Version,
-			Personas:      source.Spec.Personas,
+			AgentConfigs:      source.Spec.AgentConfigs,
 			Relationships: source.Spec.Relationships,
 			WorkflowType:  source.Spec.WorkflowType,
 			SharedMemory:  source.Spec.SharedMemory,
@@ -1885,7 +1885,7 @@ func (s *Server) cloneEnsemble(w http.ResponseWriter, r *http.Request) {
 			SkillParams:   source.Spec.SkillParams,
 			TaskOverride:  source.Spec.TaskOverride,
 			AgentSandbox:  source.Spec.AgentSandbox,
-			// Intentionally omitted: Enabled, AuthRefs, ChannelConfigs, BaseURL, ExcludePersonas
+			// Intentionally omitted: Enabled, AuthRefs, ChannelConfigs, BaseURL, ExcludeAgentConfigs
 		},
 	}
 
@@ -2103,7 +2103,7 @@ type PodInfo struct {
 	PodIP        string            `json:"podIP,omitempty"`
 	StartTime    *metav1.Time      `json:"startTime,omitempty"`
 	RestartCount int32             `json:"restartCount"`
-	InstanceRef  string            `json:"instanceRef,omitempty"`
+	AgentRef     string            `json:"agentRef,omitempty"`
 	Labels       map[string]string `json:"labels,omitempty"`
 }
 
@@ -2137,7 +2137,7 @@ func (s *Server) listPods(w http.ResponseWriter, r *http.Request) {
 			PodIP:        p.Status.PodIP,
 			StartTime:    p.Status.StartTime,
 			RestartCount: restarts,
-			InstanceRef:  inst,
+			AgentRef:  inst,
 			Labels:       p.Labels,
 		})
 	}

@@ -38,7 +38,7 @@ spec:
       openAPIV3Schema:
         description: |-
           SympoziumSchedule is the Schema for the sympoziumschedules API.
-          It defines recurring tasks (heartbeats, scheduled jobs, sweeps) for a SympoziumInstance.
+          It defines recurring tasks (heartbeats, scheduled jobs, sweeps) for a Agent.
         properties:
           apiVersion:
             description: |-
@@ -58,8 +58,12 @@ spec:
           metadata:
             type: object
           spec:
-            description: SympoziumScheduleSpec defines a recurring task for a SympoziumInstance.
+            description: SympoziumScheduleSpec defines a recurring task for a Agent.
             properties:
+              agentRef:
+                description: AgentRef is the name of the Agent this schedule belongs
+                  to.
+                type: string
               concurrencyPolicy:
                 default: Forbid
                 description: |-
@@ -75,10 +79,6 @@ spec:
                 description: IncludeMemory injects the instance's MEMORY.md as context
                   for each run.
                 type: boolean
-              instanceRef:
-                description: InstanceRef is the name of the SympoziumInstance this
-                  schedule belongs to.
-                type: string
               schedule:
                 description: Schedule is a cron expression (e.g. "0 * * * *").
                 type: string
@@ -99,7 +99,7 @@ spec:
                 - sweep
                 type: string
             required:
-            - instanceRef
+            - agentRef
             - schedule
             - task
             type: object

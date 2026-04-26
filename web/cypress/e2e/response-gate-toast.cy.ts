@@ -52,7 +52,7 @@ describe("Response gate -- toast notification", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows a warning toast when a run enters PostRunning with a gate hook", () => {

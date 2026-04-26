@@ -41,7 +41,7 @@ function waitForInstance(
   const poll = (): Cypress.Chainable<void> => {
     return (cy
       .request({
-        url: `/api/v1/instances/${instanceName}?namespace=${NS}`,
+        url: `/api/v1/agents/${instanceName}?namespace=${NS}`,
         headers: authHeaders(),
         failOnStatusCode: false,
       })
@@ -105,8 +105,8 @@ describe("Sequential Workflow — automatic trigger on completion", () => {
     });
     cy.wait(3000);
     cy.deleteEnsemble(ENSEMBLE);
-    cy.deleteInstance(R0_INSTANCE);
-    cy.deleteInstance(R1_INSTANCE);
+    cy.deleteAgent(R0_INSTANCE);
+    cy.deleteAgent(R1_INSTANCE);
     cy.exec(
       `kubectl delete agentrun -n ${NS} -l sympozium.ai/instance=${R0_INSTANCE} --ignore-not-found --wait=false`,
       { failOnNonZeroExit: false },

@@ -140,7 +140,7 @@ kubectl create secret generic "${SANDBOX_INSTANCE}-test-key" \
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${SANDBOX_INSTANCE}
   namespace: ${NAMESPACE}
@@ -167,7 +167,7 @@ metadata:
     sympozium.ai/instance: ${SANDBOX_INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${SANDBOX_INSTANCE}
+  agentRef: ${SANDBOX_INSTANCE}
   agentId: default
   sessionKey: "test-sb-${SUFFIX}"
   task: "Agent sandbox integration test"
@@ -271,7 +271,7 @@ metadata:
     sympozium.ai/instance: ${SANDBOX_INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${SANDBOX_INSTANCE}
+  agentRef: ${SANDBOX_INSTANCE}
   agentId: default
   sessionKey: "test-reg-${SUFFIX}"
   task: "Regular job integration test"
@@ -308,7 +308,7 @@ metadata:
     sympozium.ai/instance: ${SANDBOX_INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${SANDBOX_INSTANCE}
+  agentRef: ${SANDBOX_INSTANCE}
   agentId: default
   sessionKey: "test-both-${SUFFIX}"
   task: "Both sandbox modes test"
@@ -350,7 +350,7 @@ metadata:
     sympozium.ai/instance: ${SANDBOX_INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${SANDBOX_INSTANCE}
+  agentRef: ${SANDBOX_INSTANCE}
   agentId: default
   sessionKey: "test-claim-${SUFFIX}"
   task: "Warm pool claim test"
@@ -446,7 +446,7 @@ else
 fi
 
 # Instance CRD fields.
-inst_schema="$(kubectl get crd sympoziuminstances.sympozium.ai -o jsonpath='{.spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.agents.properties.default.properties.agentSandbox.properties.runtimeClass.type}' 2>/dev/null || true)"
+inst_schema="$(kubectl get crd agents.sympozium.ai -o jsonpath='{.spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.agents.properties.default.properties.agentSandbox.properties.runtimeClass.type}' 2>/dev/null || true)"
 if [[ "$inst_schema" == "string" ]]; then
   pass "Test 8: agentSandbox.runtimeClass field in instance CRD"
 else

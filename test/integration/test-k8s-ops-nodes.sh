@@ -2,7 +2,7 @@
 # Integration test: verify the k8s-ops skill works end-to-end.
 #
 # What it does:
-#   1. Creates a test SympoziumInstance + AgentRun with the k8s-ops skill
+#   1. Creates a test Agent + AgentRun with the k8s-ops skill
 #   2. The AgentRun task tells the LLM to run "kubectl get nodes"
 #   3. Waits for the AgentRun to complete
 #   4. Checks the result contains node information (e.g. "Ready", "kind-control-plane")
@@ -91,11 +91,11 @@ info "Cluster node: $EXPECTED_NODE"
 cleanup 2>/dev/null || true
 sleep 2
 
-# --- Create test SympoziumInstance with k8s-ops skill ---
-info "Creating SympoziumInstance: $INSTANCE_NAME (with k8s-ops skill)"
+# --- Create test Agent with k8s-ops skill ---
+info "Creating Agent: $INSTANCE_NAME (with k8s-ops skill)"
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -120,7 +120,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-$(date +%s)"
   task: |

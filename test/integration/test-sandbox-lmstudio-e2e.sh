@@ -172,7 +172,7 @@ kubectl create secret generic "${INSTANCE}-lms-key" \
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE}
   namespace: ${NAMESPACE}
@@ -198,7 +198,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "e2e-sb-lms-${SUFFIX}"
   task: "Reply with exactly: SANDBOX_OK"

@@ -138,7 +138,7 @@ func (r *SympoziumScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	var allRuns sympoziumv1alpha1.AgentRunList
 	if err := r.List(ctx, &allRuns,
 		client.InNamespace(schedule.Namespace),
-		client.MatchingLabels{"sympozium.ai/instance": schedule.Spec.InstanceRef},
+		client.MatchingLabels{"sympozium.ai/instance": schedule.Spec.AgentRef},
 	); err == nil {
 		for _, run := range allRuns.Items {
 			if run.Status.Phase == sympoziumv1alpha1.AgentRunPhaseServing {
@@ -153,19 +153,19 @@ func (r *SympoziumScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Build the task, optionally including memory context.
 	task := schedule.Spec.Task
 	if schedule.Spec.IncludeMemory {
-		memoryContent := r.readMemoryConfigMap(ctx, schedule.Namespace, schedule.Spec.InstanceRef)
+		memoryContent := r.readMemoryConfigMap(ctx, schedule.Namespace, schedule.Spec.AgentRef)
 		if memoryContent != "" {
 			task = fmt.Sprintf("## Memory Context\n%s\n\n## Task\n%s", memoryContent, task)
 		}
 	}
 
 	// Look up instance to get model config.
-	instance := &sympoziumv1alpha1.SympoziumInstance{}
+	instance := &sympoziumv1alpha1.Agent{}
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: schedule.Namespace,
-		Name:      schedule.Spec.InstanceRef,
+		Name:      schedule.Spec.AgentRef,
 	}, instance); err != nil {
-		log.Error(err, "instance not found", "instance", schedule.Spec.InstanceRef)
+		log.Error(err, "instance not found", "instance", schedule.Spec.AgentRef)
 		schedule.Status.Phase = "Error"
 		_ = r.Status().Update(ctx, schedule)
 		return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
@@ -190,13 +190,13 @@ func (r *SympoziumScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			Name:      runName,
 			Namespace: schedule.Namespace,
 			Labels: map[string]string{
-				"sympozium.ai/instance": schedule.Spec.InstanceRef,
+				"sympozium.ai/instance": schedule.Spec.AgentRef,
 				"sympozium.ai/schedule": schedule.Name,
 				"sympozium.ai/type":     schedule.Spec.Type,
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: schedule.Spec.InstanceRef,
+			AgentRef: schedule.Spec.AgentRef,
 			Task:        task,
 			AgentID:     fmt.Sprintf("schedule-%s", schedule.Name),
 			Model: sympoziumv1alpha1.ModelSpec{

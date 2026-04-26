@@ -61,22 +61,22 @@ export function useNamespaces() {
 
 // ── Instances ────────────────────────────────────────────────────────────────
 
-export function useInstances() {
-  return useQuery({ queryKey: ["instances"], queryFn: api.instances.list });
+export function useAgents() {
+  return useQuery({ queryKey: ["instances"], queryFn: api.agents.list });
 }
 
-export function useInstance(name: string) {
+export function useAgent(name: string) {
   return useQuery({
     queryKey: ["instances", name],
-    queryFn: () => api.instances.get(name),
+    queryFn: () => api.agents.get(name),
     enabled: !!name,
   });
 }
 
-export function useDeleteInstance() {
+export function useDeleteAgent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: api.instances.delete,
+    mutationFn: api.agents.delete,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["instances"] });
       toast.success("Instance deleted");
@@ -85,10 +85,10 @@ export function useDeleteInstance() {
   });
 }
 
-export function useCreateInstance() {
+export function useCreateAgent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: api.instances.create,
+    mutationFn: api.agents.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["instances"] });
       toast.success("Instance created");
@@ -97,7 +97,7 @@ export function useCreateInstance() {
   });
 }
 
-export function usePatchInstance() {
+export function usePatchAgent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -105,8 +105,8 @@ export function usePatchInstance() {
       data,
     }: {
       name: string;
-      data: Parameters<typeof api.instances.patch>[1];
-    }) => api.instances.patch(name, data),
+      data: Parameters<typeof api.agents.patch>[1];
+    }) => api.agents.patch(name, data),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["instances"] });
       qc.invalidateQueries({ queryKey: ["instances", variables.name] });
@@ -358,7 +358,7 @@ export function usePatchEnsembleRelationships() {
       workflowType,
     }: {
       name: string;
-      relationships: import("@/lib/api").PersonaRelationship[];
+      relationships: import("@/lib/api").AgentConfigRelationship[];
       workflowType?: string;
     }) => api.ensembles.patch(name, { relationships, workflowType }),
     onSuccess: () => {

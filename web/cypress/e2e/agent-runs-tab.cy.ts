@@ -6,7 +6,7 @@ let RUN_NAME = "";
 
 describe("Instance Detail — Runs tab", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
     cy.dispatchRun(INSTANCE, "Runs tab visibility test").then((name) => {
       RUN_NAME = name;
     });
@@ -14,11 +14,11 @@ describe("Instance Detail — Runs tab", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows the run on the instance Runs tab", () => {
-    cy.visit(`/instances/${INSTANCE}`);
+    cy.visit(`/agents/${INSTANCE}`);
 
     // Click the Runs tab.
     cy.contains("button", "Runs", { timeout: 20000 }).click();
@@ -29,7 +29,7 @@ describe("Instance Detail — Runs tab", () => {
   });
 
   it("links from the Runs tab to run detail", () => {
-    cy.visit(`/instances/${INSTANCE}`);
+    cy.visit(`/agents/${INSTANCE}`);
     cy.contains("button", "Runs", { timeout: 20000 }).click();
 
     // Click the run link.

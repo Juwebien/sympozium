@@ -3,7 +3,7 @@ import {
   useGatewayConfig,
   usePatchGatewayConfig,
   useCreateGatewayConfig,
-  useInstances,
+  useAgents,
   useGatewayMetrics,
 } from "@/hooks/use-api";
 import {
@@ -643,7 +643,7 @@ function GatewayMetricsCard() {
 }
 
 function RoutesCard({ baseDomain }: { baseDomain: string }) {
-  const { data: instances, isLoading } = useInstances();
+  const { data: instances, isLoading } = useAgents();
 
   const routes = useMemo(() => {
     if (!instances) return [];

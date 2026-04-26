@@ -4,7 +4,7 @@ Sympozium models every agentic concept as a Kubernetes Custom Resource:
 
 | CRD | Kubernetes Analogy | Purpose |
 |-----|--------------------|---------|
-| `SympoziumInstance` | Namespace / Tenant | Per-user gateway — channels, provider config, memory settings, skill bindings |
+| `Agent` | Namespace / Tenant | Per-user gateway — channels, provider config, memory settings, skill bindings |
 | `AgentRun` | Job / [Sandbox CR](agent-sandbox.md) | Single agent execution — task, model, result capture, memory extraction. Optionally uses Agent Sandbox CRDs for kernel-level isolation |
 | `SympoziumPolicy` | NetworkPolicy | Feature and tool gating — what an agent can and cannot do |
 | `SkillPack` | ConfigMap | Portable skill bundles — kubectl, Helm, or custom tools — mounted into agent pods as files, with optional sidecar containers for cluster ops |
@@ -14,7 +14,7 @@ Sympozium models every agentic concept as a Kubernetes Custom Resource:
 
 ---
 
-## SympoziumInstance
+## Agent
 
 The core resource representing an agent identity. Each instance has:
 
@@ -27,7 +27,7 @@ The core resource representing an agent identity. Each instance has:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: my-agent
 spec:
@@ -52,7 +52,7 @@ kind: AgentRun
 metadata:
   name: quick-check
 spec:
-  instanceRef: my-agent
+  agentRef: my-agent
   task: "How many nodes are in the cluster?"
   model:
     name: gpt-4o

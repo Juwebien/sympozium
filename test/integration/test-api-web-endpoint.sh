@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # API integration test: web-endpoint skill enable/disable and status endpoint.
 # Coverage:
-#   - Enable web-endpoint via PATCH /api/v1/instances/{name}
-#   - GET /api/v1/instances/{name}/web-endpoint status
+#   - Enable web-endpoint via PATCH /api/v1/agents/{name}
+#   - GET /api/v1/agents/{name}/web-endpoint status
 #   - Disable web-endpoint via PATCH
 #   - Verify skill list reflects changes
 
@@ -52,7 +52,7 @@ stop_port_forward() {
 
 cleanup() {
   info "Cleaning up web-endpoint test resources..."
-  api_request DELETE "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1 || true
   # kubectl fallback: instance, auto-created secret, configmaps
   kubectl delete sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete secret "${INSTANCE_NAME}-openai-key" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
@@ -153,13 +153,13 @@ main() {
 
   # --- Create a plain instance (no web-endpoint) ---
   info "Creating test instance"
-  api_request POST "/api/v1/instances" \
+  api_request POST "/api/v1/agents" \
     "{\"name\":\"${INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\"}" >/dev/null
   pass "Instance created"
 
   # --- Check web-endpoint status (should be disabled) ---
   info "Checking initial web-endpoint status"
-  status_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}/web-endpoint")"
+  status_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}/web-endpoint")"
   enabled="$(printf "%s" "$status_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("enabled", False))')"
   if [[ "$enabled" == "False" ]]; then
     pass "Web-endpoint initially disabled"
@@ -169,7 +169,7 @@ main() {
 
   # --- Enable web-endpoint via PATCH ---
   info "Enabling web-endpoint"
-  patch_json="$(api_request PATCH "/api/v1/instances/${INSTANCE_NAME}" \
+  patch_json="$(api_request PATCH "/api/v1/agents/${INSTANCE_NAME}" \
     '{"webEndpoint":{"enabled":true,"hostname":"test.example.com","rateLimit":{"requestsPerMinute":120}}}')"
 
   # Verify skill was added
@@ -218,7 +218,7 @@ for s in skills:
 
   # --- Check web-endpoint status (should be enabled) ---
   info "Checking web-endpoint status after enable"
-  status_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}/web-endpoint")"
+  status_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}/web-endpoint")"
   enabled="$(printf "%s" "$status_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("enabled", False))')"
   if [[ "$enabled" == "True" ]]; then
     pass "Web-endpoint status reports enabled"
@@ -228,11 +228,11 @@ for s in skills:
 
   # --- Disable web-endpoint via PATCH ---
   info "Disabling web-endpoint"
-  api_request PATCH "/api/v1/instances/${INSTANCE_NAME}" \
+  api_request PATCH "/api/v1/agents/${INSTANCE_NAME}" \
     '{"webEndpoint":{"enabled":false}}' >/dev/null
 
   # --- Verify disabled ---
-  status_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}/web-endpoint")"
+  status_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}/web-endpoint")"
   enabled="$(printf "%s" "$status_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("enabled", False))')"
   if [[ "$enabled" == "False" ]]; then
     pass "Web-endpoint disabled successfully"
@@ -242,13 +242,13 @@ for s in skills:
 
   # --- Re-enable to test idempotency ---
   info "Re-enabling web-endpoint (idempotency check)"
-  api_request PATCH "/api/v1/instances/${INSTANCE_NAME}" \
+  api_request PATCH "/api/v1/agents/${INSTANCE_NAME}" \
     '{"webEndpoint":{"enabled":true}}' >/dev/null
-  api_request PATCH "/api/v1/instances/${INSTANCE_NAME}" \
+  api_request PATCH "/api/v1/agents/${INSTANCE_NAME}" \
     '{"webEndpoint":{"enabled":true,"rateLimit":{"requestsPerMinute":200}}}' >/dev/null
 
   # Should still have exactly one web-endpoint skill
-  inst_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}")"
+  inst_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}")"
   webep_count="$(printf "%s" "$inst_json" | python3 -c '
 import json, sys
 inst = json.load(sys.stdin)

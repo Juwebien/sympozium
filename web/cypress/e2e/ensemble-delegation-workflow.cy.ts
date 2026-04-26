@@ -43,7 +43,7 @@ function waitForInstance(
   const poll = (): Cypress.Chainable<void> => {
     return cy
       .request({
-        url: `/api/v1/instances/${instanceName}?namespace=${NS}`,
+        url: `/api/v1/agents/${instanceName}?namespace=${NS}`,
         headers: authHeaders(),
         failOnStatusCode: false,
       })
@@ -107,8 +107,8 @@ describe("Delegation Workflow — delegate_to_persona runtime tool", () => {
     });
     cy.wait(3000);
     cy.deleteEnsemble(ENSEMBLE);
-    cy.deleteInstance(LEAD_INSTANCE);
-    cy.deleteInstance(RESEARCHER_INSTANCE);
+    cy.deleteAgent(LEAD_INSTANCE);
+    cy.deleteAgent(RESEARCHER_INSTANCE);
     cy.exec(
       `kubectl delete agentrun -n ${NS} -l sympozium.ai/instance=${LEAD_INSTANCE} --ignore-not-found --wait=false`,
       { failOnNonZeroExit: false },
@@ -220,7 +220,7 @@ Do NOT use any tools. Just provide a direct, factual answer.`,
             url: `/api/v1/runs/${childRunName}?namespace=${NS}`,
             headers: authHeaders(),
           }).then((resp) => {
-            expect(resp.body.spec.instanceRef).to.eq(RESEARCHER_INSTANCE);
+            expect(resp.body.spec.agentRef).to.eq(RESEARCHER_INSTANCE);
           });
 
           // Wait for the child (researcher) run to complete

@@ -4,7 +4,7 @@ Ensembles are the **recommended way to get started** with Sympozium. A Ensemble 
 
 ## Why Ensembles?
 
-Without Ensembles, setting up even one agent requires creating a Secret, SympoziumInstance, SympoziumSchedule, and memory ConfigMap by hand. Ensembles collapse that into: pick a pack → enter your API key → done.
+Without Ensembles, setting up even one agent requires creating a Secret, Agent, SympoziumSchedule, and memory ConfigMap by hand. Ensembles collapse that into: pick a pack → enter your API key → done.
 
 ## How It Works
 
@@ -15,13 +15,13 @@ Ensemble "platform-team" (3 personas)
   │
   └── Controller stamps out:
       ├── Secret: platform-team-openai-key
-      ├── SympoziumInstance: platform-team-security-guardian
+      ├── Agent: platform-team-security-guardian
       │   ├── SympoziumSchedule: ...security-guardian-schedule (every 30m)
       │   └── ConfigMap: ...security-guardian-memory (seeded)
-      ├── SympoziumInstance: platform-team-sre-watchdog
+      ├── Agent: platform-team-sre-watchdog
       │   ├── SympoziumSchedule: ...sre-watchdog-schedule (every 5m)
       │   └── ConfigMap: ...sre-watchdog-memory (seeded)
-      ├── SympoziumInstance: platform-team-platform-engineer
+      ├── Agent: platform-team-platform-engineer
       │   ├── SympoziumSchedule: ...platform-engineer-schedule (weekdays 9am)
       │   └── ConfigMap: ...platform-engineer-memory (seeded)
       │
@@ -160,7 +160,7 @@ Arguments:
   task: "Write a report based on these findings: ..."
 ```
 
-The tool writes a spawn request to the IPC protocol. The spawner resolves the target persona to the correct SympoziumInstance, validates the relationship edge exists, and creates a child AgentRun.
+The tool writes a spawn request to the IPC protocol. The spawner resolves the target persona to the correct Agent, validates the relationship edge exists, and creates a child AgentRun.
 
 ### Visual Canvas
 
@@ -211,7 +211,7 @@ kubectl patch ensemble platform-team --type=merge -p '{
 }'
 ```
 
-The controller detects the `authRefs` change and reconciles — creating SympoziumInstances, Schedules, and memory ConfigMaps for each persona.
+The controller detects the `authRefs` change and reconciles — creating Agents, Schedules, and memory ConfigMaps for each persona.
 
 ## Writing Your Own Ensemble
 

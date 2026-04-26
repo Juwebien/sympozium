@@ -141,7 +141,7 @@ pod restart required since the file is always read fresh).
 
 ## 4. Per-Instance Repository Configuration
 
-Different `SympoziumInstance` objects should be able to target **different**
+Different `Agent` objects should be able to target **different**
 GitHub repositories (e.g. one agent watches `infra/prod`, another watches
 `infra/staging`). This is handled through a new `params` field on `SkillRef`.
 
@@ -155,11 +155,11 @@ type SkillRef struct {
 }
 ```
 
-### 4.2 On a SympoziumInstance
+### 4.2 On a Agent
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: platform-agent
 spec:
@@ -951,7 +951,7 @@ func runGithubSkillSetup(reader *bufio.Reader, apiBase, instanceName string) err
     }
 
     // 4. Patch instance SkillRef with params
-    // ... PATCH SympoziumInstance to add github-gitops SkillRef with params ...
+    // ... PATCH Agent to add github-gitops SkillRef with params ...
 
     fmt.Println("\n\n  ✅ GitHub linked!")
     fmt.Printf("     Repository: %s\n", repo)
@@ -997,7 +997,7 @@ docker-build-skill-github-gitops:
 ```yaml
 # 1. Create the instance with github-gitops skill bound to a repo
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: gitops-watcher
   namespace: default
@@ -1023,7 +1023,7 @@ metadata:
   name: gitops-drift-check
   namespace: default
 spec:
-  instanceRef: gitops-watcher
+  agentRef: gitops-watcher
   schedule: "*/30 * * * *"
   type: scheduled
   task: |
@@ -1042,7 +1042,7 @@ spec:
 
 ## 16. Implementation Checklist
 
-- [ ] Add `Params` field to `SkillRef` in `api/v1alpha1/sympoziuminstance_types.go`
+- [ ] Add `Params` field to `SkillRef` in `api/v1alpha1/agent_types.go`
 - [ ] Add `SecretRef` / `SecretMountPath` fields to `SkillSidecar` in `api/v1alpha1/skillpack_types.go`
 - [ ] Re-run `make generate` to regenerate deepcopy + CRD YAML
 - [ ] Update SkillPack controller (`internal/controller/skillpack_controller.go`) to:

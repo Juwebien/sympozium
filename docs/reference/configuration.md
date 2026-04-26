@@ -6,7 +6,7 @@
 |----------|-----------|-------------|
 | `EVENT_BUS_URL` | All | NATS server URL |
 | `DATABASE_URL` | API Server | PostgreSQL connection string |
-| `INSTANCE_NAME` | Channels | Owning SympoziumInstance name |
+| `INSTANCE_NAME` | Channels | Owning Agent name |
 | `MEMORY_ENABLED` | Agent Runner | Whether persistent memory is active |
 | `MAX_TOOL_ITERATIONS` | Agent Runner | Maximum tool-call iterations (default: 50). Can also be set per-run via `spec.env` in AgentRun CR. |
 | `TELEGRAM_BOT_TOKEN` | Telegram | Bot API token |

@@ -6,7 +6,7 @@ This guide explains how to create a SkillPack — from simple Markdown instructi
 
 ## Concepts
 
-A **SkillPack** is a Kubernetes CRD that bundles one or more skills. When toggled on a SympoziumInstance, the skills are mounted into every AgentRun pod for that instance.
+A **SkillPack** is a Kubernetes CRD that bundles one or more skills. When toggled on a Agent, the skills are mounted into every AgentRun pod for that instance.
 
 There are three layers to a skill, each optional beyond the first:
 
@@ -297,14 +297,14 @@ Use this sparingly and prefer read-only mounts whenever possible.
 
 ### Via the TUI
 
-1. Press `s` on a SympoziumInstance to drill into the Skills view.
+1. Press `s` on a Agent to drill into the Skills view.
 2. Use `Space` or `Enter` to toggle the skill on/off.
 3. The next AgentRun will include the sidecar and RBAC.
 
 ### Via kubectl
 
 ```bash
-kubectl patch sympoziuminstance <name> --type=merge \
+kubectl patch agent <name> --type=merge \
   -p '{"spec":{"skills":[{"skillPackRef":"my-skill"}]}}'
 ```
 
@@ -382,7 +382,7 @@ spec:
 
 ```
 1. User toggles k8s-ops on instance "alice"
-   → SympoziumInstance.spec.skills = [{skillPackRef: "k8s-ops"}]
+   → Agent.spec.skills = [{skillPackRef: "k8s-ops"}]
 
 2. AgentRun created for instance "alice"
    → Controller resolves SkillPack "k8s-ops"

@@ -158,20 +158,20 @@ main() {
   resolve_apiserver_token
 
   # ── Create instance ──
-  api_request POST "/api/v1/instances" \
+  api_request POST "/api/v1/agents" \
     "{\"name\":\"${INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\"}" >/dev/null
   pass "Created instance '${INSTANCE_NAME}'"
 
   # ── 1) Create heartbeat schedule (every-minute cron for fast test) ──
   api_request POST "/api/v1/schedules" \
-    "{\"name\":\"${SCHEDULE_NAME}\",\"instanceRef\":\"${INSTANCE_NAME}\",\"schedule\":\"* * * * *\",\"task\":\"heartbeat health check\",\"type\":\"heartbeat\"}" >/dev/null
+    "{\"name\":\"${SCHEDULE_NAME}\",\"agentRef\":\"${INSTANCE_NAME}\",\"schedule\":\"* * * * *\",\"task\":\"heartbeat health check\",\"type\":\"heartbeat\"}" >/dev/null
   pass "Created heartbeat schedule '${SCHEDULE_NAME}'"
 
   # ── Verify schedule resource fields ──
   sched_json="$(api_request GET "/api/v1/schedules/${SCHEDULE_NAME}")"
 
   sched_type="$(printf "%s" "$sched_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("type",""))')"
-  sched_instance_ref="$(printf "%s" "$sched_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("instanceRef",""))')"
+  sched_instance_ref="$(printf "%s" "$sched_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("agentRef",""))')"
   sched_task="$(printf "%s" "$sched_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("task",""))')"
   sched_cron="$(printf "%s" "$sched_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("schedule",""))')"
 
@@ -180,7 +180,7 @@ main() {
     exit 1
   fi
   if [[ "$sched_instance_ref" != "$INSTANCE_NAME" ]]; then
-    fail "Schedule instanceRef mismatch (got '${sched_instance_ref}')"
+    fail "Schedule agentRef mismatch (got '${sched_instance_ref}')"
     exit 1
   fi
   if [[ "$sched_task" != "heartbeat health check" ]]; then
@@ -191,7 +191,7 @@ main() {
     fail "Schedule cron mismatch (got '${sched_cron}')"
     exit 1
   fi
-  pass "Schedule has correct type/instanceRef/task/cron"
+  pass "Schedule has correct type/agentRef/task/cron"
 
   # ── Verify no K8s CronJob (Sympozium controller manages dispatch) ──
   if kubectl get cronjob "$SCHEDULE_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then

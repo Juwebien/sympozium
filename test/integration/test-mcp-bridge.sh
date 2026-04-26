@@ -4,7 +4,7 @@
 # What it does:
 #   1. Deploys a minimal Python MCP server (JSON-RPC 2.0 / Streamable HTTP)
 #      as a Pod + Service in the cluster
-#   2. Creates a SympoziumInstance with the MCP server configured
+#   2. Creates a Agent with the MCP server configured
 #   3. Creates an AgentRun (via LM Studio) that calls the MCP tool
 #   4. Validates the agent discovered and invoked the tool, and received the
 #      expected result
@@ -302,14 +302,14 @@ if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then
 fi
 
 # ============================================================
-# Step 4: Create SympoziumInstance with MCP server
+# Step 4: Create Agent with MCP server
 # ============================================================
 MCP_URL="http://${MCP_SERVICE_NAME}.${NAMESPACE}.svc:8080"
-info "Creating SympoziumInstance: $INSTANCE_NAME (MCP URL: $MCP_URL)"
+info "Creating Agent: $INSTANCE_NAME (MCP URL: $MCP_URL)"
 
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -340,7 +340,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-mcp-$(date +%s)"
   task: |

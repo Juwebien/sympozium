@@ -42,14 +42,14 @@ func (pe *PolicyEnforcer) Handle(ctx context.Context, req admission.Request) adm
 		return admission.Allowed("run is being deleted; skipping policy validation")
 	}
 
-	// Look up the owning SympoziumInstance
-	var instance sympoziumv1alpha1.SympoziumInstance
+	// Look up the owning Agent
+	var instance sympoziumv1alpha1.Agent
 	if err := pe.Client.Get(ctx, types.NamespacedName{
-		Name:      run.Spec.InstanceRef,
+		Name:      run.Spec.AgentRef,
 		Namespace: run.Namespace,
 	}, &instance); err != nil {
 		return admission.Errored(http.StatusBadRequest,
-			fmt.Errorf("failed to find SympoziumInstance %s: %w", run.Spec.InstanceRef, err))
+			fmt.Errorf("failed to find Agent %s: %w", run.Spec.AgentRef, err))
 	}
 
 	// If no policy is bound, allow
@@ -234,10 +234,10 @@ func (mpe *MutatingPolicyEnforcer) Handle(ctx context.Context, req admission.Req
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	// Look up the owning SympoziumInstance
-	var instance sympoziumv1alpha1.SympoziumInstance
+	// Look up the owning Agent
+	var instance sympoziumv1alpha1.Agent
 	if err := mpe.Client.Get(ctx, types.NamespacedName{
-		Name:      run.Spec.InstanceRef,
+		Name:      run.Spec.AgentRef,
 		Namespace: run.Namespace,
 	}, &instance); err != nil {
 		return admission.Allowed("instance not found, skipping mutation")

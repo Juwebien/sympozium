@@ -6,12 +6,12 @@ const SCHEDULE = `cy-scui-sched-${Date.now()}`;
 
 describe("Schedule — create via UI", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
   });
 
   after(() => {
     cy.deleteSchedule(SCHEDULE);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("creates a schedule and surfaces it on the list", () => {

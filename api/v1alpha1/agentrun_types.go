@@ -8,8 +8,8 @@ import (
 // AgentRunSpec defines the desired state of an AgentRun.
 // Each agent invocation (including sub-agents) produces an AgentRun CR.
 type AgentRunSpec struct {
-	// InstanceRef is the name of the SympoziumInstance this run belongs to.
-	InstanceRef string `json:"instanceRef"`
+	// AgentRef is the name of the Agent this run belongs to.
+	AgentRef string `json:"agentRef"`
 
 	// AgentID identifies the agent configuration to use.
 	AgentID string `json:"agentId"`

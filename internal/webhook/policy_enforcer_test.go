@@ -37,7 +37,7 @@ func admissionRequestFor(t *testing.T, run *sympoziumv1alpha1.AgentRun) admissio
 
 // TestPolicyEnforcer_AllowsDeletingRun_WhenInstanceMissing is the regression
 // guard: when an AgentRun has been marked for deletion (deletionTimestamp
-// set) and its referenced SympoziumInstance has already been cascade-deleted
+// set) and its referenced Agent has already been cascade-deleted
 // (e.g. Ensemble disabled), the controller still needs to remove its
 // finalizer to let the object be GC'd. The webhook MUST allow that update
 // rather than rejecting it with "instance not found" and leaving the run
@@ -57,7 +57,7 @@ func TestPolicyEnforcer_AllowsDeletingRun_WhenInstanceMissing(t *testing.T) {
 			Finalizers:        []string{"sympozium.ai/agentrun-finalizer"},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: "already-deleted-instance",
+			AgentRef: "already-deleted-instance",
 			Task:        "irrelevant",
 		},
 	}
@@ -88,7 +88,7 @@ func TestPolicyEnforcer_RejectsCreate_WhenInstanceMissing(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: "nonexistent-instance",
+			AgentRef: "nonexistent-instance",
 			Task:        "x",
 		},
 	}
@@ -110,12 +110,12 @@ func TestPolicyEnforcer_AllowsRun_WhenInstanceExistsAndNoPolicy(t *testing.T) {
 		t.Fatalf("add scheme: %v", err)
 	}
 
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{Name: "inst", Namespace: "default"},
 	}
 	run := &sympoziumv1alpha1.AgentRun{
 		ObjectMeta: metav1.ObjectMeta{Name: "r", Namespace: "default"},
-		Spec:       sympoziumv1alpha1.AgentRunSpec{InstanceRef: "inst", Task: "x"},
+		Spec:       sympoziumv1alpha1.AgentRunSpec{AgentRef: "inst", Task: "x"},
 	}
 
 	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(instance).Build()

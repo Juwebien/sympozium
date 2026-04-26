@@ -22,7 +22,7 @@ func newTestRun() *sympoziumv1alpha1.AgentRun {
 			Namespace: "default",
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: "my-instance",
+			AgentRef: "my-instance",
 			AgentID:     "default",
 			SessionKey:  "sess-1",
 			Task:        "do stuff",
@@ -524,7 +524,7 @@ func TestBuildVolumes_MemoryEnabled(t *testing.T) {
 			if v.ConfigMap == nil {
 				t.Fatal("memory volume should be a ConfigMap volume")
 			}
-			expected := run.Spec.InstanceRef + "-memory"
+			expected := run.Spec.AgentRef + "-memory"
 			if v.ConfigMap.Name != expected {
 				t.Errorf("memory ConfigMap name = %q, want %q", v.ConfigMap.Name, expected)
 			}

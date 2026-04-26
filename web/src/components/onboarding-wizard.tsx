@@ -222,7 +222,7 @@ interface OnboardingWizardProps {
   /** Display name shown in the dialog title */
   targetName?: string;
   /** Number of personas in the pack (persona mode only) */
-  personaCount?: number;
+  agentConfigCount?: number;
   /** Available SkillPacks to choose from */
   availableSkills?: string[];
   /** Pre-fill form values */
@@ -437,7 +437,7 @@ export function OnboardingWizard({
   onClose,
   mode,
   targetName,
-  personaCount,
+  agentConfigCount,
   availableSkills = [],
   defaults,
   onComplete,
@@ -707,7 +707,7 @@ export function OnboardingWizard({
           </DialogTitle>
           <DialogDescription>
             {mode === "instance"
-              ? "Configure a new SympoziumInstance with provider, model, and skills."
+              ? "Configure a new Agent with provider, model, and skills."
               : "Configure provider, model, skills, and channels to activate this ensemble."}
           </DialogDescription>
         </DialogHeader>
@@ -1104,10 +1104,10 @@ export function OnboardingWizard({
                   : undefined
               }
             />
-            {mode === "persona" && personaCount !== undefined && (
+            {mode === "persona" && agentConfigCount !== undefined && (
               <p className="text-xs text-muted-foreground">
                 Applied to all{" "}
-                <span className="text-blue-400">{personaCount}</span> personas.
+                <span className="text-blue-400">{agentConfigCount}</span> personas.
               </p>
             )}
           </div>
@@ -1534,10 +1534,10 @@ export function OnboardingWizard({
                   </span>
                 </div>
               )}
-              {mode === "persona" && personaCount !== undefined && (
+              {mode === "persona" && agentConfigCount !== undefined && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Personas</span>
-                  <span>{personaCount}</span>
+                  <span>{agentConfigCount}</span>
                 </div>
               )}
               {form.heartbeatInterval && (
@@ -1614,7 +1614,7 @@ export function OnboardingWizard({
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 {mode === "instance"
-                  ? "A new SympoziumInstance will be created with this configuration."
+                  ? "A new Agent will be created with this configuration."
                   : "The controller will stamp out Instances, Schedules, and ConfigMaps for each persona."}
               </p>
               <Button
@@ -1636,12 +1636,12 @@ export function OnboardingWizard({
                   : ensembleYamlFromWizard(
                       targetName || "<pack-name>",
                       form,
-                      personaCount,
+                      agentConfigCount,
                     )
               }
               title={
                 mode === "instance"
-                  ? `SympoziumInstance — ${form.name || "<instance>"}`
+                  ? `Agent — ${form.name || "<instance>"}`
                   : `Ensemble — ${targetName || "<pack>"}`
               }
             />

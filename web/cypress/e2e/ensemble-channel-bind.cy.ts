@@ -9,7 +9,7 @@ const STAMPED_INSTANCE = `${PACK}-${PERSONA}`;
 describe("Ensemble — channel binding", () => {
   after(() => {
     cy.deleteEnsemble(PACK);
-    cy.deleteInstance(STAMPED_INSTANCE);
+    cy.deleteAgent(STAMPED_INSTANCE);
   });
 
   it("stamps a persona with a channel binding and surfaces it on instance detail", () => {

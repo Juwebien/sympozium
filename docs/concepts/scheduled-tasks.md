@@ -10,7 +10,7 @@ kind: SympoziumSchedule
 metadata:
   name: daily-standup
 spec:
-  instanceRef: alice
+  agentRef: alice
   schedule: "0 9 * * *"        # every day at 9am
   type: heartbeat
   task: "Review overnight alerts and summarize status"

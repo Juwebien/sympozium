@@ -18,9 +18,9 @@ import (
 	sympoziumv1alpha1 "github.com/sympozium-ai/sympozium/api/v1alpha1"
 )
 
-// newInstanceTestReconciler builds a SympoziumInstanceReconciler backed by a
+// newInstanceTestReconciler builds a AgentReconciler backed by a
 // fake client pre-loaded with the supplied objects.
-func newInstanceTestReconciler(t *testing.T, objs ...client.Object) (*SympoziumInstanceReconciler, client.Client) {
+func newInstanceTestReconciler(t *testing.T, objs ...client.Object) (*AgentReconciler, client.Client) {
 	t.Helper()
 
 	scheme := runtime.NewScheme()
@@ -34,10 +34,10 @@ func newInstanceTestReconciler(t *testing.T, objs ...client.Object) (*SympoziumI
 	cl := fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjects(objs...).
-		WithStatusSubresource(&sympoziumv1alpha1.SympoziumInstance{}).
+		WithStatusSubresource(&sympoziumv1alpha1.Agent{}).
 		Build()
 
-	return &SympoziumInstanceReconciler{
+	return &AgentReconciler{
 		Client: cl,
 		Scheme: scheme,
 		Log:    logr.Discard(),
@@ -81,12 +81,12 @@ func getMemoryContent(t *testing.T, cl client.Client, namespace, instanceName st
 // ---------------------------------------------------------------------------
 
 func TestInstanceMemory_AdhocInstance_GrowsAcrossPrompts(t *testing.T) {
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "adhoc-test",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "claude-sonnet-4-20250514",
@@ -187,16 +187,16 @@ func TestInstanceMemory_EnsembleInstance_GrowsAcrossPrompts(t *testing.T) {
 	// A Ensemble creates instances named "<pack>-<persona>".
 	// This test simulates the instance that would be created by a Ensemble
 	// with a "devops-assistant" persona.
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mypack-devops-assistant",
 			Namespace: "default",
 			Labels: map[string]string{
 				"sympozium.ai/personapack": "mypack",
-				"sympozium.ai/persona":     "devops-assistant",
+				"sympozium.ai/agent-config":     "devops-assistant",
 			},
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "claude-sonnet-4-20250514",
@@ -272,12 +272,12 @@ func TestInstanceMemory_EnsembleInstance_GrowsAcrossPrompts(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInstanceMemory_DisabledDoesNotCreateConfigMap(t *testing.T) {
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "no-memory-instance",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "gpt-4o",
@@ -313,12 +313,12 @@ func TestInstanceMemory_DisabledDoesNotCreateConfigMap(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInstanceMemory_ReconcilePreservesExistingContent(t *testing.T) {
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "preserve-test",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "claude-sonnet-4-20250514",

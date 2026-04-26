@@ -13,7 +13,7 @@ describe("Sidebar — grouped navigation", () => {
     cy.get("aside").contains("Dashboard").should("exist");
     cy.get("aside").contains("Gateway").should("exist");
     cy.get("aside").contains("Ensembles").should("exist");
-    cy.get("aside").contains("Instances").should("exist");
+    cy.get("aside").contains("Agents").should("exist");
     cy.get("aside").contains("Runs").should("exist");
     cy.get("aside").contains("Schedules").should("exist");
     cy.get("aside").contains("Policies").should("exist");
@@ -29,7 +29,7 @@ describe("Sidebar — grouped navigation", () => {
     cy.url().should("include", "/ensembles");
 
     // Click Instances in sidebar.
-    cy.get("aside").contains("a", "Instances").click();
+    cy.get("aside").contains("a", "Agents").click();
     cy.url().should("include", "/instances");
 
     // Click Runs in sidebar.

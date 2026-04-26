@@ -124,7 +124,7 @@ info "Test 1: Instance with memory skill gets a memory server"
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${MEM_INSTANCE}
   namespace: ${NAMESPACE}
@@ -279,7 +279,7 @@ kubectl create secret generic "$NOMEM_SECRET" \
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${NOMEM_INSTANCE}
   namespace: ${NAMESPACE}
@@ -322,7 +322,7 @@ metadata:
     sympozium.ai/instance: ${MEM_INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${MEM_INSTANCE}
+  agentRef: ${MEM_INSTANCE}
   agentId: default
   sessionKey: "test-mem-timeout-${SUFFIX}"
   task: "Memory timeout test"

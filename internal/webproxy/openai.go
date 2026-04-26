@@ -69,7 +69,7 @@ type ModelEntry struct {
 }
 
 func (p *Proxy) handleListModels(w http.ResponseWriter, r *http.Request) {
-	inst, err := p.getInstance(r.Context())
+	inst, err := p.getAgent(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to get instance: "+err.Error())
 		return
@@ -118,7 +118,7 @@ func (p *Proxy) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	inst, err := p.getInstance(ctx)
+	inst, err := p.getAgent(ctx)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to get instance: "+err.Error())
 		return
@@ -157,7 +157,7 @@ func (p *Proxy) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef:  inst.Name,
+			AgentRef:  inst.Name,
 			AgentID:      "primary",
 			SessionKey:   fmt.Sprintf("web-%s-%d", inst.Name, time.Now().UnixNano()),
 			Task:         task,
@@ -378,10 +378,10 @@ func (p *Proxy) blockingResponse(w http.ResponseWriter, r *http.Request, runName
 	}
 }
 
-// getInstance fetches the SympoziumInstance for this proxy.
-func (p *Proxy) getInstance(ctx context.Context) (*sympoziumv1alpha1.SympoziumInstance, error) {
+// getAgent fetches the Agent for this proxy.
+func (p *Proxy) getAgent(ctx context.Context) (*sympoziumv1alpha1.Agent, error) {
 	ns := podNamespace()
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := p.k8s.Get(ctx, client.ObjectKey{Name: p.config.InstanceName, Namespace: ns}, &inst); err != nil {
 		return nil, err
 	}
@@ -399,7 +399,7 @@ func podNamespace() string {
 }
 
 // resolveProvider returns the AI provider for the instance.
-func resolveProvider(inst *sympoziumv1alpha1.SympoziumInstance) string {
+func resolveProvider(inst *sympoziumv1alpha1.Agent) string {
 	for _, ref := range inst.Spec.AuthRefs {
 		if ref.Provider != "" {
 			return ref.Provider
@@ -416,7 +416,7 @@ func resolveProvider(inst *sympoziumv1alpha1.SympoziumInstance) string {
 }
 
 // resolveAuthSecret returns the first non-empty auth secret reference.
-func resolveAuthSecret(inst *sympoziumv1alpha1.SympoziumInstance) string {
+func resolveAuthSecret(inst *sympoziumv1alpha1.Agent) string {
 	for _, ref := range inst.Spec.AuthRefs {
 		if strings.TrimSpace(ref.Secret) != "" {
 			return ref.Secret
@@ -425,9 +425,9 @@ func resolveAuthSecret(inst *sympoziumv1alpha1.SympoziumInstance) string {
 	return ""
 }
 
-// listInstances fetches all instances (for namespace-scoped listing).
-func (p *Proxy) listInstances(ctx context.Context) ([]sympoziumv1alpha1.SympoziumInstance, error) {
-	var list sympoziumv1alpha1.SympoziumInstanceList
+// listAgents fetches all instances (for namespace-scoped listing).
+func (p *Proxy) listAgents(ctx context.Context) ([]sympoziumv1alpha1.Agent, error) {
+	var list sympoziumv1alpha1.AgentList
 	if err := p.k8s.List(ctx, &list, client.InNamespace("")); err != nil {
 		return nil, err
 	}

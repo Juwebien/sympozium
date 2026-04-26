@@ -139,7 +139,7 @@ func (p *Proxy) handleMCPMessage(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "tools/list":
-		inst, err := p.getInstance(r.Context())
+		inst, err := p.getAgent(r.Context())
 		if err != nil {
 			resp.Error = &JSONRPCError{Code: -32603, Message: err.Error()}
 			break
@@ -220,7 +220,7 @@ func (p *Proxy) handleMCPMessage(w http.ResponseWriter, r *http.Request) {
 
 // executeAgentTask creates an AgentRun and waits for the result.
 func (p *Proxy) executeAgentTask(ctx context.Context, task string, session *mcpSession) (string, error) {
-	inst, err := p.getInstance(ctx)
+	inst, err := p.getAgent(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -238,7 +238,7 @@ func (p *Proxy) executeAgentTask(ctx context.Context, task string, session *mcpS
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: inst.Name,
+			AgentRef: inst.Name,
 			AgentID:     "primary",
 			SessionKey:  fmt.Sprintf("mcp-%s-%d", inst.Name, time.Now().UnixNano()),
 			Task:        task,
@@ -322,9 +322,9 @@ func (p *Proxy) sendProgressNotification(session *mcpSession, content string) {
 	}
 }
 
-// listInstances is unused but kept for potential future use.
-func (p *Proxy) listInstancesMCP(ctx context.Context) ([]string, error) {
-	instances, err := p.listInstances(ctx)
+// listAgents is unused but kept for potential future use.
+func (p *Proxy) listAgentsMCP(ctx context.Context) ([]string, error) {
+	instances, err := p.listAgents(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +336,7 @@ func (p *Proxy) listInstancesMCP(ctx context.Context) ([]string, error) {
 }
 
 // resolveSystemPrompt extracts the system prompt from instance config.
-func resolveSystemPrompt(inst *sympoziumv1alpha1.SympoziumInstance) string {
+func resolveSystemPrompt(inst *sympoziumv1alpha1.Agent) string {
 	if inst.Spec.Memory != nil {
 		return inst.Spec.Memory.SystemPrompt
 	}

@@ -186,7 +186,7 @@ main() {
   fi
   create_body="${create_body}}"
 
-  api_request POST "/api/v1/instances" "$create_body" >/dev/null
+  api_request POST "/api/v1/agents" "$create_body" >/dev/null
   pass "Created instance '${INSTANCE_NAME}' with memory skill"
 
   # Wait for memory server to be ready before dispatching runs.
@@ -218,7 +218,7 @@ main() {
 
     local task="Continuity test run ${i} of ${NUM_RUNS}. Say 'Run ${i} complete' and nothing else."
     local run_json
-    run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${INSTANCE_NAME}\",\"task\":\"${task}\"}")"
+    run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${INSTANCE_NAME}\",\"task\":\"${task}\"}")"
     local run_name
     run_name="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))')"
 
@@ -274,7 +274,7 @@ main() {
 
   # Instance should still be retrievable
   local inst_json
-  inst_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}" 2>/dev/null || echo "")"
+  inst_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}" 2>/dev/null || echo "")"
   if [[ -n "$inst_json" ]]; then
     pass "Instance still retrievable after all runs"
   else
@@ -293,7 +293,7 @@ main() {
   # Can still dispatch one more run (instance not stuck)
   info "── Final canary run ──"
   local canary_json
-  canary_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${INSTANCE_NAME}\",\"task\":\"Final canary: say OK\"}" 2>/dev/null || echo "")"
+  canary_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${INSTANCE_NAME}\",\"task\":\"Final canary: say OK\"}" 2>/dev/null || echo "")"
   if [[ -n "$canary_json" ]]; then
     local canary_name
     canary_name="$(printf "%s" "$canary_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))' 2>/dev/null || echo "")"

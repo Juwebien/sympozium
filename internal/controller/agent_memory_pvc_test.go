@@ -17,12 +17,12 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestInstanceMemory_PVCCreatedWhenMemorySkillAttached(t *testing.T) {
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mem-pvc-test",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "claude-sonnet-4-20250514",
@@ -72,12 +72,12 @@ func TestInstanceMemory_PVCCreatedWhenMemorySkillAttached(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInstanceMemory_PVCNotCreatedWithoutMemorySkill(t *testing.T) {
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "no-mem-skill",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "gpt-4o",
@@ -114,12 +114,12 @@ func TestInstanceMemory_PVCNotCreatedWithoutMemorySkill(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestInstanceMemory_PVCAlreadyExists(t *testing.T) {
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "idempotent-pvc",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "claude-sonnet-4-20250514",

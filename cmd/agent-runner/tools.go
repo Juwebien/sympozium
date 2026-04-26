@@ -369,7 +369,7 @@ func sendChannelMessageTool(args map[string]any) string {
 
 // delegateToPersonaTool writes a spawn request to /ipc/spawn/ with
 // targetPersona and packName for the IPC bridge to forward to the spawner.
-// The spawner resolves the persona to the correct SympoziumInstance.
+// The spawner resolves the persona to the correct Agent.
 func delegateToPersonaTool(args map[string]any) string {
 	targetPersona, _ := args["targetPersona"].(string)
 	task, _ := args["task"].(string)

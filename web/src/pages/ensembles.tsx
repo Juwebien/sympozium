@@ -258,7 +258,7 @@ export function EnsemblesPage() {
                   {pack.spec.version || "—"}
                 </TableCell>
                 <TableCell className="text-sm">
-                  {pack.status?.personaCount ?? pack.spec.personas?.length ?? 0}
+                  {pack.status?.agentConfigCount ?? pack.spec.agentConfigs?.length ?? 0}
                 </TableCell>
                 <TableCell className="text-sm">
                   {pack.status?.installedCount ?? 0}
@@ -318,20 +318,20 @@ export function EnsemblesPage() {
         onClose={closeWizard}
         mode="persona"
         targetName={wizardPack?.metadata.name}
-        personaCount={wizardPack?.spec.personas?.length ?? 0}
+        agentConfigCount={wizardPack?.spec.agentConfigs?.length ?? 0}
         availableSkills={(skillPacks || []).map((s) => s.metadata.name)}
         defaults={{
           provider: wizardPack?.spec.authRefs?.[0]?.provider || "",
           secretName: wizardPack?.spec.authRefs?.[0]?.secret || "",
-          model: wizardPack?.spec.personas?.[0]?.model || "",
+          model: wizardPack?.spec.agentConfigs?.[0]?.model || "",
           skills: Array.from(
             new Set(
-              (wizardPack?.spec.personas || []).flatMap((p) => p.skills || []),
+              (wizardPack?.spec.agentConfigs || []).flatMap((p) => p.skills || []),
             ),
           ),
           channelConfigs: wizardPack?.spec.channelConfigs || {},
           channels:
-            wizardPack?.spec.personas?.[0]?.channels ||
+            wizardPack?.spec.agentConfigs?.[0]?.channels ||
             Object.keys(wizardPack?.spec.channelConfigs || {}),
         }}
         onComplete={handleComplete}

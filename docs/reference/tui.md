@@ -7,7 +7,7 @@ Running `sympozium` with no arguments launches a **k9s-style interactive termina
 | Key | View | Description |
 |-----|------|-------------|
 | `1` | Personas | Ensemble list — press Enter to activate a pack and create agents |
-| `2` | Instances | SympoziumInstance list with status, channels, memory config |
+| `2` | Instances | Agent list with status, channels, memory config |
 | `3` | Runs | AgentRun list with phase, duration, result preview |
 | `4` | Policies | SympoziumPolicy list with feature gates |
 | `5` | Skills | SkillPack list with file counts |

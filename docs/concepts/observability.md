@@ -4,11 +4,11 @@ Sympozium supports OpenTelemetry for agent runs and tool execution. The built-in
 
 ## Instance-Level Configuration
 
-Enable observability per `SympoziumInstance`:
+Enable observability per `Agent`:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: my-agent
 spec:

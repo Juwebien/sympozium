@@ -38,12 +38,12 @@ func newScheduleTestReconciler(t *testing.T, objs ...client.Object) (*SympoziumS
 
 func TestSympoziumScheduleReconcile_CopiesProviderAndAuthSecretToRun(t *testing.T) {
 	now := time.Now()
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "inst-a",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "claude-3-5-sonnet",
@@ -61,7 +61,7 @@ func TestSympoziumScheduleReconcile_CopiesProviderAndAuthSecretToRun(t *testing.
 			CreationTimestamp: metav1.NewTime(now.Add(-2 * time.Minute)),
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef: "inst-a",
+			AgentRef: "inst-a",
 			Schedule:    "* * * * *",
 			Task:        "heartbeat",
 			Type:        "heartbeat",
@@ -117,12 +117,12 @@ func TestSympoziumScheduleReconcile_CopiesProviderAndAuthSecretToRun(t *testing.
 
 func TestSympoziumScheduleReconcile_FiltersWebEndpointSkill(t *testing.T) {
 	now := time.Now()
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "inst-web",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "gpt-4o",
@@ -145,7 +145,7 @@ func TestSympoziumScheduleReconcile_FiltersWebEndpointSkill(t *testing.T) {
 			CreationTimestamp: metav1.NewTime(now.Add(-2 * time.Minute)),
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef: "inst-web",
+			AgentRef: "inst-web",
 			Schedule:    "* * * * *",
 			Task:        "heartbeat",
 			Type:        "heartbeat",
@@ -192,12 +192,12 @@ func TestSympoziumScheduleReconcile_FiltersWebEndpointSkill(t *testing.T) {
 
 func TestSympoziumScheduleReconcile_SkipsWhenServingRunExists(t *testing.T) {
 	now := time.Now()
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "inst-serving",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "gpt-4o",
@@ -218,7 +218,7 @@ func TestSympoziumScheduleReconcile_SkipsWhenServingRunExists(t *testing.T) {
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: "inst-serving",
+			AgentRef: "inst-serving",
 			AgentID:     "web-endpoint",
 			SessionKey:  "web",
 			Task:        "serve",
@@ -243,7 +243,7 @@ func TestSympoziumScheduleReconcile_SkipsWhenServingRunExists(t *testing.T) {
 			CreationTimestamp: metav1.NewTime(now.Add(-2 * time.Minute)),
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef: "inst-serving",
+			AgentRef: "inst-serving",
 			Schedule:    "* * * * *",
 			Task:        "heartbeat",
 			Type:        "heartbeat",
@@ -284,12 +284,12 @@ func TestSympoziumScheduleReconcile_SkipsWhenServingRunExists(t *testing.T) {
 
 func TestSympoziumScheduleReconcile_ResolvesProviderFromSecretNameFallback(t *testing.T) {
 	now := time.Now()
-	instance := &sympoziumv1alpha1.SympoziumInstance{
+	instance := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "inst-b",
 			Namespace: "default",
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model: "gpt-4.1",
@@ -307,7 +307,7 @@ func TestSympoziumScheduleReconcile_ResolvesProviderFromSecretNameFallback(t *te
 			CreationTimestamp: metav1.NewTime(now.Add(-2 * time.Minute)),
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef: "inst-b",
+			AgentRef: "inst-b",
 			Schedule:    "* * * * *",
 			Task:        "heartbeat",
 			Type:        "heartbeat",

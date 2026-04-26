@@ -16,7 +16,7 @@ Most agent frameworks dump every tool into one shared process. One bad `kubectl 
 ## How Sidecars Are Injected
 
 ```
-SympoziumInstance has skills: [k8s-ops]
+Agent has skills: [k8s-ops]
   → AgentRun created
     → Controller resolves SkillPack "k8s-ops"
       → Finds sidecar: { image: skill-k8s-ops, rbac: [...] }
@@ -60,7 +60,7 @@ Every agent pod has these tools available out of the box (no skill sidecar requi
 ```bash
 # In the TUI: press 's' on an instance → Space to toggle skills
 # Or via kubectl:
-kubectl patch sympoziuminstance <name> --type=merge \
+kubectl patch agent <name> --type=merge \
   -p '{"spec":{"skills":[{"skillPackRef":"k8s-ops"},{"skillPackRef":"llmfit"}]}}'
 ```
 

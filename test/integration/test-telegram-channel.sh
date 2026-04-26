@@ -4,7 +4,7 @@
 # This test has two modes:
 #
 # Mode 1 (no TELEGRAM_BOT_TOKEN): Deployment pipeline only
-#   - Creates a SympoziumInstance with a telegram channel
+#   - Creates a Agent with a telegram channel
 #   - Verifies the controller creates a channel-telegram Deployment
 #   - Checks the channel pod starts (may restart without a real token, but
 #     the image pull + container start is validated)
@@ -59,7 +59,7 @@ cleanup() {
     kubectl delete sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete jobs -n "$NAMESPACE" -l "sympozium.ai/agentrun=$RUN_NAME" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete pods -n "$NAMESPACE" -l "sympozium.ai/agentrun=$RUN_NAME" --ignore-not-found >/dev/null 2>&1 || true
-    # Wait for the controller to clean up channel deployments (owned by SympoziumInstance)
+    # Wait for the controller to clean up channel deployments (owned by Agent)
     sleep 3
     kubectl delete deployment "$INSTANCE_NAME-channel-telegram" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
     kubectl delete secret "$TELEGRAM_SECRET_NAME" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
@@ -111,7 +111,7 @@ sleep 2
 # ============================================================
 # Part 1: Channel Deployment Pipeline
 # ============================================================
-info "Creating SympoziumInstance with telegram channel: $INSTANCE_NAME"
+info "Creating Agent with telegram channel: $INSTANCE_NAME"
 
 # Build the channel config — use a real or dummy token
 if $FULL_MODE; then
@@ -126,7 +126,7 @@ fi
 
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -189,13 +189,13 @@ if $deploy_found; then
     fi
 fi
 
-# Verify SympoziumInstance status shows the channel
+# Verify Agent status shows the channel
 channel_status=$(kubectl get sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" \
     -o jsonpath='{.status.channels[0].type}' 2>/dev/null || echo "")
 if [[ "$channel_status" == "telegram" ]]; then
-    pass "SympoziumInstance status shows telegram channel"
+    pass "Agent status shows telegram channel"
 else
-    info "SympoziumInstance channel status: $channel_status (may need reconcile)"
+    info "Agent channel status: $channel_status (may need reconcile)"
 fi
 
 # Wait for pod to start (or at least be created)
@@ -253,7 +253,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-tg-$(date +%s)"
   task: |

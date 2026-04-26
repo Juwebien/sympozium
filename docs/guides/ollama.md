@@ -91,9 +91,9 @@ For example: `http://172.18.0.1:11434/v1`
 
 ---
 
-## Creating a SympoziumInstance
+## Creating a Agent
 
-Create a SympoziumInstance that points at your Ollama server. Ollama does not
+Create a Agent that points at your Ollama server. Ollama does not
 require an API key, but the `authRefs` field is mandatory -- create a Secret
 with a placeholder value.
 
@@ -104,7 +104,7 @@ kubectl create secret generic ollama-key \
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ollama-agent
 spec:
@@ -136,7 +136,7 @@ kind: AgentRun
 metadata:
   name: ollama-test
 spec:
-  instanceRef: ollama-agent
+  agentRef: ollama-agent
   task: "List all pods across every namespace and summarise their status."
   model:
     provider: ollama
@@ -165,7 +165,7 @@ chat completions and MCP protocol support.
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ollama-server
 spec:
@@ -268,7 +268,7 @@ You can also set this manually in a CRD:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ollama-agent
 spec:
@@ -352,7 +352,7 @@ The base URL becomes the in-cluster DNS name:
 http://ollama.ollama.svc:11434/v1
 ```
 
-Update your SympoziumInstance accordingly:
+Update your Agent accordingly:
 
 ```yaml
 agents:
@@ -421,7 +421,7 @@ ollama list          # see available models
 ollama pull llama3   # pull if missing
 ```
 
-The model name in your SympoziumInstance must match exactly (e.g. `llama3`,
+The model name in your Agent must match exactly (e.g. `llama3`,
 not `meta-llama/llama3`).
 
 ### Network policy blocking traffic

@@ -58,7 +58,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "sympozium",
 		Short: "Sympozium - Kubernetes-native AI agent management",
-		Long: `Sympozium CLI for managing SympoziumInstances, AgentRuns, SympoziumPolicies,
+		Long: `Sympozium CLI for managing Agents, AgentRuns, SympoziumPolicies,
 SkillPacks, and feature gates in your Kubernetes cluster.
 
 Running without a subcommand launches the interactive TUI.`,
@@ -137,16 +137,16 @@ func newInstancesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "instances",
 		Aliases: []string{"instance", "inst"},
-		Short:   "Manage SympoziumInstances",
+		Short:   "Manage Agents",
 	}
 
 	cmd.AddCommand(
 		&cobra.Command{
 			Use:   "list",
-			Short: "List SympoziumInstances",
+			Short: "List Agents",
 			RunE: func(cmd *cobra.Command, args []string) error {
 				ctx := context.Background()
-				var list sympoziumv1alpha1.SympoziumInstanceList
+				var list sympoziumv1alpha1.AgentList
 				if err := k8sClient.List(ctx, &list, client.InNamespace(namespace)); err != nil {
 					return err
 				}
@@ -168,11 +168,11 @@ func newInstancesCmd() *cobra.Command {
 		},
 		&cobra.Command{
 			Use:   "get [name]",
-			Short: "Get a SympoziumInstance",
+			Short: "Get a Agent",
 			Args:  cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				ctx := context.Background()
-				var inst sympoziumv1alpha1.SympoziumInstance
+				var inst sympoziumv1alpha1.Agent
 				if err := k8sClient.Get(ctx, types.NamespacedName{Name: args[0], Namespace: namespace}, &inst); err != nil {
 					return err
 				}
@@ -183,11 +183,11 @@ func newInstancesCmd() *cobra.Command {
 		},
 		&cobra.Command{
 			Use:   "delete [name]",
-			Short: "Delete a SympoziumInstance",
+			Short: "Delete a Agent",
 			Args:  cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				ctx := context.Background()
-				inst := &sympoziumv1alpha1.SympoziumInstance{
+				inst := &sympoziumv1alpha1.Agent{
 					ObjectMeta: metav1.ObjectMeta{Name: args[0], Namespace: namespace},
 				}
 				if err := k8sClient.Delete(ctx, inst); err != nil {
@@ -227,7 +227,7 @@ func newRunsCmd() *cobra.Command {
 						tokens = fmt.Sprintf("%d/%d", run.Status.TokenUsage.InputTokens, run.Status.TokenUsage.OutputTokens)
 					}
 					fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
-						run.Name, run.Spec.InstanceRef,
+						run.Name, run.Spec.AgentRef,
 						run.Status.Phase, run.Status.PodName, tokens, age)
 				}
 				return w.Flush()
@@ -565,7 +565,7 @@ func newOnboardCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "onboard",
 		Short: "Interactive setup wizard for Sympozium",
-		Long: `Walks you through creating your first SympoziumInstance, connecting a
+		Long: `Walks you through creating your first Agent, connecting a
 channel (Telegram, Slack, Discord, or WhatsApp), setting up your AI provider
 credentials, and optionally applying a default SympoziumPolicy.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -589,7 +589,7 @@ func runOnboard() error {
 
 	// Quick health check: can we list CRDs?
 	ctx := context.Background()
-	var instances sympoziumv1alpha1.SympoziumInstanceList
+	var instances sympoziumv1alpha1.AgentList
 	if err := k8sClient.List(ctx, &instances, client.InNamespace(namespace)); err != nil {
 		fmt.Println("\n  ❌ Sympozium CRDs not found. Run 'sympozium install' first.")
 		return fmt.Errorf("CRDs not installed: %w", err)
@@ -605,7 +605,7 @@ func runOnboard() error {
 	}
 
 	// ── Step 3: Instance name ────────────────────────────────────────────
-	fmt.Println("\n📋 Step 3/9 — Create your SympoziumInstance")
+	fmt.Println("\n📋 Step 3/9 — Create your Agent")
 	fmt.Println("  An instance represents you (or a tenant) in the system.")
 	instanceName := prompt(reader, "  Instance name", "my-agent")
 
@@ -877,8 +877,8 @@ func runOnboard() error {
 		}
 	}
 
-	// 4. Create SympoziumInstance.
-	fmt.Printf("  Creating SympoziumInstance %s...\n", instanceName)
+	// 4. Create Agent.
+	fmt.Printf("  Creating Agent %s...\n", instanceName)
 	// Only pass the secret name if an API key was provided.
 	instanceSecret := providerSecretName
 	if apiKey == "" {
@@ -889,7 +889,7 @@ func runOnboard() error {
 	if channelType == "whatsapp" {
 		chSecret = ""
 	}
-	instanceYAML := buildSympoziumInstanceYAML(instanceName, namespace, modelName, baseURL,
+	instanceYAML := buildAgentYAML(instanceName, namespace, modelName, baseURL,
 		providerName, instanceSecret, channelType, chSecret,
 		policyName, applyPolicy, githubRepo)
 	if err := kubectlApplyStdin(instanceYAML); err != nil {
@@ -1117,7 +1117,7 @@ spec:
 `, name, ns)
 }
 
-func buildSympoziumInstanceYAML(name, ns, model, baseURL, provider, providerSecret,
+func buildAgentYAML(name, ns, model, baseURL, provider, providerSecret,
 	channelType, channelSecret, policyName string, hasPolicy bool, githubRepo string) string {
 
 	var channelsBlock string
@@ -1163,7 +1163,7 @@ func buildSympoziumInstanceYAML(name, ns, model, baseURL, provider, providerSecr
 	}
 
 	return fmt.Sprintf(`apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: %s
   namespace: %s
@@ -1418,7 +1418,7 @@ func runUninstall() error {
 	// Strip finalizers from all Sympozium CRD instances BEFORE deleting the
 	// controller, so resources don't get stuck in Terminating state.
 	fmt.Println("  Removing finalizers from Sympozium resources...")
-	resources := []string{"agentruns", "sympoziuminstances", "sympoziumpolicies", "skillpacks", "sympoziumschedules", "ensembles"}
+	resources := []string{"agentruns", "agents", "sympoziumpolicies", "skillpacks", "sympoziumschedules", "ensembles"}
 	for _, res := range resources {
 		stripFinalizers(res)
 	}
@@ -1717,7 +1717,7 @@ func newTUICmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "tui",
 		Short: "Interactive terminal UI for managing Sympozium",
-		Long:  `Launch an interactive terminal interface with slash commands for managing SympoziumInstances, AgentRuns, policies, and more.`,
+		Long:  `Launch an interactive terminal interface with slash commands for managing Agents, AgentRuns, policies, and more.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := initClient(); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: could not connect to cluster: %v\n", err)
@@ -1765,7 +1765,7 @@ type suggestionsMsg struct {
 	items []suggestion
 }
 type dataRefreshMsg struct {
-	instances     *[]sympoziumv1alpha1.SympoziumInstance
+	instances     *[]sympoziumv1alpha1.Agent
 	runs          *[]sympoziumv1alpha1.AgentRun
 	policies      *[]sympoziumv1alpha1.SympoziumPolicy
 	skills        *[]sympoziumv1alpha1.SkillPack
@@ -1785,7 +1785,7 @@ type suggestion struct {
 }
 
 var slashCommandSuggestions = []suggestion{
-	{"/instances", "List SympoziumInstances"},
+	{"/instances", "List Agents"},
 	{"/runs", "List AgentRuns"},
 	{"/run", "Create AgentRun: /run <inst> <task>"},
 	{"/abort", "Abort run: /abort <run>"},
@@ -1811,7 +1811,7 @@ var slashCommandSuggestions = []suggestion{
 }
 
 var deleteTypeSuggestions = []suggestion{
-	{"instance", "Delete a SympoziumInstance"},
+	{"instance", "Delete a Agent"},
 	{"run", "Delete an AgentRun"},
 	{"policy", "Delete a SympoziumPolicy"},
 	{"schedule", "Delete a SympoziumSchedule"},
@@ -2133,7 +2133,7 @@ func writeGithubTokenCmd(token string) tea.Cmd {
 }
 
 var tuiCommands = []struct{ cmd, desc string }{
-	{"/instances", "List SympoziumInstances"},
+	{"/instances", "List Agents"},
 	{"/runs", "List AgentRuns"},
 	{"/run <inst> <task>", "Create a new AgentRun"},
 	{"/abort <run>", "Abort a running AgentRun"},
@@ -2329,7 +2329,7 @@ type tuiModel struct {
 	wizard wizardState
 
 	// Cached K8s data
-	instances     []sympoziumv1alpha1.SympoziumInstance
+	instances     []sympoziumv1alpha1.Agent
 	runs          []sympoziumv1alpha1.AgentRun
 	policies      []sympoziumv1alpha1.SympoziumPolicy
 	skills        []sympoziumv1alpha1.SkillPack
@@ -2410,7 +2410,7 @@ type tuiModel struct {
 	feedScrollOffset int // 0 = pinned to bottom; >0 = scrolled up N lines
 }
 
-// editMemoryForm holds the editable memory fields for a SympoziumInstance.
+// editMemoryForm holds the editable memory fields for a Agent.
 type editMemoryForm struct {
 	enabled      bool
 	maxSizeKB    string // edited as text, parsed to int on apply
@@ -2483,7 +2483,7 @@ type editLifecycleHook struct {
 	envVars string // "KEY=VALUE" per line
 }
 
-// editLifecycleForm holds the editable lifecycle hooks for a SympoziumInstance.
+// editLifecycleForm holds the editable lifecycle hooks for a Agent.
 type editLifecycleForm struct {
 	preRun  []editLifecycleHook
 	postRun []editLifecycleHook
@@ -2506,7 +2506,7 @@ var availableChannelTypes = []string{"telegram", "slack", "discord", "whatsapp"}
 // personaHeartbeatOptions defines the selectable intervals for Ensemble editing.
 var personaHeartbeatOptions = []struct {
 	label    string
-	interval string // value written to PersonaSchedule.Interval
+	interval string // value written to AgentConfigSchedule.Interval
 }{
 	{"30m", "30m"},
 	{"1h", "1h"},
@@ -2720,7 +2720,7 @@ func (m tuiModel) selectedInstanceForFeed() string {
 		}
 	case viewRuns:
 		if m.selectedRow < len(m.runs) {
-			return m.runs[m.selectedRow].Spec.InstanceRef
+			return m.runs[m.selectedRow].Spec.AgentRef
 		}
 	case viewChannels:
 		filtered := m.filteredChannels()
@@ -2748,7 +2748,7 @@ func (m tuiModel) runsForInstance(instName string) []sympoziumv1alpha1.AgentRun 
 	var filtered []sympoziumv1alpha1.AgentRun
 	// m.runs is sorted newest-first; iterate in reverse for oldest-first.
 	for i := len(m.runs) - 1; i >= 0; i-- {
-		if m.runs[i].Spec.InstanceRef == instName {
+		if m.runs[i].Spec.AgentRef == instName {
 			filtered = append(filtered, m.runs[i])
 		}
 	}
@@ -2798,7 +2798,7 @@ func refreshDataCmd() tea.Cmd {
 		defer cancel()
 
 		var (
-			inst      sympoziumv1alpha1.SympoziumInstanceList
+			inst      sympoziumv1alpha1.AgentList
 			runs      sympoziumv1alpha1.AgentRunList
 			pols      sympoziumv1alpha1.SympoziumPolicyList
 			skls      sympoziumv1alpha1.SkillPackList
@@ -2965,7 +2965,7 @@ func refreshDataCmd() tea.Cmd {
 					}
 					podRows = append(podRows, podRow{
 						Name:     pod.Name,
-						Instance: r.Spec.InstanceRef,
+						Instance: r.Spec.AgentRef,
 						Phase:    string(pod.Status.Phase),
 						Node:     pod.Spec.NodeName,
 						IP:       pod.Status.PodIP,
@@ -4294,7 +4294,7 @@ func (m tuiModel) handleRowAction() (tea.Model, tea.Cmd) {
 				nextRun = shortDuration(time.Until(s.Status.NextRunTime.Time))
 			}
 			m.addLog(fmt.Sprintf("%s │ inst:%s cron:%s type:%s phase:%s runs:%d next:%s",
-				s.Name, s.Spec.InstanceRef, s.Spec.Schedule, s.Spec.Type, s.Status.Phase, s.Status.TotalRuns, nextRun))
+				s.Name, s.Spec.AgentRef, s.Spec.Schedule, s.Spec.Type, s.Status.Phase, s.Status.TotalRuns, nextRun))
 		}
 	case viewPersonas:
 		if m.selectedRow < len(m.ensembles) {
@@ -4331,7 +4331,7 @@ func (m tuiModel) handleRowLogs() (tea.Model, tea.Cmd) {
 			inst := m.instances[m.selectedRow]
 			// Show events for the instance.
 			return m, m.asyncCmd(func() (string, error) {
-				return tuiResourceEvents(m.namespace, "SympoziumInstance", inst.Name)
+				return tuiResourceEvents(m.namespace, "Agent", inst.Name)
 			})
 		}
 	case viewPolicies:
@@ -4353,7 +4353,7 @@ func (m tuiModel) handleRowLogs() (tea.Model, tea.Cmd) {
 		if m.selectedRow < len(filtered) {
 			ch := filtered[m.selectedRow]
 			return m, m.asyncCmd(func() (string, error) {
-				return tuiResourceEvents(m.namespace, "SympoziumInstance", ch.InstanceName)
+				return tuiResourceEvents(m.namespace, "Agent", ch.InstanceName)
 			})
 		}
 	case viewSchedules:
@@ -4443,7 +4443,7 @@ func (m tuiModel) handleRowDelete() (tea.Model, tea.Cmd) {
 			ns := m.namespace
 			// Check if this instance belongs to a Ensemble.
 			packName := inst.Labels["sympozium.ai/ensemble"]
-			personaName := inst.Labels["sympozium.ai/persona"]
+			personaName := inst.Labels["sympozium.ai/agent-config"]
 			if packName != "" && personaName != "" {
 				m.confirmDelete = true
 				m.deleteResourceKind = "persona in pack " + packName
@@ -4514,7 +4514,7 @@ func (m tuiModel) handleRowDelete() (tea.Model, tea.Cmd) {
 			ns := m.namespace
 			// Collect all persona names to disable.
 			var allNames []string
-			for _, p := range pack.Spec.Personas {
+			for _, p := range pack.Spec.AgentConfigs {
 				allNames = append(allNames, p.Name)
 			}
 			m.confirmDelete = true
@@ -4562,7 +4562,7 @@ func (m tuiModel) handleRowEdit() (tea.Model, tea.Cmd) {
 			suspend:           false,
 		}
 		for i, sched := range m.schedules {
-			if sched.Spec.InstanceRef == inst.Name {
+			if sched.Spec.AgentRef == inst.Name {
 				m.editScheduleName = sched.Name
 				m.editHeartbeat.schedule = sched.Spec.Schedule
 				m.editHeartbeat.task = sched.Spec.Task
@@ -4671,7 +4671,7 @@ func (m tuiModel) handleRowEdit() (tea.Model, tea.Cmd) {
 		}
 		sched := m.schedules[m.selectedRow]
 		m.editScheduleName = sched.Name
-		m.editInstanceName = sched.Spec.InstanceRef
+		m.editInstanceName = sched.Spec.AgentRef
 		m.editTab = 1
 		m.editField = 0
 		m.editHeartbeat = editHeartbeatForm{
@@ -4697,7 +4697,7 @@ func (m tuiModel) handleRowEdit() (tea.Model, tea.Cmd) {
 		m.editSkills = nil
 		m.editChannels = nil
 		for _, inst := range m.instances {
-			if inst.Name == sched.Spec.InstanceRef {
+			if inst.Name == sched.Spec.AgentRef {
 				if inst.Spec.Memory != nil {
 					m.editMemory = editMemoryForm{
 						enabled:      inst.Spec.Memory.Enabled,
@@ -4760,7 +4760,7 @@ func (m tuiModel) handleRowEdit() (tea.Model, tea.Cmd) {
 
 		// Detect current heartbeat interval from first persona with a schedule.
 		m.editPersonaHeartbeatIdx = len(personaHeartbeatOptions) - 1 // default: "pack default"
-		for _, p := range pp.Spec.Personas {
+		for _, p := range pp.Spec.AgentConfigs {
 			if p.Schedule != nil && p.Schedule.Interval != "" {
 				for i, opt := range personaHeartbeatOptions {
 					if opt.interval == p.Schedule.Interval {
@@ -4774,11 +4774,11 @@ func (m tuiModel) handleRowEdit() (tea.Model, tea.Cmd) {
 
 		// Build persona toggle list from the pack spec.
 		excluded := make(map[string]bool)
-		for _, e := range pp.Spec.ExcludePersonas {
+		for _, e := range pp.Spec.ExcludeAgentConfigs {
 			excluded[e] = true
 		}
 		m.editPersonas = nil
-		for _, p := range pp.Spec.Personas {
+		for _, p := range pp.Spec.AgentConfigs {
 			dn := p.DisplayName
 			if dn == "" {
 				dn = p.Name
@@ -4867,9 +4867,9 @@ func (m tuiModel) applyEditModal() tea.Cmd {
 			msgs = append(msgs, fmt.Sprintf("Created secret: %s", ch.secretRef))
 		}
 
-		// Apply memory, skills, and channel changes to SympoziumInstance.
+		// Apply memory, skills, and channel changes to Agent.
 		if instName != "" {
-			var inst sympoziumv1alpha1.SympoziumInstance
+			var inst sympoziumv1alpha1.Agent
 			if err := k8sClient.Get(ctx, types.NamespacedName{Name: instName, Namespace: ns}, &inst); err != nil {
 				return cmdResultMsg{err: fmt.Errorf("get instance %q: %w", instName, err)}
 			}
@@ -5032,7 +5032,7 @@ func (m tuiModel) applyEditModal() tea.Cmd {
 					Namespace: ns,
 				},
 				Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-					InstanceRef:       instName,
+					AgentRef:       instName,
 					Schedule:          hb.schedule,
 					Task:              hb.task,
 					Type:              schedType,
@@ -5140,14 +5140,14 @@ func (m tuiModel) applyEnsembleEdit(packName string) tea.Cmd {
 				excludes = append(excludes, p.name)
 			}
 		}
-		pack.Spec.ExcludePersonas = excludes
+		pack.Spec.ExcludeAgentConfigs = excludes
 
 		// Apply heartbeat interval to all personas with a schedule.
 		if heartbeatInterval != "" {
-			for i := range pack.Spec.Personas {
-				if pack.Spec.Personas[i].Schedule != nil {
-					pack.Spec.Personas[i].Schedule.Interval = heartbeatInterval
-					pack.Spec.Personas[i].Schedule.Cron = "" // clear cron so interval takes precedence
+			for i := range pack.Spec.AgentConfigs {
+				if pack.Spec.AgentConfigs[i].Schedule != nil {
+					pack.Spec.AgentConfigs[i].Schedule.Interval = heartbeatInterval
+					pack.Spec.AgentConfigs[i].Schedule.Cron = "" // clear cron so interval takes precedence
 				}
 			}
 		}
@@ -5176,7 +5176,7 @@ func (m tuiModel) handleRunPrompt() (tea.Model, tea.Cmd) {
 		}
 	case viewRuns:
 		if m.selectedRow < len(m.runs) {
-			instName = m.runs[m.selectedRow].Spec.InstanceRef
+			instName = m.runs[m.selectedRow].Spec.AgentRef
 		}
 	case viewChannels:
 		filtered := m.filteredChannels()
@@ -5419,7 +5419,7 @@ func fetchInstanceSuggestions(ns, prefix string) []suggestion {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	var list sympoziumv1alpha1.SympoziumInstanceList
+	var list sympoziumv1alpha1.AgentList
 	if err := k8sClient.List(ctx, &list, client.InNamespace(ns)); err != nil {
 		return nil
 	}
@@ -5497,7 +5497,7 @@ func fetchEnsembleSuggestions(ns, prefix string) []suggestion {
 		if prefix == "" || strings.HasPrefix(strings.ToLower(pp.Name), prefix) {
 			desc := pp.Spec.Category
 			if desc == "" {
-				desc = fmt.Sprintf("%d personas", len(pp.Spec.Personas))
+				desc = fmt.Sprintf("%d personas", len(pp.Spec.AgentConfigs))
 			}
 			out = append(out, suggestion{text: pp.Name, desc: desc})
 		}
@@ -6040,8 +6040,8 @@ func (m tuiModel) renderTable(tableH int) string {
 	return b.String()
 }
 
-// resolveInstanceProvider returns the display provider name for a SympoziumInstance.
-func resolveInstanceProvider(inst sympoziumv1alpha1.SympoziumInstance) string {
+// resolveInstanceProvider returns the display provider name for a Agent.
+func resolveInstanceProvider(inst sympoziumv1alpha1.Agent) string {
 	if len(inst.Spec.AuthRefs) > 0 && inst.Spec.AuthRefs[0].Provider != "" {
 		return inst.Spec.AuthRefs[0].Provider
 	}
@@ -6077,7 +6077,7 @@ func (m tuiModel) renderInstancesTable(tableH int) string {
 	instanceTokens := make(map[string]int)
 	for _, run := range m.runs {
 		if run.Status.TokenUsage != nil {
-			instanceTokens[run.Spec.InstanceRef] += run.Status.TokenUsage.TotalTokens
+			instanceTokens[run.Spec.AgentRef] += run.Status.TokenUsage.TotalTokens
 		}
 	}
 
@@ -6200,7 +6200,7 @@ func (m tuiModel) renderRunsTable(tableH int) string {
 		}
 
 		// Build row without phase/trigger (we'll colorize them separately).
-		nameCol := fmt.Sprintf(" %-26s %-18s ", truncate(run.Name, 26), truncate(run.Spec.InstanceRef, 18))
+		nameCol := fmt.Sprintf(" %-26s %-18s ", truncate(run.Name, 26), truncate(run.Spec.AgentRef, 18))
 		phaseCol := fmt.Sprintf("%-12s ", phase)
 		trigCol := fmt.Sprintf("%-14s ", truncate(triggerText, 14))
 		restCol := fmt.Sprintf("%-18s %-8s", truncate(pod, 18), age)
@@ -6498,7 +6498,7 @@ func (m tuiModel) renderSchedulesTable(tableH int) string {
 			schedType = "scheduled"
 		}
 
-		nameCol := fmt.Sprintf(" %-24s %-18s %-18s ", truncate(s.Name, 24), truncate(s.Spec.InstanceRef, 18), truncate(s.Spec.Schedule, 18))
+		nameCol := fmt.Sprintf(" %-24s %-18s %-18s ", truncate(s.Name, 24), truncate(s.Spec.AgentRef, 18), truncate(s.Spec.Schedule, 18))
 		typeCol := fmt.Sprintf("%-12s ", schedType)
 		phaseCol := fmt.Sprintf("%-10s ", phase)
 		restCol := fmt.Sprintf("%-10d %-8s", s.Status.TotalRuns, age)
@@ -6532,8 +6532,8 @@ func (m tuiModel) renderSchedulesTable(tableH int) string {
 }
 
 // gatewayRoutes returns instances that have web endpoints enabled.
-func (m tuiModel) gatewayRoutes() []sympoziumv1alpha1.SympoziumInstance {
-	var routes []sympoziumv1alpha1.SympoziumInstance
+func (m tuiModel) gatewayRoutes() []sympoziumv1alpha1.Agent {
+	var routes []sympoziumv1alpha1.Agent
 	for _, inst := range m.instances {
 		if inst.Spec.WebEndpoint != nil && inst.Spec.WebEndpoint.Enabled {
 			routes = append(routes, inst)
@@ -6669,7 +6669,7 @@ func (m tuiModel) renderPersonasTable(tableH int) string {
 			cat = "-"
 		}
 
-		agentCount := len(pp.Spec.Personas)
+		agentCount := len(pp.Spec.AgentConfigs)
 		row := fmt.Sprintf(" %-24s %-14s %-10d %-10d %-12s %-8s",
 			truncate(pp.Name, 24), truncate(cat, 14), agentCount, pp.Status.InstalledCount, phase, age)
 
@@ -6893,7 +6893,7 @@ func (m tuiModel) renderDetailSkillRuns(width, height int) string {
 
 	var matchedRuns []sympoziumv1alpha1.AgentRun
 	for _, run := range m.runs {
-		if usingInstances[run.Spec.InstanceRef] {
+		if usingInstances[run.Spec.AgentRef] {
 			matchedRuns = append(matchedRuns, run)
 		}
 	}
@@ -6929,7 +6929,7 @@ func (m tuiModel) renderDetailSkillRuns(width, height int) string {
 		}
 		nameLine := " " + lipgloss.NewStyle().Foreground(lipgloss.Color("#CDD6F4")).Render(truncate(run.Name, contentW))
 		allLines = append(allLines, nameLine)
-		metaLine := tuiDimStyle.Render("   "+run.Spec.InstanceRef+" • ") + phaseStyle.Render(phase) + tuiDimStyle.Render(" • "+age)
+		metaLine := tuiDimStyle.Render("   "+run.Spec.AgentRef+" • ") + phaseStyle.Render(phase) + tuiDimStyle.Render(" • "+age)
 		allLines = append(allLines, metaLine)
 
 		task := extractUserMessage(run.Spec.Task)
@@ -7916,7 +7916,7 @@ func (m tuiModel) renderEditModal(base string) string {
 		content.WriteString(tuiDimStyle.Render("  ── Available Environment Variables ──") + "\n")
 		envVars := []struct{ name, desc, scope string }{
 			{"AGENT_RUN_ID", "Unique run identifier", "all"},
-			{"INSTANCE_NAME", "SympoziumInstance name", "all"},
+			{"INSTANCE_NAME", "Agent name", "all"},
 			{"AGENT_NAMESPACE", "Kubernetes namespace", "all"},
 			{"AGENT_EXIT_CODE", "Exit code (postRun only)", "postRun"},
 			{"AGENT_RESULT", "Agent response (postRun only)", "postRun"},
@@ -8013,7 +8013,7 @@ func (m tuiModel) renderEditModal(base string) string {
 
 func tuiCreateRun(ns, instance, task string) (string, error) {
 	ctx := context.Background()
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: instance, Namespace: ns}, &inst); err != nil {
 		return "", fmt.Errorf("instance %q not found: %w", instance, err)
 	}
@@ -8056,7 +8056,7 @@ func tuiCreateRun(ns, instance, task string) (string, error) {
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: instance,
+			AgentRef: instance,
 			Task:        task,
 			Model: sympoziumv1alpha1.ModelSpec{
 				Provider:      provider,
@@ -8183,7 +8183,7 @@ func tuiRunStatus(ns, name string) (string, error) {
 
 func tuiClusterStatus(ns string) (string, error) {
 	ctx := context.Background()
-	var instances sympoziumv1alpha1.SympoziumInstanceList
+	var instances sympoziumv1alpha1.AgentList
 	var runs sympoziumv1alpha1.AgentRunList
 	var policies sympoziumv1alpha1.SympoziumPolicyList
 	_ = k8sClient.List(ctx, &instances, client.InNamespace(ns))
@@ -8232,7 +8232,7 @@ func tuiDelete(ns, resourceType, name string) (string, error) {
 	ctx := context.Background()
 	switch strings.ToLower(resourceType) {
 	case "instance", "inst":
-		obj := &sympoziumv1alpha1.SympoziumInstance{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
+		obj := &sympoziumv1alpha1.Agent{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}}
 		if err := k8sClient.Delete(ctx, obj); err != nil {
 			return "", fmt.Errorf("delete instance: %w", err)
 		}
@@ -8268,7 +8268,7 @@ func tuiDelete(ns, resourceType, name string) (string, error) {
 
 func tuiAddChannel(ns, instanceName, chType, secretName string) (string, error) {
 	ctx := context.Background()
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: instanceName, Namespace: ns}, &inst); err != nil {
 		return "", fmt.Errorf("instance %q not found: %w", instanceName, err)
 	}
@@ -8294,7 +8294,7 @@ func tuiAddChannel(ns, instanceName, chType, secretName string) (string, error) 
 
 func tuiRemoveChannel(ns, instanceName, chType string) (string, error) {
 	ctx := context.Background()
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: instanceName, Namespace: ns}, &inst); err != nil {
 		return "", fmt.Errorf("instance %q not found: %w", instanceName, err)
 	}
@@ -8321,7 +8321,7 @@ func tuiRemoveChannel(ns, instanceName, chType string) (string, error) {
 
 func tuiSetProvider(ns, instanceName, provider, model string) (string, error) {
 	ctx := context.Background()
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: instanceName, Namespace: ns}, &inst); err != nil {
 		return "", fmt.Errorf("instance %q not found: %w", instanceName, err)
 	}
@@ -8343,7 +8343,7 @@ func tuiCreateSchedule(ns, instanceName, cronExpr, task string) (string, error) 
 	ctx := context.Background()
 
 	// Verify instance exists.
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: instanceName, Namespace: ns}, &inst); err != nil {
 		return "", fmt.Errorf("instance %q not found: %w", instanceName, err)
 	}
@@ -8355,7 +8355,7 @@ func tuiCreateSchedule(ns, instanceName, cronExpr, task string) (string, error) 
 			Namespace: ns,
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef:   instanceName,
+			AgentRef:   instanceName,
 			Schedule:      cronExpr,
 			Task:          task,
 			Type:          "scheduled",
@@ -8375,7 +8375,7 @@ func tuiInstallEnsemble(ns, packName string) (string, error) {
 	var existing sympoziumv1alpha1.Ensemble
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: packName, Namespace: ns}, &existing); err == nil {
 		return "", fmt.Errorf("Ensemble %q already exists (phase: %s, %d/%d personas installed)",
-			packName, existing.Status.Phase, existing.Status.InstalledCount, existing.Status.PersonaCount)
+			packName, existing.Status.Phase, existing.Status.InstalledCount, existing.Status.AgentConfigCount)
 	}
 
 	// Look for a built-in pack YAML on disk. If not found, create a minimal one.
@@ -8407,13 +8407,13 @@ func tuiDisablePackPersona(ns, packName, personaName string) (string, error) {
 	}
 
 	// Check if already excluded.
-	for _, p := range pack.Spec.ExcludePersonas {
+	for _, p := range pack.Spec.ExcludeAgentConfigs {
 		if p == personaName {
 			return tuiDimStyle.Render(fmt.Sprintf("Persona %q is already disabled in pack %s", personaName, packName)), nil
 		}
 	}
 
-	pack.Spec.ExcludePersonas = append(pack.Spec.ExcludePersonas, personaName)
+	pack.Spec.ExcludeAgentConfigs = append(pack.Spec.ExcludeAgentConfigs, personaName)
 	if err := k8sClient.Update(ctx, &pack); err != nil {
 		return "", fmt.Errorf("update Ensemble %q: %w", packName, err)
 	}
@@ -8431,15 +8431,15 @@ func tuiDisableAllPackPersonas(ns, packName string, personaNames []string) (stri
 
 	// Build full exclusion list (deduplicated).
 	excluded := make(map[string]bool)
-	for _, e := range pack.Spec.ExcludePersonas {
+	for _, e := range pack.Spec.ExcludeAgentConfigs {
 		excluded[e] = true
 	}
 	for _, name := range personaNames {
 		excluded[name] = true
 	}
-	pack.Spec.ExcludePersonas = make([]string, 0, len(excluded))
+	pack.Spec.ExcludeAgentConfigs = make([]string, 0, len(excluded))
 	for name := range excluded {
-		pack.Spec.ExcludePersonas = append(pack.Spec.ExcludePersonas, name)
+		pack.Spec.ExcludeAgentConfigs = append(pack.Spec.ExcludeAgentConfigs, name)
 	}
 
 	if err := k8sClient.Update(ctx, &pack); err != nil {
@@ -8474,7 +8474,7 @@ func tuiShowMemory(ns, instanceName string) (string, error) {
 
 func tuiSetBaseURL(ns, instanceName, baseURL string) (string, error) {
 	ctx := context.Background()
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := k8sClient.Get(ctx, types.NamespacedName{Name: instanceName, Namespace: ns}, &inst); err != nil {
 		return "", fmt.Errorf("instance %q not found: %w", instanceName, err)
 	}
@@ -8678,7 +8678,7 @@ func (m tuiModel) advanceWizard(val string) (tea.Model, tea.Cmd) {
 		// Auto step — verify CRDs are reachable.
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		var instances sympoziumv1alpha1.SympoziumInstanceList
+		var instances sympoziumv1alpha1.AgentList
 		if err := k8sClient.List(ctx, &instances, client.InNamespace(m.namespace)); err != nil {
 			w.err = "CRDs not found — run 'sympozium install' first"
 			w.active = false
@@ -9301,7 +9301,7 @@ func (m tuiModel) advanceWizard(val string) (tea.Model, tea.Cmd) {
 		hasGithub := false
 		for _, pp := range m.ensembles {
 			if pp.Name == w.ensembleName {
-				for _, p := range pp.Spec.Personas {
+				for _, p := range pp.Spec.AgentConfigs {
 					for _, sk := range p.Skills {
 						if sk == "github-gitops" {
 							hasGithub = true
@@ -9554,7 +9554,7 @@ func (m tuiModel) renderWizardPanel(h int) string {
 		lines = append(lines, hintStyle.Render(fmt.Sprintf("  Press Enter to use current: %s", m.namespace)))
 
 	case wizStepInstanceName:
-		lines = append(lines, stepStyle.Render("  📋 Step 3/9 — Create your SympoziumInstance"))
+		lines = append(lines, stepStyle.Render("  📋 Step 3/9 — Create your Agent"))
 		lines = append(lines, menuStyle.Render("  An instance represents you (or a tenant) in the system."))
 		lines = append(lines, "")
 		lines = append(lines, labelStyle.Render("  Enter instance name:"))
@@ -9869,8 +9869,8 @@ func (m tuiModel) renderPersonaWizardPanel(h int,
 		for _, pp := range m.ensembles {
 			if pp.Name == w.ensembleName {
 				lines = append(lines, hintStyle.Render("  Category: ")+valueStyle.Render(pp.Spec.Category)+
-					hintStyle.Render("  Personas: ")+valueStyle.Render(fmt.Sprintf("%d", len(pp.Spec.Personas))))
-				for _, p := range pp.Spec.Personas {
+					hintStyle.Render("  Personas: ")+valueStyle.Render(fmt.Sprintf("%d", len(pp.Spec.AgentConfigs))))
+				for _, p := range pp.Spec.AgentConfigs {
 					name := p.Name
 					if p.DisplayName != "" {
 						name = p.DisplayName
@@ -9937,7 +9937,7 @@ func (m tuiModel) renderPersonaWizardPanel(h int,
 				lines = append(lines, menuNumStyle.Render(fmt.Sprintf("  [%d]", i+1))+
 					menuStyle.Render(fmt.Sprintf(" %s", pp.Name))+
 					hintStyle.Render(fmt.Sprintf(" — %s (%d personas)%s",
-						pp.Spec.Category, len(pp.Spec.Personas), activated)))
+						pp.Spec.Category, len(pp.Spec.AgentConfigs), activated)))
 			}
 		}
 		lines = append(lines, "")
@@ -10166,7 +10166,7 @@ func (m tuiModel) renderEnsembleDetailPane(w, h int) string {
 	if pack.Spec.Version != "" {
 		lines = append(lines, labelStyle.Render(" Version:   ")+valueStyle.Render(pack.Spec.Version))
 	}
-	lines = append(lines, labelStyle.Render(" Personas:  ")+valueStyle.Render(fmt.Sprintf("%d", len(pack.Spec.Personas))))
+	lines = append(lines, labelStyle.Render(" Personas:  ")+valueStyle.Render(fmt.Sprintf("%d", len(pack.Spec.AgentConfigs))))
 	if pack.Spec.Description != "" {
 		lines = append(lines, "")
 		// Word-wrap description to fit the pane.
@@ -10201,7 +10201,7 @@ func (m tuiModel) renderEnsembleDetailPane(w, h int) string {
 		} else if phase == "Error" {
 			phaseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#F38BA8"))
 		}
-		installed := fmt.Sprintf("%d/%d", pack.Status.InstalledCount, len(pack.Spec.Personas))
+		installed := fmt.Sprintf("%d/%d", pack.Status.InstalledCount, len(pack.Spec.AgentConfigs))
 		lines = append(lines, labelStyle.Render(" Status:    ")+phaseStyle.Render(phase)+
 			dimStyle.Render("  (")+valueStyle.Render(installed)+dimStyle.Render(" installed)"))
 	}
@@ -10211,7 +10211,7 @@ func (m tuiModel) renderEnsembleDetailPane(w, h int) string {
 	lines = append(lines, "")
 
 	// Each persona
-	for i, p := range pack.Spec.Personas {
+	for i, p := range pack.Spec.AgentConfigs {
 		name := p.DisplayName
 		if name == "" {
 			name = p.Name
@@ -10219,7 +10219,7 @@ func (m tuiModel) renderEnsembleDetailPane(w, h int) string {
 
 		// Check if excluded
 		excluded := false
-		for _, ex := range pack.Spec.ExcludePersonas {
+		for _, ex := range pack.Spec.ExcludeAgentConfigs {
 			if ex == p.Name {
 				excluded = true
 				break
@@ -10278,7 +10278,7 @@ func (m tuiModel) renderEnsembleDetailPane(w, h int) string {
 		}
 
 		// Add a blank line between personas (but not after the last one).
-		if i < len(pack.Spec.Personas)-1 {
+		if i < len(pack.Spec.AgentConfigs)-1 {
 			lines = append(lines, "")
 		}
 	}
@@ -10400,7 +10400,7 @@ func tuiPersonaApply(ns string, w *wizardState) (string, error) {
 	// On re-activation (updating auth/model), preserve the user's exclusion choices.
 	firstActivation := len(pack.Spec.AuthRefs) == 0
 	if firstActivation {
-		pack.Spec.ExcludePersonas = nil
+		pack.Spec.ExcludeAgentConfigs = nil
 	}
 
 	pack.Spec.AuthRefs = []sympoziumv1alpha1.SecretRef{
@@ -10428,7 +10428,7 @@ func tuiPersonaApply(ns string, w *wizardState) (string, error) {
 
 	// Store agent-sandbox setting.
 	if w.agentSandboxEnabled {
-		pack.Spec.AgentSandbox = &sympoziumv1alpha1.AgentSandboxInstanceSpec{
+		pack.Spec.AgentSandbox = &sympoziumv1alpha1.AgentSandboxDefaults{
 			Enabled:      true,
 			RuntimeClass: "gvisor",
 		}
@@ -10450,19 +10450,19 @@ func tuiPersonaApply(ns string, w *wizardState) (string, error) {
 	if len(channelConfigs) > 0 {
 		pack.Spec.ChannelConfigs = channelConfigs
 	}
-	for i := range pack.Spec.Personas {
-		pack.Spec.Personas[i].Model = w.modelName
+	for i := range pack.Spec.AgentConfigs {
+		pack.Spec.AgentConfigs[i].Model = w.modelName
 		if len(enabledChannels) > 0 {
-			pack.Spec.Personas[i].Channels = enabledChannels
+			pack.Spec.AgentConfigs[i].Channels = enabledChannels
 		}
 	}
 
 	// Apply heartbeat override if the user chose something other than "pack default".
 	if w.heartbeatCron != "" {
-		for i := range pack.Spec.Personas {
-			if pack.Spec.Personas[i].Schedule != nil {
-				pack.Spec.Personas[i].Schedule.Cron = w.heartbeatCron
-				pack.Spec.Personas[i].Schedule.Interval = ""
+		for i := range pack.Spec.AgentConfigs {
+			if pack.Spec.AgentConfigs[i].Schedule != nil {
+				pack.Spec.AgentConfigs[i].Schedule.Cron = w.heartbeatCron
+				pack.Spec.AgentConfigs[i].Schedule.Interval = ""
 			}
 		}
 	}
@@ -10470,7 +10470,7 @@ func tuiPersonaApply(ns string, w *wizardState) (string, error) {
 	if err := k8sClient.Update(ctx, &pack); err != nil {
 		return "", fmt.Errorf("update Ensemble: %w", err)
 	}
-	msgs = append(msgs, tuiSuccessStyle.Render(fmt.Sprintf("✓ Activated Ensemble: %s (%d personas)", w.ensembleName, len(pack.Spec.Personas))))
+	msgs = append(msgs, tuiSuccessStyle.Render(fmt.Sprintf("✓ Activated Ensemble: %s (%d personas)", w.ensembleName, len(pack.Spec.AgentConfigs))))
 	msgs = append(msgs, tuiDimStyle.Render("  Controller will create instances shortly..."))
 
 	return strings.Join(msgs, "\n"), nil
@@ -10606,13 +10606,13 @@ func tuiOnboardApply(ns string, w *wizardState) (string, error) {
 		}
 	}
 
-	// 4. Create SympoziumInstance.
-	inst := &sympoziumv1alpha1.SympoziumInstance{
+	// 4. Create Agent.
+	inst := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      w.instanceName,
 			Namespace: ns,
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model:   w.modelName,
@@ -10647,7 +10647,7 @@ func tuiOnboardApply(ns string, w *wizardState) (string, error) {
 		inst.Spec.PolicyRef = policyName
 	}
 	if w.agentSandboxEnabled {
-		inst.Spec.Agents.Default.AgentSandbox = &sympoziumv1alpha1.AgentSandboxInstanceSpec{
+		inst.Spec.Agents.Default.AgentSandbox = &sympoziumv1alpha1.AgentSandboxDefaults{
 			Enabled:      true,
 			RuntimeClass: "gvisor",
 		}
@@ -10679,18 +10679,18 @@ func tuiOnboardApply(ns string, w *wizardState) (string, error) {
 
 	// Try create; if it exists, update.
 	if err := k8sClient.Create(ctx, inst); err != nil {
-		var existing sympoziumv1alpha1.SympoziumInstance
+		var existing sympoziumv1alpha1.Agent
 		if getErr := k8sClient.Get(ctx, types.NamespacedName{Name: w.instanceName, Namespace: ns}, &existing); getErr == nil {
 			existing.Spec = inst.Spec
 			if err2 := k8sClient.Update(ctx, &existing); err2 != nil {
 				return "", fmt.Errorf("update instance: %w", err2)
 			}
-			msgs = append(msgs, tuiSuccessStyle.Render(fmt.Sprintf("✓ Updated SympoziumInstance: %s", w.instanceName)))
+			msgs = append(msgs, tuiSuccessStyle.Render(fmt.Sprintf("✓ Updated Agent: %s", w.instanceName)))
 		} else {
 			return "", fmt.Errorf("create instance: %w", err)
 		}
 	} else {
-		msgs = append(msgs, tuiSuccessStyle.Render(fmt.Sprintf("✓ Created SympoziumInstance: %s", w.instanceName)))
+		msgs = append(msgs, tuiSuccessStyle.Render(fmt.Sprintf("✓ Created Agent: %s", w.instanceName)))
 	}
 
 	// 5. Create a heartbeat schedule (unless disabled).
@@ -10706,7 +10706,7 @@ func tuiOnboardApply(ns string, w *wizardState) (string, error) {
 				Namespace: ns,
 			},
 			Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-				InstanceRef:       w.instanceName,
+				AgentRef:       w.instanceName,
 				Schedule:          heartbeatCron,
 				Task:              onboardHeartbeatTask(w.teamTask),
 				Type:              "heartbeat",

@@ -5,10 +5,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SympoziumInstanceSpec defines the desired state of a SympoziumInstance.
-// Each user or tenant gets a SympoziumInstance that declares their desired channels,
+// AgentSpec defines the desired state of a Agent.
+// Each user or tenant gets a Agent that declares their desired channels,
 // agents, and policy bindings.
-type SympoziumInstanceSpec struct {
+type AgentSpec struct {
 	// Channels this instance connects to.
 	// +optional
 	Channels []ChannelSpec `json:"channels,omitempty"`
@@ -96,7 +96,7 @@ type MCPServerRef struct {
 	ToolsDeny []string `json:"toolsDeny,omitempty"`
 }
 
-// MemorySpec configures persistent memory for a SympoziumInstance.
+// MemorySpec configures persistent memory for a Agent.
 type MemorySpec struct {
 	// Enabled indicates whether persistent memory is active.
 	// +kubebuilder:default=true
@@ -254,7 +254,7 @@ type AgentConfig struct {
 	// AgentSandbox configures the Kubernetes Agent Sandbox (CRD) execution backend defaults.
 	// When enabled, agent runs use Sandbox CRs with gVisor/Kata kernel isolation.
 	// +optional
-	AgentSandbox *AgentSandboxInstanceSpec `json:"agentSandbox,omitempty"`
+	AgentSandbox *AgentSandboxDefaults `json:"agentSandbox,omitempty"`
 
 	// Subagents configuration.
 	// +optional
@@ -292,9 +292,9 @@ type SandboxSpec struct {
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
-// AgentSandboxInstanceSpec defines instance-level defaults for the Kubernetes
+// AgentSandboxDefaults defines instance-level defaults for the Kubernetes
 // Agent Sandbox (CRD) execution backend.
-type AgentSandboxInstanceSpec struct {
+type AgentSandboxDefaults struct {
 	// Enabled activates Agent Sandbox mode for all runs in this instance.
 	Enabled bool `json:"enabled"`
 
@@ -349,7 +349,7 @@ type SkillRef struct {
 
 	// Params are per-instance key/value pairs injected as SKILL_<KEY> environment
 	// variables into the skill sidecar container. This allows the same SkillPack to
-	// be configured differently per SympoziumInstance (e.g. different GitHub repos).
+	// be configured differently per Agent (e.g. different GitHub repos).
 	// +optional
 	Params map[string]string `json:"params,omitempty"`
 }
@@ -363,8 +363,8 @@ type SecretRef struct {
 	Secret string `json:"secret"`
 }
 
-// SympoziumInstanceStatus defines the observed state of SympoziumInstance.
-type SympoziumInstanceStatus struct {
+// AgentStatus defines the observed state of Agent.
+type AgentStatus struct {
 	// Phase is the current phase (Pending, Running, Serving, Error).
 	// +optional
 	Phase string `json:"phase,omitempty"`
@@ -428,25 +428,25 @@ type ChannelStatus struct {
 // +kubebuilder:printcolumn:name="Total Runs",type="integer",JSONPath=".status.totalAgentRuns"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// SympoziumInstance is the Schema for the sympoziuminstances API.
+// Agent is the Schema for the agents API.
 // It represents a per-user/per-tenant gateway configuration.
-type SympoziumInstance struct {
+type Agent struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SympoziumInstanceSpec   `json:"spec,omitempty"`
-	Status SympoziumInstanceStatus `json:"status,omitempty"`
+	Spec   AgentSpec   `json:"spec,omitempty"`
+	Status AgentStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// SympoziumInstanceList contains a list of SympoziumInstance.
-type SympoziumInstanceList struct {
+// AgentList contains a list of Agent.
+type AgentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SympoziumInstance `json:"items"`
+	Items           []Agent `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&SympoziumInstance{}, &SympoziumInstanceList{})
+	SchemeBuilder.Register(&Agent{}, &AgentList{})
 }

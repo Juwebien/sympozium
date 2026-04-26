@@ -349,7 +349,7 @@ uninstall: ## Uninstall Sympozium (Helm release, CRDs, namespace)
 	for crd in \
 		sympoziumconfigs.sympozium.ai \
 		personapacks.sympozium.ai \
-		sympoziuminstances.sympozium.ai \
+		agents.sympozium.ai \
 		sympoziumschedules.sympozium.ai \
 		sympoziumpolicies.sympozium.ai \
 		skillpacks.sympozium.ai \

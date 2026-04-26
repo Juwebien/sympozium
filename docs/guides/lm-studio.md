@@ -77,7 +77,7 @@ curl http://172.18.0.1:1234/v1/models
 
 ---
 
-## Creating a SympoziumInstance
+## Creating a Agent
 
 LM Studio does not require an API key, but the `authRefs` field is mandatory —
 create a Secret with a placeholder value.
@@ -89,7 +89,7 @@ kubectl create secret generic lmstudio-key \
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: lmstudio-agent
 spec:
@@ -120,7 +120,7 @@ kind: AgentRun
 metadata:
   name: lmstudio-test
 spec:
-  instanceRef: lmstudio-agent
+  agentRef: lmstudio-agent
   task: "List all pods across every namespace and summarise their status."
   model:
     provider: openai

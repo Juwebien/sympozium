@@ -155,12 +155,12 @@ main() {
   resolve_apiserver_token
 
   # ── 1) Create ad-hoc instance with skills ──
-  api_request POST "/api/v1/instances" \
+  api_request POST "/api/v1/agents" \
     "{\"name\":\"${INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\",\"skills\":[{\"skillPackRef\":\"k8s-ops\"}]}" >/dev/null
   pass "Created ad-hoc instance '${INSTANCE_NAME}'"
 
   # ── Verify instance appears in list ──
-  inst_list="$(api_request GET "/api/v1/instances")"
+  inst_list="$(api_request GET "/api/v1/agents")"
   found="$(printf "%s" "$inst_list" | python3 -c 'import json,sys; t=sys.argv[1]; d=json.load(sys.stdin); print("true" if any(i.get("metadata",{}).get("name")==t for i in d) else "false")' "$INSTANCE_NAME")"
   if [[ "$found" != "true" ]]; then
     fail "Instance '${INSTANCE_NAME}' not found in list"
@@ -169,7 +169,7 @@ main() {
   pass "Instance appears in list"
 
   # ── Verify instance fields ──
-  inst_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}")"
+  inst_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}")"
 
   inst_model="$(printf "%s" "$inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("agents",{}).get("default",{}).get("model",""))')"
   inst_provider="$(printf "%s" "$inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); refs=d.get("spec",{}).get("authRefs",[]); print(refs[0].get("provider","") if refs else "")')"
@@ -202,7 +202,7 @@ main() {
   pass "Auth secret '${inst_secret}' exists in cluster"
 
   # ── 2) Create an AgentRun against the instance ──
-  run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${INSTANCE_NAME}\",\"task\":\"adhoc lifecycle test run\"}")"
+  run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${INSTANCE_NAME}\",\"task\":\"adhoc lifecycle test run\"}")"
   RUN_NAME="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))')"
 
   if [[ -z "$RUN_NAME" ]]; then
@@ -216,7 +216,7 @@ main() {
   run_model="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("model",{}).get("model",""))')"
   run_auth="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("model",{}).get("authSecretRef",""))')"
   run_skills="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); s=[i.get("skillPackRef","") for i in d.get("spec",{}).get("skills",[])]; print(",".join(sorted(s)))')"
-  run_instance_ref="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("instanceRef",""))')"
+  run_instance_ref="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("agentRef",""))')"
 
   if [[ "$run_provider" != "openai" ]]; then
     fail "Run provider not inherited (got '${run_provider}')"
@@ -235,10 +235,10 @@ main() {
     exit 1
   fi
   if [[ "$run_instance_ref" != "$INSTANCE_NAME" ]]; then
-    fail "Run instanceRef mismatch (got '${run_instance_ref}')"
+    fail "Run agentRef mismatch (got '${run_instance_ref}')"
     exit 1
   fi
-  pass "AgentRun inherited provider/model/auth/skills/instanceRef from instance"
+  pass "AgentRun inherited provider/model/auth/skills/agentRef from instance"
 
   # ── Verify run has instance label ──
   run_inst_label="$(printf "%s" "$run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("labels",{}).get("sympozium.ai/instance",""))')"
@@ -268,7 +268,7 @@ main() {
   # ── 4) Verify instance status reflects the run ──
   # Give controller a moment to reconcile
   sleep 2
-  inst_status_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}")"
+  inst_status_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}")"
   total_runs="$(printf "%s" "$inst_status_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status",{}).get("totalAgentRuns",0))')"
   if [[ "$total_runs" -ge 1 ]]; then
     pass "Instance status.totalAgentRuns = ${total_runs}"
@@ -277,24 +277,24 @@ main() {
   fi
 
   # ── 5) Delete instance ──
-  api_request DELETE "/api/v1/instances/${INSTANCE_NAME}" >/dev/null
+  api_request DELETE "/api/v1/agents/${INSTANCE_NAME}" >/dev/null
 
   # K8s deletion is async (controller finalizers), poll until gone
   elapsed=0
   while [[ "$elapsed" -lt 30 ]]; do
-    api_check "/api/v1/instances/${INSTANCE_NAME}" || break
+    api_check "/api/v1/agents/${INSTANCE_NAME}" || break
     sleep 2
     elapsed=$((elapsed + 2))
   done
 
-  if api_check "/api/v1/instances/${INSTANCE_NAME}"; then
+  if api_check "/api/v1/agents/${INSTANCE_NAME}"; then
     fail "Instance still exists after delete (waited ${elapsed}s)"
     exit 1
   fi
   pass "Instance deleted successfully"
 
   # ── Verify instance no longer in list ──
-  inst_list_after="$(api_request GET "/api/v1/instances")"
+  inst_list_after="$(api_request GET "/api/v1/agents")"
   still_found="$(printf "%s" "$inst_list_after" | python3 -c 'import json,sys; t=sys.argv[1]; d=json.load(sys.stdin); print("true" if any(i.get("metadata",{}).get("name")==t for i in d) else "false")' "$INSTANCE_NAME")"
   if [[ "$still_found" == "true" ]]; then
     fail "Instance still appears in list after delete"

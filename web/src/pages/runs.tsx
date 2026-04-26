@@ -4,7 +4,7 @@ import {
   useRuns,
   useDeleteRun,
   useCreateRun,
-  useInstances,
+  useAgents,
   useObservabilityMetrics,
   useGateVerdict,
 } from "@/hooks/use-api";
@@ -59,7 +59,7 @@ function isAwaitingGate(run: AgentRun): boolean {
 
 export function RunsPage() {
   const { data, isLoading } = useRuns();
-  const instances = useInstances();
+  const instances = useAgents();
   const observability = useObservabilityMetrics();
   const deleteRun = useDeleteRun();
   const createRun = useCreateRun();
@@ -69,7 +69,7 @@ export function RunsPage() {
   const { isUnseen, markAllSeen } = useRunsSeen();
   const markedRef = useRef(false);
   const [form, setForm] = useState({
-    instanceRef: "",
+    agentRef: "",
     task: "",
     model: "",
     timeout: "5m",
@@ -90,7 +90,7 @@ export function RunsPage() {
   const filtered = sorted.filter(
     (r) =>
       r.metadata.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.spec.instanceRef.toLowerCase().includes(search.toLowerCase()) ||
+      r.spec.agentRef.toLowerCase().includes(search.toLowerCase()) ||
       r.spec.task.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -98,7 +98,7 @@ export function RunsPage() {
     createRun.mutate(form, {
       onSuccess: () => {
         setOpen(false);
-        setForm({ instanceRef: "", task: "", model: "", timeout: "5m" });
+        setForm({ agentRef: "", task: "", model: "", timeout: "5m" });
       },
     });
   };
@@ -132,8 +132,8 @@ export function RunsPage() {
               <div className="space-y-2">
                 <Label>Instance</Label>
                 <Select
-                  value={form.instanceRef}
-                  onValueChange={(v) => setForm({ ...form, instanceRef: v })}
+                  value={form.agentRef}
+                  onValueChange={(v) => setForm({ ...form, agentRef: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select instance" />
@@ -185,7 +185,7 @@ export function RunsPage() {
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
                 onClick={handleCreate}
                 disabled={
-                  !form.instanceRef || !form.task || createRun.isPending
+                  !form.agentRef || !form.task || createRun.isPending
                 }
               >
                 {createRun.isPending ? "Creating…" : "Create Run"}
@@ -304,7 +304,7 @@ export function RunsPage() {
             <p className="text-sm text-muted-foreground">
               Runs are created when you dispatch a task to an{" "}
               <Link
-                to="/instances"
+                to="/agents"
                 className="text-blue-400 hover:text-blue-300"
               >
                 Instance
@@ -353,10 +353,10 @@ export function RunsPage() {
                 </TableCell>
                 <TableCell className="text-sm">
                   <Link
-                    to={`/instances/${run.spec.instanceRef}`}
+                    to={`/agents/${run.spec.agentRef}`}
                     className="hover:text-primary"
                   >
-                    {run.spec.instanceRef}
+                    {run.spec.agentRef}
                   </Link>
                 </TableCell>
                 <TableCell className="max-w-xs text-sm text-muted-foreground">

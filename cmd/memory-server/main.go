@@ -1,4 +1,4 @@
-// memory-server runs as a standalone Deployment per SympoziumInstance.
+// memory-server runs as a standalone Deployment per Agent.
 // It provides persistent memory for Sympozium agents via an HTTP API,
 // backed by SQLite with FTS5 for full-text search.
 //

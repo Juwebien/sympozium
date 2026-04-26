@@ -8,7 +8,7 @@ const STAMPED_INSTANCE = `${PACK}-${PERSONA}`;
 describe("Ensemble Detail — installed instances", () => {
   after(() => {
     cy.deleteEnsemble(PACK);
-    cy.deleteInstance(STAMPED_INSTANCE);
+    cy.deleteAgent(STAMPED_INSTANCE);
   });
 
   it("shows the stamped instance on the ensemble detail page", () => {
@@ -45,7 +45,7 @@ spec:
 
     // Click the instance link — should navigate to instance detail.
     cy.contains("a", STAMPED_INSTANCE).click();
-    cy.url().should("include", `/instances/${STAMPED_INSTANCE}`);
+    cy.url().should("include", `/agents/${STAMPED_INSTANCE}`);
   });
 });
 

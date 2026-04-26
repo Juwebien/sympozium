@@ -29,7 +29,7 @@ func newInstanceTestServer(t *testing.T) (*Server, *runtime.Scheme) {
 
 	cl := fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithStatusSubresource(&sympoziumv1alpha1.SympoziumInstance{}).
+		WithStatusSubresource(&sympoziumv1alpha1.Agent{}).
 		Build()
 
 	return NewServer(cl, nil, nil, logr.Discard()), scheme
@@ -44,7 +44,7 @@ func TestCreateInstance_NoHardcodedOTLPEndpoint(t *testing.T) {
 		Model:    "qwen/qwen3.5-35b-a3b",
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/instances?namespace=default", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents?namespace=default", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	srv.buildMux(nil, "").ServeHTTP(rec, req)
@@ -54,7 +54,7 @@ func TestCreateInstance_NoHardcodedOTLPEndpoint(t *testing.T) {
 	}
 
 	// Retrieve the created instance from the fake client and verify.
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := srv.client.Get(req.Context(), types.NamespacedName{Name: "test-adhoc", Namespace: "default"}, &inst); err != nil {
 		t.Fatalf("failed to get created instance: %v", err)
 	}

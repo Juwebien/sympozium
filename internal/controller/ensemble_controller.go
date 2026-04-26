@@ -27,7 +27,7 @@ import (
 const ensembleFinalizer = "sympozium.ai/ensemble-finalizer"
 
 // EnsembleReconciler reconciles Ensemble objects.
-// It stamps out SympoziumInstances, SympoziumSchedules, and memory
+// It stamps out Agents, SympoziumSchedules, and memory
 // ConfigMaps for each persona defined in the pack.
 type EnsembleReconciler struct {
 	client.Client
@@ -148,14 +148,14 @@ func (r *EnsembleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// resources and mark the pack as Inactive (catalog-only).
 	if !pack.Spec.Enabled {
 		log.Info("Ensemble is not enabled, cleaning up any existing resources")
-		for _, persona := range pack.Spec.Personas {
+		for _, persona := range pack.Spec.AgentConfigs {
 			if err := r.cleanupPersona(ctx, log, pack, &persona); err != nil {
 				log.Error(err, "Failed to clean up persona for disabled pack", "persona", persona.Name)
 			}
 		}
 
 		// Wait for stamped resources to actually disappear before deleting auth secrets.
-		var instList sympoziumv1alpha1.SympoziumInstanceList
+		var instList sympoziumv1alpha1.AgentList
 		if err := r.List(ctx, &instList, client.InNamespace(pack.Namespace), client.MatchingLabels{"sympozium.ai/ensemble": pack.Name}); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -189,9 +189,9 @@ func (r *EnsembleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 
 		pack.Status.Phase = "Inactive"
-		pack.Status.PersonaCount = len(pack.Spec.Personas)
+		pack.Status.AgentConfigCount = len(pack.Spec.AgentConfigs)
 		pack.Status.InstalledCount = 0
-		pack.Status.InstalledPersonas = nil
+		pack.Status.InstalledAgentConfigs = nil
 		pack.Status.SharedMemoryReady = false
 		if err := r.Status().Update(ctx, pack); err != nil {
 			return ctrl.Result{}, err
@@ -215,17 +215,17 @@ func (r *EnsembleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// Reconcile each persona → instance + schedule + memory
-	var installed []sympoziumv1alpha1.InstalledPersona
+	var installed []sympoziumv1alpha1.InstalledAgentConfig
 	var installErr error
-	for i, persona := range pack.Spec.Personas {
+	for i, persona := range pack.Spec.AgentConfigs {
 		// Skip personas that have been excluded (disabled via TUI).
-		if isExcluded(persona.Name, pack.Spec.ExcludePersonas) {
+		if isExcluded(persona.Name, pack.Spec.ExcludeAgentConfigs) {
 			if err := r.cleanupPersona(ctx, log, pack, &persona); err != nil {
 				log.Error(err, "Failed to clean up excluded persona", "persona", persona.Name)
 			}
 			continue
 		}
-		ip, err := r.reconcilePersona(ctx, log, pack, &persona, i, modelEndpoint)
+		ip, err := r.reconcileAgentConfig(ctx, log, pack, &persona, i, modelEndpoint)
 		if err != nil {
 			log.Error(err, "Failed to reconcile persona", "persona", persona.Name)
 			installErr = err
@@ -241,9 +241,9 @@ func (r *EnsembleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// Update status
-	pack.Status.PersonaCount = len(pack.Spec.Personas)
+	pack.Status.AgentConfigCount = len(pack.Spec.AgentConfigs)
 	pack.Status.InstalledCount = len(installed)
-	pack.Status.InstalledPersonas = installed
+	pack.Status.InstalledAgentConfigs = installed
 	if installErr != nil {
 		pack.Status.Phase = "Error"
 	} else {
@@ -256,31 +256,31 @@ func (r *EnsembleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, installErr
 }
 
-// reconcilePersona ensures the SympoziumInstance and optional
+// reconcileAgentConfig ensures the Agent and optional
 // SympoziumSchedule exist for one persona.
-func (r *EnsembleReconciler) reconcilePersona(
+func (r *EnsembleReconciler) reconcileAgentConfig(
 	ctx context.Context,
 	log logr.Logger,
 	pack *sympoziumv1alpha1.Ensemble,
-	persona *sympoziumv1alpha1.PersonaSpec,
+	persona *sympoziumv1alpha1.AgentConfigSpec,
 	personaIndex int,
 	modelEndpoint string,
-) (sympoziumv1alpha1.InstalledPersona, error) {
+) (sympoziumv1alpha1.InstalledAgentConfig, error) {
 	instanceName := pack.Name + "-" + persona.Name
-	ip := sympoziumv1alpha1.InstalledPersona{
+	ip := sympoziumv1alpha1.InstalledAgentConfig{
 		Name:         persona.Name,
 		InstanceName: instanceName,
 	}
 
-	// --- SympoziumInstance ---
-	existingInst := &sympoziumv1alpha1.SympoziumInstance{}
+	// --- Agent ---
+	existingInst := &sympoziumv1alpha1.Agent{}
 	err := r.Get(ctx, client.ObjectKey{Name: instanceName, Namespace: pack.Namespace}, existingInst)
 	if errors.IsNotFound(err) {
-		inst := r.buildInstance(pack, persona, instanceName, modelEndpoint)
+		inst := r.buildAgent(pack, persona, instanceName, modelEndpoint)
 		if err := ctrl.SetControllerReference(pack, inst, r.Scheme); err != nil {
 			return ip, fmt.Errorf("set owner ref on instance: %w", err)
 		}
-		log.Info("Creating SympoziumInstance for persona", "instance", instanceName, "persona", persona.Name)
+		log.Info("Creating Agent for persona", "instance", instanceName, "persona", persona.Name)
 		if err := r.Create(ctx, inst); err != nil {
 			return ip, fmt.Errorf("create instance %s: %w", instanceName, err)
 		}
@@ -452,13 +452,13 @@ func (r *EnsembleReconciler) reconcilePersona(
 	return ip, nil
 }
 
-// buildInstance creates a SympoziumInstance spec from a persona definition.
-func (r *EnsembleReconciler) buildInstance(
+// buildAgent creates a Agent spec from a persona definition.
+func (r *EnsembleReconciler) buildAgent(
 	pack *sympoziumv1alpha1.Ensemble,
-	persona *sympoziumv1alpha1.PersonaSpec,
+	persona *sympoziumv1alpha1.AgentConfigSpec,
 	instanceName string,
 	modelEndpoint string,
-) *sympoziumv1alpha1.SympoziumInstance {
+) *sympoziumv1alpha1.Agent {
 	model := persona.Model
 	if model == "" {
 		model = "gpt-4o" // sensible default; overridden by onboarding
@@ -491,16 +491,16 @@ func (r *EnsembleReconciler) buildInstance(
 		}
 	}
 
-	inst := &sympoziumv1alpha1.SympoziumInstance{
+	inst := &sympoziumv1alpha1.Agent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instanceName,
 			Namespace: pack.Namespace,
 			Labels: map[string]string{
 				"sympozium.ai/ensemble": pack.Name,
-				"sympozium.ai/persona":  persona.Name,
+				"sympozium.ai/agent-config":  persona.Name,
 			},
 		},
-		Spec: sympoziumv1alpha1.SympoziumInstanceSpec{
+		Spec: sympoziumv1alpha1.AgentSpec{
 			Agents: sympoziumv1alpha1.AgentsSpec{
 				Default: sympoziumv1alpha1.AgentConfig{
 					Model:        model,
@@ -600,7 +600,7 @@ func (r *EnsembleReconciler) buildInstance(
 // the same pack don't fire simultaneously and contend for a shared LLM.
 func (r *EnsembleReconciler) buildSchedule(
 	pack *sympoziumv1alpha1.Ensemble,
-	persona *sympoziumv1alpha1.PersonaSpec,
+	persona *sympoziumv1alpha1.AgentConfigSpec,
 	instanceName, schedName string,
 	personaIndex int,
 ) *sympoziumv1alpha1.SympoziumSchedule {
@@ -619,11 +619,11 @@ func (r *EnsembleReconciler) buildSchedule(
 			Namespace: pack.Namespace,
 			Labels: map[string]string{
 				"sympozium.ai/ensemble": pack.Name,
-				"sympozium.ai/persona":  persona.Name,
+				"sympozium.ai/agent-config":  persona.Name,
 			},
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef:       instanceName,
+			AgentRef:       instanceName,
 			Schedule:          cron,
 			Task:              r.buildScheduleTask(pack, persona),
 			Type:              persona.Schedule.Type,
@@ -637,7 +637,7 @@ func (r *EnsembleReconciler) buildSchedule(
 // If the pack has a TaskOverride, it prepends the team-level directive.
 func (r *EnsembleReconciler) buildScheduleTask(
 	pack *sympoziumv1alpha1.Ensemble,
-	persona *sympoziumv1alpha1.PersonaSpec,
+	persona *sympoziumv1alpha1.AgentConfigSpec,
 ) string {
 	base := persona.Schedule.Task
 	if pack.Spec.TaskOverride != "" {
@@ -651,7 +651,7 @@ func (r *EnsembleReconciler) reconcileMemorySeeds(
 	ctx context.Context,
 	log logr.Logger,
 	pack *sympoziumv1alpha1.Ensemble,
-	persona *sympoziumv1alpha1.PersonaSpec,
+	persona *sympoziumv1alpha1.AgentConfigSpec,
 	instanceName string,
 ) error {
 	cmName := instanceName + "-memory"
@@ -671,7 +671,7 @@ func (r *EnsembleReconciler) reconcileMemorySeeds(
 				Namespace: pack.Namespace,
 				Labels: map[string]string{
 					"sympozium.ai/ensemble": pack.Name,
-					"sympozium.ai/persona":  persona.Name,
+					"sympozium.ai/agent-config":  persona.Name,
 					"sympozium.ai/memory":   "true",
 				},
 			},
@@ -744,12 +744,12 @@ func (r *EnsembleReconciler) cleanupPersona(
 	ctx context.Context,
 	log logr.Logger,
 	pack *sympoziumv1alpha1.Ensemble,
-	persona *sympoziumv1alpha1.PersonaSpec,
+	persona *sympoziumv1alpha1.AgentConfigSpec,
 ) error {
 	instanceName := pack.Name + "-" + persona.Name
 
-	// Delete SympoziumInstance
-	inst := &sympoziumv1alpha1.SympoziumInstance{}
+	// Delete Agent
+	inst := &sympoziumv1alpha1.Agent{}
 	if err := r.Get(ctx, client.ObjectKey{Name: instanceName, Namespace: pack.Namespace}, inst); err == nil {
 		log.Info("Deleting excluded persona instance", "instance", instanceName)
 		if err := r.Delete(ctx, inst); err != nil && !errors.IsNotFound(err) {
@@ -796,7 +796,7 @@ func (r *EnsembleReconciler) reconcileDelete(
 	// Owner references handle cascade deletion of instances and schedules,
 	// but we clean up memory ConfigMaps explicitly since they may not
 	// have owner references.
-	for _, persona := range pack.Spec.Personas {
+	for _, persona := range pack.Spec.AgentConfigs {
 		cmName := pack.Name + "-" + persona.Name + "-memory"
 		var cm corev1.ConfigMap
 		if err := r.Get(ctx, client.ObjectKey{Name: cmName, Namespace: pack.Namespace}, &cm); err == nil {
@@ -1084,7 +1084,7 @@ func (r *EnsembleReconciler) cleanupSharedMemory(ctx context.Context, log logr.L
 func (r *EnsembleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sympoziumv1alpha1.Ensemble{}).
-		Owns(&sympoziumv1alpha1.SympoziumInstance{}).
+		Owns(&sympoziumv1alpha1.Agent{}).
 		Owns(&sympoziumv1alpha1.SympoziumSchedule{}).
 		Complete(r)
 }

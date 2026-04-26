@@ -229,7 +229,7 @@ export function EnsembleDetailPage() {
               <CardTitle className="text-base">Persona Workflow</CardTitle>
               <CardDescription>
                 {hasRelationships
-                  ? `${pack.spec.personas?.length ?? 0} personas with ${pack.spec.relationships!.length} relationships`
+                  ? `${pack.spec.agentConfigs?.length ?? 0} personas with ${pack.spec.relationships!.length} relationships`
                   : "Define relationships between personas to enable coordination. Drag to rearrange."}
               </CardDescription>
             </CardHeader>
@@ -366,8 +366,8 @@ export function EnsembleDetailPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Personas</p>
                   <p className="text-2xl font-bold">
-                    {pack.status?.personaCount ??
-                      pack.spec.personas?.length ??
+                    {pack.status?.agentConfigCount ??
+                      pack.spec.agentConfigs?.length ??
                       0}
                   </p>
                 </div>
@@ -406,8 +406,8 @@ export function EnsembleDetailPage() {
           </div>
 
           {/* Installed Instances */}
-          {pack.status?.installedPersonas &&
-            pack.status.installedPersonas.length > 0 && (
+          {pack.status?.installedAgentConfigs &&
+            pack.status.installedAgentConfigs.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">
@@ -416,15 +416,15 @@ export function EnsembleDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {pack.status.installedPersonas.map((ip) => (
+                    {pack.status.installedAgentConfigs.map((ip) => (
                       <Link
-                        key={ip.instanceName}
-                        to={`/instances/${ip.instanceName}`}
+                        key={ip.agentName}
+                        to={`/agents/${ip.agentName}`}
                         className="flex items-center justify-between rounded-lg border p-3 hover:bg-white/5 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-sm">
-                            {ip.instanceName}
+                            {ip.agentName}
                           </span>
                           <Badge variant="outline" className="text-xs">
                             {ip.name}
@@ -466,10 +466,10 @@ export function EnsembleDetailPage() {
           {/* Personas */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">
-              Personas ({pack.spec.personas?.length ?? 0})
+              Personas ({pack.spec.agentConfigs?.length ?? 0})
             </h2>
-            {pack.spec.personas?.map((persona, i) => {
-              const installed = pack.status?.installedPersonas?.some(
+            {pack.spec.agentConfigs?.map((persona, i) => {
+              const installed = pack.status?.installedAgentConfigs?.some(
                 (ip) => ip.name === persona.name,
               );
               const isEditing = editingPersona === persona.name;
@@ -752,18 +752,18 @@ export function EnsembleDetailPage() {
         onClose={() => setWizardOpen(false)}
         mode="persona"
         targetName={pack.metadata.name}
-        personaCount={pack.spec.personas?.length ?? 0}
+        agentConfigCount={pack.spec.agentConfigs?.length ?? 0}
         availableSkills={(skillPacks || []).map((s) => s.metadata.name)}
         defaults={{
           provider: pack.spec.authRefs?.[0]?.provider || "",
           secretName: pack.spec.authRefs?.[0]?.secret || "",
-          model: pack.spec.personas?.[0]?.model || "",
+          model: pack.spec.agentConfigs?.[0]?.model || "",
           skills: Array.from(
-            new Set((pack.spec.personas || []).flatMap((p) => p.skills || [])),
+            new Set((pack.spec.agentConfigs || []).flatMap((p) => p.skills || [])),
           ),
           channelConfigs: pack.spec.channelConfigs || {},
           channels:
-            pack.spec.personas?.[0]?.channels ||
+            pack.spec.agentConfigs?.[0]?.channels ||
             Object.keys(pack.spec.channelConfigs || {}),
         }}
         onComplete={handleProviderChange}

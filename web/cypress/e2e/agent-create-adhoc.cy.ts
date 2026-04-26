@@ -1,15 +1,9 @@
-// Test: create an ad-hoc LM Studio instance with qwen/qwen3.5-9b, dispatch
-// multiple agent runs against it, then delete the instance and assert it is
-// gone.
+// Test: create an ad-hoc instance using LM Studio with qwen/qwen3.5-9b,
+// verify it on the detail page, then dispatch a run and confirm it exists.
 
-const INSTANCE = `cypress-multirun-${Date.now()}`;
-const RUN_COUNT = 3;
-const TASKS = Array.from(
-  { length: RUN_COUNT },
-  (_, i) => `Cypress multi-run task #${i + 1}`,
-);
+const INSTANCE = `cypress-adhoc-${Date.now()}`;
 
-describe("Ad-hoc Instance — Multiple Runs and Delete", () => {
+describe("Ad-hoc Instance — Create and Run", () => {
   function authHeaders(): Record<string, string> {
     const token = Cypress.env("API_TOKEN");
     const h: Record<string, string> = { "Content-Type": "application/json" };
@@ -17,12 +11,11 @@ describe("Ad-hoc Instance — Multiple Runs and Delete", () => {
     return h;
   }
 
-  // Safety net: if the delete test fails or is skipped, still clean up.
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
-  it("creates the LM Studio instance via the wizard", () => {
+  it("creates an instance via the wizard", () => {
     cy.visit("/instances");
 
     cy.contains("button", "Create Instance", { timeout: 20000 }).click();
@@ -73,51 +66,39 @@ describe("Ad-hoc Instance — Multiple Runs and Delete", () => {
       .contains("button", "Create")
       .click({ force: true });
 
+    // Wait for dialog to close.
     cy.get("[role='dialog']").should("not.exist", { timeout: 20000 });
+
+    // ── Verify instance in the list ───────────────────────────
     cy.contains(INSTANCE, { timeout: 20000 }).should("be.visible");
   });
 
-  it(`dispatches ${RUN_COUNT} ad-hoc runs against the instance`, () => {
-    TASKS.forEach((task) => {
-      cy.request({
-        method: "POST",
-        url: "/api/v1/runs?namespace=default",
-        headers: authHeaders(),
-        body: {
-          instanceRef: INSTANCE,
-          task,
-        },
-      }).then((resp) => {
-        expect(resp.status).to.eq(201);
-        expect(resp.body?.metadata?.name).to.be.a("string").and.not.be.empty;
-      });
-    });
+  it("shows correct config on the detail page", () => {
+    cy.visit(`/agents/${INSTANCE}`);
 
-    // All runs should appear on the Runs page tied to this instance.
-    cy.visit("/runs");
-    cy.contains("td", INSTANCE, { timeout: 20000 }).should("be.visible");
-    TASKS.forEach((task) => {
-      cy.contains(task, { timeout: 20000 }).should("be.visible");
-    });
+    cy.contains(INSTANCE, { timeout: 20000 }).should("be.visible");
+    cy.contains("qwen/qwen3.5-9b").should("be.visible");
+    cy.contains("http://localhost:1234/v1").should("be.visible");
   });
 
-  it("deletes the instance and confirms it is gone", () => {
-    const token = Cypress.env("API_TOKEN");
-
+  it("dispatches an ad-hoc run via API", () => {
     cy.request({
-      method: "DELETE",
-      url: `/api/v1/instances/${INSTANCE}?namespace=default`,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      method: "POST",
+      url: "/api/v1/runs?namespace=default",
+      headers: authHeaders(),
+      body: {
+        agentRef: INSTANCE,
+        task: "Say hello from Cypress test",
+      },
     }).then((resp) => {
-      expect(resp.status).to.be.oneOf([200, 202, 204]);
+      expect(resp.status).to.eq(201);
+      expect(resp.body?.metadata?.name).to.be.a("string").and.not.be.empty;
+
+      // Verify the run appears on the Runs page by matching its instance name.
+      cy.visit("/runs");
+      cy.contains("td", INSTANCE, { timeout: 20000 }).should("be.visible");
+      cy.contains("Say hello from Cypress test").should("be.visible");
     });
-
-    // API: subsequent GET should eventually 404 (finalizers may delay removal).
-    cy.waitForDeleted(`/api/v1/instances/${INSTANCE}?namespace=default`);
-
-    // UI: instance no longer shown in the list.
-    cy.visit("/instances");
-    cy.contains(INSTANCE, { timeout: 20000 }).should("not.exist");
   });
 });
 

@@ -200,7 +200,7 @@ main() {
 
   cat <<EOF | kubectl apply -f - >/dev/null
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${ADHOC_INSTANCE}
   namespace: ${NAMESPACE}
@@ -247,7 +247,7 @@ EOF
   elapsed=0
   channel_reported=false
   while [[ "$elapsed" -lt 20 ]]; do
-    inst_json="$(api_request GET "/api/v1/instances/${ADHOC_INSTANCE}" 2>/dev/null || true)"
+    inst_json="$(api_request GET "/api/v1/agents/${ADHOC_INSTANCE}" 2>/dev/null || true)"
     if [[ -n "$inst_json" ]]; then
       chan_count="$(printf "%s" "$inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("status",{}).get("channels",[]); print(len(c))' 2>/dev/null || echo 0)"
       if [[ "$chan_count" -ge 1 ]]; then
@@ -287,7 +287,7 @@ spec:
   enabled: false
   channelConfigs:
     telegram: ${PACK_CHANNEL_SECRET}
-  personas:
+  agentConfigs:
     - name: ${PACK_PERSONA}
       displayName: "Notification Agent"
       systemPrompt: "You send notifications."
@@ -308,7 +308,7 @@ EOF
   # ── Wait for stamped instance ──
   elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    api_check "/api/v1/instances/${PACK_INSTANCE}" && break
+    api_check "/api/v1/agents/${PACK_INSTANCE}" && break
     sleep 3
     elapsed=$((elapsed + 3))
   done
@@ -319,7 +319,7 @@ EOF
   pass "Ensemble stamped instance '${PACK_INSTANCE}'"
 
   # ── Verify stamped instance has channel spec ──
-  pack_inst_json="$(api_request GET "/api/v1/instances/${PACK_INSTANCE}")"
+  pack_inst_json="$(api_request GET "/api/v1/agents/${PACK_INSTANCE}")"
   pack_chan_type="$(printf "%s" "$pack_inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("spec",{}).get("channels",[]); print(c[0].get("type","") if c else "")')"
   if [[ "$pack_chan_type" != "telegram" ]]; then
     fail "Stamped instance missing telegram channel (got '${pack_chan_type}')"

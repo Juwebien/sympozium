@@ -1,10 +1,10 @@
-// Test: create an ad-hoc instance using llama-server.
+// Test: create an ad-hoc instance using Unsloth with unsloth/gemma-3-12b-it.
 
-const INSTANCE = `cypress-llama-server-${Date.now()}`;
+const INSTANCE = `cypress-unsloth-${Date.now()}`;
 
-describe("Create Instance — llama-server", () => {
+describe("Create Instance — Unsloth", () => {
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("walks through the wizard and creates the instance", () => {
@@ -19,24 +19,25 @@ describe("Create Instance — llama-server", () => {
       .type(INSTANCE);
     cy.wizardNext();
 
-    // ── Step 2: Provider — select llama-server ────────────────
+    // ── Step 2: Provider — select Unsloth ─────────────────────
+    // Scope to the dialog to avoid matching page-level selects.
     cy.get("[role='dialog']")
       .find("button[role='combobox']")
       .click({ force: true });
     cy.get("[data-radix-popper-content-wrapper]")
-      .contains("llama-server")
+      .contains("Unsloth")
       .click({ force: true });
     cy.wizardNext();
 
     // ── Step 3: Auth ──────────────────────────────────────────
-    // llama-server needs no API key — go straight through.
+    // Unsloth needs no API key — go straight through.
     cy.wizardNext();
 
     // ── Step 4: Model ─────────────────────────────────────────
     cy.get("[role='dialog']")
       .find("input[placeholder='gpt-4o']")
       .clear()
-      .type("default");
+      .type("unsloth/gemma-3-12b-it");
     cy.wizardNext();
 
     // ── Step 5: Skills ────────────────────────────────────────
@@ -53,8 +54,8 @@ describe("Create Instance — llama-server", () => {
 
     // ── Step 8: Confirm ───────────────────────────────────────
     cy.get("[role='dialog']").contains(INSTANCE);
-    cy.get("[role='dialog']").contains("llama-server");
-    cy.get("[role='dialog']").contains("default");
+    cy.get("[role='dialog']").contains("unsloth");
+    cy.get("[role='dialog']").contains("unsloth/gemma-3-12b-it");
     cy.get("[role='dialog']")
       .contains("button", "Create")
       .click({ force: true });

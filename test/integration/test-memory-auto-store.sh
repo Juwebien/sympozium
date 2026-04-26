@@ -118,7 +118,7 @@ info "Using model '${LM_STUDIO_MODEL}' at ${LM_STUDIO_BASE_URL}"
 # Create instance with memory enabled.
 cat <<EOF | kubectl apply -n "$NAMESPACE" -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE}
 spec:
@@ -165,7 +165,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "autostore-${SUFFIX}"
   task: "Respond with exactly: The answer is ${MARKER}. Do NOT call any tools. Just respond with that text."
@@ -284,7 +284,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "autostore-followup-${SUFFIX}"
   task: "Say goodbye. Do not call any tools."

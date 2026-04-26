@@ -112,14 +112,14 @@ Sympozium takes the best of both:
 
 ## 3. Custom Resource Definitions
 
-### 3.1 `SympoziumInstance` — per-user/per-tenant gateway
+### 3.1 `Agent` — per-user/per-tenant gateway
 
-Replaces the monolithic gateway. Each user or tenant gets a `SympoziumInstance` that
+Replaces the monolithic gateway. Each user or tenant gets a `Agent` that
 declares their desired channels, agents, and policy bindings.
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: alice
   namespace: sympozium
@@ -200,10 +200,10 @@ metadata:
     sympozium.ai/parent-run: run-parent-456   # populated for sub-agents
   ownerReferences:
     - apiVersion: sympozium.ai/v1alpha1
-      kind: SympoziumInstance
+      kind: Agent
       name: alice
 spec:
-  instanceRef: alice
+  agentRef: alice
   agentId: default
   sessionKey: "agent:default:subagent:xyz"
 
@@ -457,10 +457,10 @@ When a Ensemble is activated (via the TUI wizard or kubectl), the controller
 stamps out all the underlying resources automatically:
 
 ```
-Ensemble CR (spec.personas[])
+Ensemble CR (spec.agentConfigs[])
   │
   ├─ For each persona:
-  │   ├─ Create SympoziumInstance (inherits model, authRefs, policyRef)
+  │   ├─ Create Agent (inherits model, authRefs, policyRef)
   │   ├─ Create SympoziumSchedule (from persona.schedule)
   │   └─ Create ConfigMap (<name>-memory, from persona.memory.seeds)
   │
@@ -468,7 +468,7 @@ Ensemble CR (spec.personas[])
   │   └─ Deleting the Ensemble cascades to all children
   │
   └─ Update status:
-      ├─ status.personaCount = len(spec.personas)
+      ├─ status.personaCount = len(spec.agentConfigs)
       ├─ status.installedCount = successfully created
       ├─ status.installedPersonas[] = {name, instanceName, scheduleName}
       └─ status.phase = Ready | Pending | Error
@@ -494,7 +494,7 @@ spec:
   category: platform
   version: "1.0.0"
 
-  # Personas — each becomes a SympoziumInstance + Schedule
+  # Personas — each becomes a Agent + Schedule
   personas:
     - name: security-guardian
       displayName: "Security Guardian"
@@ -560,7 +560,7 @@ AgentRun created (status.phase = Pending)
   ├─ Validate against SympoziumPolicy (via admission webhook, already passed)
   │
   ├─ Resolve pod spec:
-  │   ├─ Base image (sandbox image from SympoziumInstance)
+  │   ├─ Base image (sandbox image from Agent)
   │   ├─ Sidecar containers (sandbox exec, browser if featureGate enabled)
   │   ├─ Skill sidecars (from SkillPack.spec.sidecar, e.g. kubectl)
   │   ├─ Skill RBAC (Role/ClusterRole + bindings, scoped per-run)
@@ -824,7 +824,7 @@ reconnection doesn't affect Telegram. A Telegram rate limit doesn't block Discor
    kubectl create secret generic my-telegram-creds \
      --from-literal=TELEGRAM_BOT_TOKEN=<token-from-botfather>
    ```
-4. Reference the secret in your SympoziumInstance:
+4. Reference the secret in your Agent:
    ```yaml
    channels:
      - type: telegram
@@ -895,7 +895,7 @@ with the `sympozium.ai/agent-run` label and enforces `SympoziumPolicy`:
 
 1. Inject `NetworkPolicy` sidecar label selectors for network isolation.
 2. Add default resource limits from `SympoziumPolicy` if not specified.
-3. Inject the skills volume from `SympoziumInstance.spec.skills`.
+3. Inject the skills volume from `Agent.spec.skills`.
 4. Add the `ipc-bridge` sidecar if not present.
 5. Set `ttlSecondsAfterFinished` for auto-cleanup.
 
@@ -994,7 +994,7 @@ declared in `SympoziumPolicy.featureGates` and enforced at multiple levels:
 | Feature Gate | What it unlocks | Enforcement point |
 |---|---|---|
 | `browser-automation` | Browser sidecar in agent pods | Admission webhook (rejects browser sidecar if false) |
-| `voice-call` | Voice call channel pod | SympoziumInstance controller (skips voice pod creation) |
+| `voice-call` | Voice call channel pod | Agent controller (skips voice pod creation) |
 | `canvas` | Canvas host sidecar | Admission webhook |
 | `plugins` | Plugin loading in agent pods | Admission webhook (env var injection) |
 | `agent-swarms` | Sub-agent spawning | Admission webhook (rejects spawn depth > 0 if false) |
@@ -1030,7 +1030,7 @@ transcripts) becomes a PostgreSQL table:
 ```sql
 CREATE TABLE sessions (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    instance_name   TEXT NOT NULL,   -- SympoziumInstance name
+    instance_name   TEXT NOT NULL,   -- Agent name
     agent_id        TEXT NOT NULL,
     session_key     TEXT NOT NULL UNIQUE,
     channel         TEXT,
@@ -1075,11 +1075,11 @@ CREATE INDEX ON memory_embeddings
 |---|---|
 | `gateway.auth` | K8s Secret + Ingress auth |
 | `gateway.mode`, `gateway.port` | Service + Ingress spec |
-| `agents.defaults` | `SympoziumInstance.spec.agents.default` |
+| `agents.defaults` | `Agent.spec.agents.default` |
 | `agents.defaults.sandbox` | `SympoziumPolicy.spec.sandbox` |
 | `agents.defaults.subagents` | `SympoziumPolicy.spec.subagents` |
 | `agents.defaults.tools` | `SympoziumPolicy.spec.tools` |
-| `channels.*` | `SympoziumInstance.spec.channels` + channel pod Secrets |
+| `channels.*` | `Agent.spec.channels` + channel pod Secrets |
 | `hooks.*` | Plugin hooks in agent pod ConfigMap |
 | `skills.*` | `SkillPack` CRDs |
 | `cron.*` | K8s CronJob resources |
@@ -1096,9 +1096,9 @@ the IPC bridge flushes them to the database in batches.
 
 ### Phase 1: Operator + CRDs (foundations)
 
-- Implement CRDs: `SympoziumInstance`, `AgentRun`, `SympoziumPolicy`, `SkillPack`
+- Implement CRDs: `Agent`, `AgentRun`, `SympoziumPolicy`, `SkillPack`
 - Build the Sympozium operator (controller-runtime based)
-- `SympoziumInstance` controller: reconcile channel pods + store config
+- `Agent` controller: reconcile channel pods + store config
 - `AgentRun` controller: create Jobs, watch completion, deliver results
 - Agent pod image: Go-based runner that reads task from `/ipc/input/`,
   calls LLM, writes result to `/ipc/output/`
@@ -1115,7 +1115,7 @@ the IPC bridge flushes them to the database in batches.
 ### Phase 3: Channel decomposition
 
 - Extract each channel into its own container image
-- Channel controller: watches `SympoziumInstance.spec.channels`, reconciles channel pods
+- Channel controller: watches `Agent.spec.channels`, reconciles channel pods
 - Event bus integration for inbound/outbound message routing
 - Channel health monitoring via event bus heartbeats
 
@@ -1216,7 +1216,7 @@ the IPC bridge flushes them to the database in batches.
   they never touch disk inside the pod (env-only, no file mount).
 - **Gateway tokens** are only in the control plane pods, never in agent pods.
 - **Channel credentials** are only in channel pods, never in agent pods.
-- **Cross-instance isolation**: each `SympoziumInstance` has its own Secrets; the
+- **Cross-instance isolation**: each `Agent` has its own Secrets; the
   admission webhook rejects pods that reference Secrets from other instances.
 
 ---

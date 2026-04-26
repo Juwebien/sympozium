@@ -2,7 +2,7 @@
 # Integration test: verify the Anthropic provider + write_file tool works end-to-end.
 #
 # What it does:
-#   1. Creates a test SympoziumInstance + AgentRun using provider=anthropic
+#   1. Creates a test Agent + AgentRun using provider=anthropic
 #   2. The AgentRun task tells Claude to write a specific file using write_file
 #   3. Waits for the AgentRun to complete (Succeeded or Failed)
 #   4. Checks pod logs for evidence the tool was invoked
@@ -79,11 +79,11 @@ fi
 cleanup 2>/dev/null || true
 sleep 2
 
-# --- Create test SympoziumInstance ---
-info "Creating SympoziumInstance: $INSTANCE_NAME"
+# --- Create test Agent ---
+info "Creating Agent: $INSTANCE_NAME"
 cat <<EOF | kubectl apply -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE_NAME}
   namespace: ${NAMESPACE}
@@ -106,7 +106,7 @@ metadata:
   labels:
     sympozium.ai/instance: ${INSTANCE_NAME}
 spec:
-  instanceRef: ${INSTANCE_NAME}
+  agentRef: ${INSTANCE_NAME}
   agentId: default
   sessionKey: "inttest-anthropic-$(date +%s)"
   task: |

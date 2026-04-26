@@ -25,7 +25,7 @@ function authHeaders(): Record<string, string> {
 describe("Ensemble — scheduled run fires and produces a response", () => {
   after(() => {
     cy.deleteEnsemble(PACK);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
     // The schedule + runs are owned by the pack/instance and should GC,
     // but clean up defensively in case of leftover resources.
     cy.exec(

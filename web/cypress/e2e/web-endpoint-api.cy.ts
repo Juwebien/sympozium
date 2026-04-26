@@ -12,16 +12,16 @@ function authHeaders(): Record<string, string> {
 
 describe("Web-endpoint — API validation", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE, { skills: ["web-endpoint"] });
+    cy.createLMStudioAgent(INSTANCE, { skills: ["web-endpoint"] });
   });
 
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("instance spec includes web-endpoint skill", () => {
     cy.request({
-      url: `/api/v1/instances/${INSTANCE}?namespace=default`,
+      url: `/api/v1/agents/${INSTANCE}?namespace=default`,
       headers: authHeaders(),
     }).then((resp) => {
       expect(resp.status).to.eq(200);
@@ -36,7 +36,7 @@ describe("Web-endpoint — API validation", () => {
 
   it("web-endpoint skill has default rate_limit_rpm", () => {
     cy.request({
-      url: `/api/v1/instances/${INSTANCE}?namespace=default`,
+      url: `/api/v1/agents/${INSTANCE}?namespace=default`,
       headers: authHeaders(),
     }).then((resp) => {
       const webSkill = (

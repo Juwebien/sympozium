@@ -13,7 +13,7 @@ function authHeaders(): Record<string, string> {
 
 describe("Run — delete", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
     cy.dispatchRun(INSTANCE, "Reply with exactly: DEL_OK").then((name) => {
       RUN_NAME = name;
     });
@@ -21,7 +21,7 @@ describe("Run — delete", () => {
   });
 
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("removes the run from the list and returns 404 on direct GET", () => {

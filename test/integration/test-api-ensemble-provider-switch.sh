@@ -68,7 +68,7 @@ cleanup() {
   info "Cleaning up provider-switch resources..."
   [[ -n "$RUN_OPENAI" ]] && api_request DELETE "/api/v1/runs/${RUN_OPENAI}" >/dev/null 2>&1 || true
   [[ -n "$RUN_ANTHROPIC" ]] && api_request DELETE "/api/v1/runs/${RUN_ANTHROPIC}" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1 || true
   api_request DELETE "/api/v1/ensembles/${PACK_NAME}" >/dev/null 2>&1 || true
   # kubectl fallback: agentruns, instance, pack, secrets, configmaps
   kubectl delete agentrun -n "$NAMESPACE" -l "sympozium.ai/instance=${INSTANCE_NAME}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
@@ -226,7 +226,7 @@ wait_for_instance_model() {
   local want_model="$1"
   local elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    inst_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}" 2>/dev/null || true)"
+    inst_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}" 2>/dev/null || true)"
     if [[ -n "$inst_json" ]]; then
       got_model="$(printf "%s" "$inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("agents",{}).get("default",{}).get("model",""))')"
       if [[ "$got_model" == "$want_model" ]]; then
@@ -265,7 +265,7 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   enabled: false
-  personas:
+  agentConfigs:
     - name: ${PERSONA_NAME}
       systemPrompt: "Integration test persona for provider switch"
       model: ${OPENAI_MODEL}
@@ -289,7 +289,7 @@ EOF
   assert_instance "$inst_openai" "openai" "$OPENAI_SECRET" "$OPENAI_MODEL"
   pass "OpenAI propagation to Ensemble instance verified"
 
-  run_openai_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${INSTANCE_NAME}\",\"task\":\"provider switch openai run\"}")"
+  run_openai_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${INSTANCE_NAME}\",\"task\":\"provider switch openai run\"}")"
   RUN_OPENAI="$(printf "%s" "$run_openai_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("metadata",{}).get("name",""))')"
   assert_run "$run_openai_json" "openai" "$OPENAI_SECRET" "$OPENAI_MODEL"
   pass "OpenAI propagation to new runs verified"
@@ -303,7 +303,7 @@ EOF
   assert_instance "$inst_anthropic" "anthropic" "$ANTHROPIC_SECRET" "$ANTHROPIC_MODEL"
   pass "Anthropic propagation to Ensemble instance verified"
 
-  run_anthropic_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${INSTANCE_NAME}\",\"task\":\"provider switch anthropic run\"}")"
+  run_anthropic_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${INSTANCE_NAME}\",\"task\":\"provider switch anthropic run\"}")"
   RUN_ANTHROPIC="$(printf "%s" "$run_anthropic_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("metadata",{}).get("name",""))')"
   assert_run "$run_anthropic_json" "anthropic" "$ANTHROPIC_SECRET" "$ANTHROPIC_MODEL"
   pass "Anthropic propagation to new runs verified"

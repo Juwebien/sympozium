@@ -108,7 +108,7 @@ func TestNextScheduledRunNumber_IgnoresMalformedSuffixes(t *testing.T) {
 			Namespace: "default",
 			Labels:    map[string]string{"sympozium.ai/schedule": "sched"},
 		},
-		Spec: sympoziumv1alpha1.AgentRunSpec{InstanceRef: "i", Task: "x"},
+		Spec: sympoziumv1alpha1.AgentRunSpec{AgentRef: "i", Task: "x"},
 	}
 	r, _ := newScheduleTestReconciler(t, schedule, goodRun, bogus)
 
@@ -131,7 +131,7 @@ func makeOrphanRun(scheduleName string, suffix int) *sympoziumv1alpha1.AgentRun 
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: "any-instance",
+			AgentRef: "any-instance",
 			Task:        "x",
 		},
 	}

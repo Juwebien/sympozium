@@ -67,8 +67,8 @@ cleanup() {
   [[ -n "$ADHOC_RUN_NAME" ]] && api_request DELETE "/api/v1/runs/${ADHOC_RUN_NAME}" >/dev/null 2>&1 || true
 
   api_request DELETE "/api/v1/schedules/${PACK_INSTANCE_NAME}-schedule" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${PACK_INSTANCE_NAME}" >/dev/null 2>&1 || true
-  api_request DELETE "/api/v1/instances/${ADHOC_INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${PACK_INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${ADHOC_INSTANCE_NAME}" >/dev/null 2>&1 || true
   api_request DELETE "/api/v1/ensembles/${PACK_NAME}" >/dev/null 2>&1 || true
 
   # kubectl fallback: agentruns, schedules, instances, pack, secrets, configmaps
@@ -262,7 +262,7 @@ spec:
   category: "integration"
   version: "1.0.0"
   enabled: false
-  personas:
+  agentConfigs:
     - name: ${PERSONA_NAME}
       displayName: "Integration Analyst"
       systemPrompt: "Integration test persona"
@@ -288,7 +288,7 @@ EOF
 
   elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    if api_request GET "/api/v1/instances/${PACK_INSTANCE_NAME}" >/dev/null 2>&1; then
+    if api_request GET "/api/v1/agents/${PACK_INSTANCE_NAME}" >/dev/null 2>&1; then
       break
     fi
     sleep 5
@@ -299,23 +299,23 @@ EOF
     exit 1
   fi
 
-  pack_inst_json="$(api_request GET "/api/v1/instances/${PACK_INSTANCE_NAME}")"
+  pack_inst_json="$(api_request GET "/api/v1/agents/${PACK_INSTANCE_NAME}")"
   assert_instance_fields "$pack_inst_json" "$PACK_EXPECTED_SECRET" "$MODEL_NAME" "openai" "$EXPECTED_SKILLS_CSV" "Ensemble instance"
   pass "Ensemble instance propagated auth/provider/model/skills"
 
-  pack_run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${PACK_INSTANCE_NAME}\",\"task\":\"pack run correctness\"}")"
+  pack_run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${PACK_INSTANCE_NAME}\",\"task\":\"pack run correctness\"}")"
   PACK_RUN_NAME="$(printf "%s" "$pack_run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))')"
   assert_run_fields "$pack_run_json" "$PACK_EXPECTED_SECRET" "$MODEL_NAME" "openai" "$EXPECTED_SKILLS_CSV" "Ensemble run"
   pass "Ensemble run inherited provider/model/auth/skills"
 
   # (2) Ad-hoc instance parity.
-  api_request POST "/api/v1/instances" "{\"name\":\"${ADHOC_INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"${MODEL_NAME}\",\"apiKey\":\"${OPENAI_API_KEY}\",\"skills\":[{\"skillPackRef\":\"code-review\"},{\"skillPackRef\":\"k8s-ops\"},{\"skillPackRef\":\"memory\"}]}" >/dev/null
+  api_request POST "/api/v1/agents" "{\"name\":\"${ADHOC_INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"${MODEL_NAME}\",\"apiKey\":\"${OPENAI_API_KEY}\",\"skills\":[{\"skillPackRef\":\"code-review\"},{\"skillPackRef\":\"k8s-ops\"},{\"skillPackRef\":\"memory\"}]}" >/dev/null
 
-  adhoc_inst_json="$(api_request GET "/api/v1/instances/${ADHOC_INSTANCE_NAME}")"
+  adhoc_inst_json="$(api_request GET "/api/v1/agents/${ADHOC_INSTANCE_NAME}")"
   assert_instance_fields "$adhoc_inst_json" "$ADHOC_EXPECTED_SECRET" "$MODEL_NAME" "openai" "$EXPECTED_SKILLS_CSV" "Ad-hoc instance"
   pass "Ad-hoc instance has correct auth/provider/model/skills"
 
-  adhoc_run_json="$(api_request POST "/api/v1/runs" "{\"instanceRef\":\"${ADHOC_INSTANCE_NAME}\",\"task\":\"adhoc run correctness\"}")"
+  adhoc_run_json="$(api_request POST "/api/v1/runs" "{\"agentRef\":\"${ADHOC_INSTANCE_NAME}\",\"task\":\"adhoc run correctness\"}")"
   ADHOC_RUN_NAME="$(printf "%s" "$adhoc_run_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("metadata",{}).get("name",""))')"
   assert_run_fields "$adhoc_run_json" "$ADHOC_EXPECTED_SECRET" "$MODEL_NAME" "openai" "$EXPECTED_SKILLS_CSV" "Ad-hoc run"
   pass "Ad-hoc run inherited provider/model/auth/skills"
@@ -325,7 +325,7 @@ EOF
 
   elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    if ! api_request GET "/api/v1/instances/${PACK_INSTANCE_NAME}" >/dev/null 2>&1; then
+    if ! api_request GET "/api/v1/agents/${PACK_INSTANCE_NAME}" >/dev/null 2>&1; then
       break
     fi
     sleep 5

@@ -4,7 +4,7 @@ import {
   useDeleteSchedule,
   useCreateSchedule,
   useUpdateSchedule,
-  useInstances,
+  useAgents,
 } from "@/hooks/use-api";
 import type { SympoziumSchedule } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
@@ -42,7 +42,7 @@ import { formatAge } from "@/lib/utils";
 
 export function SchedulesPage() {
   const { data, isLoading } = useSchedules();
-  const instances = useInstances();
+  const instances = useAgents();
   const deleteSchedule = useDeleteSchedule();
   const createSchedule = useCreateSchedule();
   const updateSchedule = useUpdateSchedule();
@@ -57,7 +57,7 @@ export function SchedulesPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
-    instanceRef: "",
+    agentRef: "",
     schedule: "*/5 * * * *",
     type: "heartbeat",
     task: "",
@@ -74,7 +74,7 @@ export function SchedulesPage() {
         setOpen(false);
         setForm({
           name: "",
-          instanceRef: "",
+          agentRef: "",
           schedule: "*/5 * * * *",
           type: "heartbeat",
           task: "",
@@ -136,8 +136,8 @@ export function SchedulesPage() {
               <div className="space-y-2">
                 <Label>Instance</Label>
                 <Select
-                  value={form.instanceRef}
-                  onValueChange={(v) => setForm({ ...form, instanceRef: v })}
+                  value={form.agentRef}
+                  onValueChange={(v) => setForm({ ...form, agentRef: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select instance" />
@@ -196,7 +196,7 @@ export function SchedulesPage() {
                 onClick={handleCreate}
                 disabled={
                   !form.name ||
-                  !form.instanceRef ||
+                  !form.agentRef ||
                   !form.schedule ||
                   createSchedule.isPending
                 }
@@ -246,7 +246,7 @@ export function SchedulesPage() {
                   {sched.metadata.name}
                 </TableCell>
                 <TableCell className="text-sm">
-                  {sched.spec.instanceRef}
+                  {sched.spec.agentRef}
                 </TableCell>
                 <TableCell className="font-mono text-xs">
                   {sched.spec.schedule}
@@ -308,7 +308,7 @@ export function SchedulesPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label>Instance</Label>
-              <Input value={editing?.spec.instanceRef ?? ""} disabled />
+              <Input value={editing?.spec.agentRef ?? ""} disabled />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

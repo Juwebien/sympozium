@@ -53,7 +53,7 @@ describe("Response gate -- reject", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("replaces the result with the rejection message and shows banner", () => {

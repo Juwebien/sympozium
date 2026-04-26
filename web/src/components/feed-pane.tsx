@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useInstances, useCreateRun, useRuns } from "@/hooks/use-api";
+import { useAgents, useCreateRun, useRuns } from "@/hooks/use-api";
 import { useWebSocket, type StreamEvent } from "@/hooks/use-websocket";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export function FeedPane({
   open: boolean;
   onToggle: () => void;
 }) {
-  const { data: instances } = useInstances();
+  const { data: instances } = useAgents();
   const { data: runs } = useRuns();
   const { events } = useWebSocket();
   const createRun = useCreateRun();
@@ -74,7 +74,7 @@ export function FeedPane({
   const instanceRuns = useMemo(
     () =>
       (runs || [])
-        .filter((r) => r.spec.instanceRef === activeTab)
+        .filter((r) => r.spec.agentRef === activeTab)
         .sort((a, b) => {
           const ta = a.metadata.creationTimestamp || "";
           const tb = b.metadata.creationTimestamp || "";
@@ -91,7 +91,7 @@ export function FeedPane({
         const meta = e.data as Record<string, unknown> | undefined;
         if (meta && typeof meta === "object") {
           if (
-            (meta as Record<string, unknown>).instanceRef === activeTab ||
+            (meta as Record<string, unknown>).agentRef === activeTab ||
             (meta as Record<string, unknown>).instance === activeTab
           ) {
             return true;
@@ -196,7 +196,7 @@ export function FeedPane({
     const task = message.trim();
     if (!task || !activeTab) return;
     createRun.mutate({
-      instanceRef: activeTab,
+      agentRef: activeTab,
       task,
     });
     setMessage("");

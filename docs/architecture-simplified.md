@@ -28,7 +28,7 @@ flowchart TB
 
         subgraph crds["Custom Resources (CRDs)"]
             ensemble["Ensemble<br/><i>multi-agent team</i>"]
-            instance["SympoziumInstance<br/><i>agent deployment</i>"]
+            instance["Agent<br/><i>agent deployment</i>"]
             agentrun["AgentRun<br/><i>single execution</i>"]
             policy["SympoziumPolicy<br/><i>governance</i>"]
             skillpack["SkillPack<br/><i>tool bundles</i>"]

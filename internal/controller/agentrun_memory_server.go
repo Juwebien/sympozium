@@ -18,7 +18,7 @@ var memoryStoreClient = &http.Client{Timeout: 5 * time.Second}
 // memoryServerURLForRun builds the cluster-internal URL for the memory server
 // that belongs to the given AgentRun's instance.
 func memoryServerURLForRun(agentRun *sympoziumv1alpha1.AgentRun) string {
-	return fmt.Sprintf("http://%s-memory.%s.svc:8080", agentRun.Spec.InstanceRef, agentRun.Namespace)
+	return fmt.Sprintf("http://%s-memory.%s.svc:8080", agentRun.Spec.AgentRef, agentRun.Namespace)
 }
 
 // persistFailureMemory stores a structured failure record in the memory server
@@ -40,12 +40,12 @@ func (r *AgentRunReconciler) persistFailureMemory(ctx context.Context, log logr.
 		task,
 		reason,
 		time.Now().UTC().Format(time.RFC3339),
-		agentRun.Spec.InstanceRef,
+		agentRun.Spec.AgentRef,
 	)
 
 	body, _ := json.Marshal(map[string]any{
 		"content": content,
-		"tags":    []string{"failure", "agent-run", agentRun.Spec.InstanceRef},
+		"tags":    []string{"failure", "agent-run", agentRun.Spec.AgentRef},
 	})
 
 	storeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)

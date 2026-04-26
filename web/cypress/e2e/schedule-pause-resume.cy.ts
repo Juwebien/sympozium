@@ -13,14 +13,14 @@ function authHeaders(): Record<string, string> {
 
 describe("Schedule — pause and resume", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
     cy.request({
       method: "POST",
       url: "/api/v1/schedules?namespace=default",
       headers: authHeaders(),
       body: {
         name: SCHEDULE,
-        instanceRef: INSTANCE,
+        agentRef: INSTANCE,
         schedule: "*/10 * * * *",
         type: "scheduled",
         task: "pause/resume test",
@@ -31,7 +31,7 @@ describe("Schedule — pause and resume", () => {
 
   after(() => {
     cy.deleteSchedule(SCHEDULE);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("toggles suspend=true then suspend=false and UI reflects the state", () => {

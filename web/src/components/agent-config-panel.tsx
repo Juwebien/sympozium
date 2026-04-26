@@ -1,5 +1,5 @@
 /**
- * PersonaConfigPanel — slide-in side panel for editing a persona's
+ * AgentConfigPanel — slide-in side panel for editing a persona's
  * configuration within the Ensemble Builder canvas.
  *
  * Uses the provider context from the builder to show a provider-aware
@@ -22,28 +22,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, Trash2, Save, Search, Check, Loader2 } from "lucide-react";
-import type { PersonaSpec } from "@/lib/api";
+import type { AgentConfigSpec } from "@/lib/api";
 import type { ProviderContext } from "@/components/ensemble-builder";
 import { useSkills } from "@/hooks/use-api";
 import { useModelList } from "@/hooks/use-model-list";
 
-interface PersonaConfigPanelProps {
-  persona: PersonaSpec;
+interface AgentConfigPanelProps {
+  persona: AgentConfigSpec;
   providerCtx: ProviderContext;
-  onSave: (updated: PersonaSpec) => void;
+  onSave: (updated: AgentConfigSpec) => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-export function PersonaConfigPanel({
+export function AgentConfigPanel({
   persona,
   providerCtx,
   onSave,
   onDelete,
   onClose,
-}: PersonaConfigPanelProps) {
+}: AgentConfigPanelProps) {
   const { data: skills } = useSkills();
-  const [draft, setDraft] = useState<PersonaSpec>({ ...persona });
+  const [draft, setDraft] = useState<AgentConfigSpec>({ ...persona });
   const [modelSearch, setModelSearch] = useState("");
 
   // Provider-aware model list

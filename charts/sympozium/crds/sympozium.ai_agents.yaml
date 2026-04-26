@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.2
-  name: sympoziuminstances.sympozium.ai
+  name: agents.sympozium.ai
 spec:
   group: sympozium.ai
   names:
-    kind: SympoziumInstance
-    listKind: SympoziumInstanceList
-    plural: sympoziuminstances
-    singular: sympoziuminstance
+    kind: Agent
+    listKind: AgentList
+    plural: agents
+    singular: agent
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -31,7 +31,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          SympoziumInstance is the Schema for the sympoziuminstances API.
+          Agent is the Schema for the agents API.
           It represents a per-user/per-tenant gateway configuration.
         properties:
           apiVersion:
@@ -53,8 +53,8 @@ spec:
             type: object
           spec:
             description: |-
-              SympoziumInstanceSpec defines the desired state of a SympoziumInstance.
-              Each user or tenant gets a SympoziumInstance that declares their desired channels,
+              AgentSpec defines the desired state of a Agent.
+              Each user or tenant gets a Agent that declares their desired channels,
               agents, and policy bindings.
             properties:
               agents:
@@ -641,7 +641,7 @@ spec:
                       description: |-
                         Params are per-instance key/value pairs injected as SKILL_<KEY> environment
                         variables into the skill sidecar container. This allows the same SkillPack to
-                        be configured differently per SympoziumInstance (e.g. different GitHub repos).
+                        be configured differently per Agent (e.g. different GitHub repos).
                       type: object
                     skillPackRef:
                       description: SkillPackRef references a SkillPack CRD by name.
@@ -693,7 +693,7 @@ spec:
             - agents
             type: object
           status:
-            description: SympoziumInstanceStatus defines the observed state of SympoziumInstance.
+            description: AgentStatus defines the observed state of Agent.
             properties:
               activeAgentPods:
                 description: ActiveAgentPods is the number of currently running agent

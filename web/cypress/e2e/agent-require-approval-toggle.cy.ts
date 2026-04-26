@@ -6,11 +6,11 @@ const INSTANCE = `cy-approval-toggle-${Date.now()}`;
 
 describe("Instance -- require approval toggle", () => {
   before(() => {
-    cy.createLMStudioInstance(INSTANCE);
+    cy.createLMStudioAgent(INSTANCE);
   });
 
   after(() => {
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("enables and disables approval via the detail page toggle", () => {
@@ -23,7 +23,7 @@ describe("Instance -- require approval toggle", () => {
       });
 
     // Visit detail page and enable the gate.
-    cy.visit(`/instances/${INSTANCE}`);
+    cy.visit(`/agents/${INSTANCE}`);
     cy.get("[data-testid='gate-toggle-btn']", { timeout: 10000 })
       .should("contain.text", "Enable")
       .click();
@@ -50,7 +50,7 @@ describe("Instance -- require approval toggle", () => {
 
     // Verify via API that the lifecycle has the manual gate hook.
     cy.request({
-      url: `/api/v1/instances/${INSTANCE}?namespace=default`,
+      url: `/api/v1/agents/${INSTANCE}?namespace=default`,
       headers: {
         "Content-Type": "application/json",
         ...(Cypress.env("API_TOKEN")
@@ -68,7 +68,7 @@ describe("Instance -- require approval toggle", () => {
     });
 
     // Now disable the gate.
-    cy.visit(`/instances/${INSTANCE}`);
+    cy.visit(`/agents/${INSTANCE}`);
     cy.get("[data-testid='gate-toggle-btn']", { timeout: 10000 })
       .should("contain.text", "Disable")
       .click();

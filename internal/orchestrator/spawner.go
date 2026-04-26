@@ -34,7 +34,7 @@ type SpawnRequest struct {
 	// ParentSessionKey is the session key of the parent.
 	ParentSessionKey string `json:"parentSessionKey"`
 
-	// InstanceName is the SympoziumInstance this belongs to.
+	// InstanceName is the Agent this belongs to.
 	InstanceName string `json:"instanceName"`
 
 	// Namespace is the Kubernetes namespace.
@@ -62,7 +62,7 @@ type SpawnRequest struct {
 
 	// TargetPersona is the name of a persona within the same Ensemble.
 	// When set (along with PackName), the spawner resolves it to the
-	// correct SympoziumInstance, overriding InstanceName.
+	// correct Agent, overriding InstanceName.
 	TargetPersona string `json:"targetPersona,omitempty"`
 
 	// PackName is the Ensemble that owns both the parent and target personas.
@@ -131,7 +131,7 @@ func (s *Spawner) Spawn(ctx context.Context, req SpawnRequest) (*SpawnResult, er
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: req.InstanceName,
+			AgentRef: req.InstanceName,
 			AgentID:     req.AgentID,
 			SessionKey:  sessionKey,
 			Parent: &sympoziumv1alpha1.ParentRunRef{
@@ -149,7 +149,7 @@ func (s *Spawner) Spawn(ctx context.Context, req SpawnRequest) (*SpawnResult, er
 	}
 
 	// Look up the instance to propagate lifecycle hooks to sub-agents.
-	var inst sympoziumv1alpha1.SympoziumInstance
+	var inst sympoziumv1alpha1.Agent
 	if err := s.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.InstanceName}, &inst); err == nil {
 		agentRun.Spec.Lifecycle = inst.Spec.Agents.Default.Lifecycle
 	}
@@ -163,7 +163,7 @@ func (s *Spawner) Spawn(ctx context.Context, req SpawnRequest) (*SpawnResult, er
 	return &SpawnResult{RunName: runName}, nil
 }
 
-// resolvePersonaTarget looks up a Ensemble to find the SympoziumInstance
+// resolvePersonaTarget looks up a Ensemble to find the Agent
 // that corresponds to the requested target persona. It also inherits the
 // target persona's system prompt, skills, and model if not already set.
 func (s *Spawner) resolvePersonaTarget(ctx context.Context, req SpawnRequest) (SpawnRequest, error) {
@@ -173,14 +173,14 @@ func (s *Spawner) resolvePersonaTarget(ctx context.Context, req SpawnRequest) (S
 	}
 
 	// Find the target persona's installed instance.
-	var targetInstanceName string
-	for _, ip := range pack.Status.InstalledPersonas {
+	var targetAgentName string
+	for _, ip := range pack.Status.InstalledAgentConfigs {
 		if ip.Name == req.TargetPersona {
-			targetInstanceName = ip.InstanceName
+			targetAgentName = ip.InstanceName
 			break
 		}
 	}
-	if targetInstanceName == "" {
+	if targetAgentName == "" {
 		return req, fmt.Errorf("persona %q not found or not installed in Ensemble %q", req.TargetPersona, req.PackName)
 	}
 
@@ -188,7 +188,7 @@ func (s *Spawner) resolvePersonaTarget(ctx context.Context, req SpawnRequest) (S
 	if len(pack.Spec.Relationships) > 0 {
 		// Determine the source persona from the parent's instance name.
 		var sourcePersona string
-		for _, ip := range pack.Status.InstalledPersonas {
+		for _, ip := range pack.Status.InstalledAgentConfigs {
 			if ip.InstanceName == req.InstanceName {
 				sourcePersona = ip.Name
 				break
@@ -210,11 +210,11 @@ func (s *Spawner) resolvePersonaTarget(ctx context.Context, req SpawnRequest) (S
 		}
 	}
 
-	req.InstanceName = targetInstanceName
+	req.InstanceName = targetAgentName
 
 	// Inherit system prompt and skills from the target persona spec if not
 	// explicitly provided in the spawn request.
-	for _, p := range pack.Spec.Personas {
+	for _, p := range pack.Spec.AgentConfigs {
 		if p.Name == req.TargetPersona {
 			if req.SystemPrompt == "" {
 				req.SystemPrompt = p.SystemPrompt
@@ -233,7 +233,7 @@ func (s *Spawner) resolvePersonaTarget(ctx context.Context, req SpawnRequest) (S
 	s.Log.Info("Resolved persona target",
 		"pack", req.PackName,
 		"targetPersona", req.TargetPersona,
-		"resolvedInstance", targetInstanceName,
+		"resolvedInstance", targetAgentName,
 	)
 
 	return req, nil

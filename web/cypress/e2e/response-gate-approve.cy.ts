@@ -52,7 +52,7 @@ describe("Response gate -- approve", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("succeeds with gate verdict approved and shows banner in UI", () => {

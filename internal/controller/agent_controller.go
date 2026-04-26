@@ -26,26 +26,26 @@ import (
 
 const sympoziumInstanceFinalizer = "sympozium.ai/finalizer"
 
-// SympoziumInstanceReconciler reconciles a SympoziumInstance object.
-type SympoziumInstanceReconciler struct {
+// AgentReconciler reconciles a Agent object.
+type AgentReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Log      logr.Logger
 	ImageTag string // release tag for Sympozium images
 }
 
-// +kubebuilder:rbac:groups=sympozium.ai,resources=sympoziuminstances,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=sympozium.ai,resources=sympoziuminstances/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=sympozium.ai,resources=sympoziuminstances/finalizers,verbs=update
+// +kubebuilder:rbac:groups=sympozium.ai,resources=agents,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=sympozium.ai,resources=agents/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=sympozium.ai,resources=agents/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=secrets;configmaps;services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile handles SympoziumInstance reconciliation.
-func (r *SympoziumInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// Reconcile handles Agent reconciliation.
+func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("sympoziuminstance", req.NamespacedName)
 
-	var instance sympoziumv1alpha1.SympoziumInstance
+	var instance sympoziumv1alpha1.Agent
 	if err := r.Get(ctx, req.NamespacedName, &instance); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -137,7 +137,7 @@ func (r *SympoziumInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 }
 
 // reconcileChannels ensures a Deployment exists for each configured channel.
-func (r *SympoziumInstanceReconciler) reconcileChannels(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) reconcileChannels(ctx context.Context, instance *sympoziumv1alpha1.Agent) error {
 	channelStatuses := make([]sympoziumv1alpha1.ChannelStatus, 0, len(instance.Spec.Channels))
 
 	for _, ch := range instance.Spec.Channels {
@@ -207,8 +207,8 @@ func (r *SympoziumInstanceReconciler) reconcileChannels(ctx context.Context, ins
 }
 
 // buildChannelDeployment creates a Deployment spec for a channel pod.
-func (r *SympoziumInstanceReconciler) buildChannelDeployment(
-	instance *sympoziumv1alpha1.SympoziumInstance,
+func (r *AgentReconciler) buildChannelDeployment(
+	instance *sympoziumv1alpha1.Agent,
 	ch sympoziumv1alpha1.ChannelSpec,
 	name string,
 ) *appsv1.Deployment {
@@ -311,7 +311,7 @@ func (r *SympoziumInstanceReconciler) buildChannelDeployment(
 }
 
 // ensureWhatsAppPVC creates a PVC for the WhatsApp credential store if it doesn't exist.
-func (r *SympoziumInstanceReconciler) ensureWhatsAppPVC(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance, deployName string) error {
+func (r *AgentReconciler) ensureWhatsAppPVC(ctx context.Context, instance *sympoziumv1alpha1.Agent, deployName string) error {
 	pvcName := fmt.Sprintf("%s-data", deployName)
 	var pvc corev1.PersistentVolumeClaim
 	err := r.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, &pvc)
@@ -351,7 +351,7 @@ func (r *SympoziumInstanceReconciler) ensureWhatsAppPVC(ctx context.Context, ins
 }
 
 // cleanupChannelDeployments removes channel deployments owned by the instance.
-func (r *SympoziumInstanceReconciler) cleanupChannelDeployments(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) cleanupChannelDeployments(ctx context.Context, instance *sympoziumv1alpha1.Agent) error {
 	var deploys appsv1.DeploymentList
 	if err := r.List(ctx, &deploys,
 		client.InNamespace(instance.Namespace),
@@ -370,7 +370,7 @@ func (r *SympoziumInstanceReconciler) cleanupChannelDeployments(ctx context.Cont
 }
 
 // countActiveAgentPods counts running agent pods for this instance.
-func (r *SympoziumInstanceReconciler) countActiveAgentPods(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance) (int, bool, error) {
+func (r *AgentReconciler) countActiveAgentPods(ctx context.Context, instance *sympoziumv1alpha1.Agent) (int, bool, error) {
 	var runs sympoziumv1alpha1.AgentRunList
 	if err := r.List(ctx, &runs,
 		client.InNamespace(instance.Namespace),
@@ -396,7 +396,7 @@ func (r *SympoziumInstanceReconciler) countActiveAgentPods(ctx context.Context, 
 // reconcileMemoryConfigMap ensures the memory ConfigMap exists when memory is
 // enabled for the instance. The ConfigMap is named "<instance>-memory" and
 // contains a single key "MEMORY.md".
-func (r *SympoziumInstanceReconciler) reconcileMemoryConfigMap(ctx context.Context, log logr.Logger, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) reconcileMemoryConfigMap(ctx context.Context, log logr.Logger, instance *sympoziumv1alpha1.Agent) error {
 	if instance.Spec.Memory == nil || !instance.Spec.Memory.Enabled {
 		return nil
 	}
@@ -436,7 +436,7 @@ func (r *SympoziumInstanceReconciler) reconcileMemoryConfigMap(ctx context.Conte
 }
 
 // cleanupMemoryConfigMap deletes the memory ConfigMap for an instance.
-func (r *SympoziumInstanceReconciler) cleanupMemoryConfigMap(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) cleanupMemoryConfigMap(ctx context.Context, instance *sympoziumv1alpha1.Agent) error {
 	cmName := fmt.Sprintf("%s-memory", instance.Name)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -453,7 +453,7 @@ func (r *SympoziumInstanceReconciler) cleanupMemoryConfigMap(ctx context.Context
 // reconcileMemoryPVC ensures a PersistentVolumeClaim exists for instances that
 // use the "memory" SkillPack. The PVC persists the SQLite database across
 // ephemeral agent pod runs.
-func (r *SympoziumInstanceReconciler) reconcileMemoryPVC(ctx context.Context, log logr.Logger, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) reconcileMemoryPVC(ctx context.Context, log logr.Logger, instance *sympoziumv1alpha1.Agent) error {
 	if !instanceHasMemorySkill(instance) {
 		return nil
 	}
@@ -497,7 +497,7 @@ func (r *SympoziumInstanceReconciler) reconcileMemoryPVC(ctx context.Context, lo
 }
 
 // instanceHasMemorySkill returns true if the instance references the "memory" SkillPack.
-func instanceHasMemorySkill(instance *sympoziumv1alpha1.SympoziumInstance) bool {
+func instanceHasMemorySkill(instance *sympoziumv1alpha1.Agent) bool {
 	for _, skill := range instance.Spec.Skills {
 		if skill.SkillPackRef == "memory" {
 			return true
@@ -509,7 +509,7 @@ func instanceHasMemorySkill(instance *sympoziumv1alpha1.SympoziumInstance) bool 
 // reconcileMemoryDeployment ensures a Deployment + Service exist for the memory
 // server when the "memory" SkillPack is attached. The Deployment mounts the
 // memory PVC and exposes an HTTP API that agent pods call.
-func (r *SympoziumInstanceReconciler) reconcileMemoryDeployment(ctx context.Context, log logr.Logger, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) reconcileMemoryDeployment(ctx context.Context, log logr.Logger, instance *sympoziumv1alpha1.Agent) error {
 	if !instanceHasMemorySkill(instance) {
 		return nil
 	}
@@ -680,7 +680,7 @@ func (r *SympoziumInstanceReconciler) reconcileMemoryDeployment(ctx context.Cont
 }
 
 // cleanupMemoryDeployment deletes the memory Deployment and Service for an instance.
-func (r *SympoziumInstanceReconciler) cleanupMemoryDeployment(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) cleanupMemoryDeployment(ctx context.Context, instance *sympoziumv1alpha1.Agent) error {
 	name := fmt.Sprintf("%s-memory", instance.Name)
 
 	deploy := &appsv1.Deployment{
@@ -703,7 +703,7 @@ func (r *SympoziumInstanceReconciler) cleanupMemoryDeployment(ctx context.Contex
 // reconcileWebEndpoint ensures a server-mode AgentRun exists when the
 // "web-endpoint" skill is present. The AgentRun controller handles creating
 // the actual Deployment + Service.
-func (r *SympoziumInstanceReconciler) reconcileWebEndpoint(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance) error {
+func (r *AgentReconciler) reconcileWebEndpoint(ctx context.Context, instance *sympoziumv1alpha1.Agent) error {
 	for _, skill := range instance.Spec.Skills {
 		if skill.SkillPackRef == "web-endpoint" || skill.SkillPackRef == "skillpack-web-endpoint" {
 			return r.ensureWebEndpointAgentRun(ctx, instance, skill)
@@ -715,7 +715,7 @@ func (r *SympoziumInstanceReconciler) reconcileWebEndpoint(ctx context.Context, 
 // ensureWebEndpointAgentRun checks for an existing server-mode AgentRun for
 // this instance and creates one if none exists. The AgentRun controller will
 // detect the RequiresServer sidecar and create a Deployment + Service.
-func (r *SympoziumInstanceReconciler) ensureWebEndpointAgentRun(ctx context.Context, instance *sympoziumv1alpha1.SympoziumInstance, webSkill sympoziumv1alpha1.SkillRef) error {
+func (r *AgentReconciler) ensureWebEndpointAgentRun(ctx context.Context, instance *sympoziumv1alpha1.Agent, webSkill sympoziumv1alpha1.SkillRef) error {
 	// Check if a serving AgentRun already exists for this instance.
 	var runs sympoziumv1alpha1.AgentRunList
 	if err := r.List(ctx, &runs,
@@ -747,7 +747,7 @@ func (r *SympoziumInstanceReconciler) ensureWebEndpointAgentRun(ctx context.Cont
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: instance.Name,
+			AgentRef: instance.Name,
 			AgentID:     "web-endpoint",
 			SessionKey:  "web-endpoint",
 			Task:        "Serve HTTP requests for this instance",
@@ -785,9 +785,9 @@ func (r *SympoziumInstanceReconciler) ensureWebEndpointAgentRun(ctx context.Cont
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SympoziumInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&sympoziumv1alpha1.SympoziumInstance{}).
+		For(&sympoziumv1alpha1.Agent{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Complete(r)

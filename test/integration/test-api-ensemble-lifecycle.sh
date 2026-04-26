@@ -183,7 +183,7 @@ spec:
   enabled: false
   excludePersonas:
     - ${PERSONA_C}
-  personas:
+  agentConfigs:
     - name: ${PERSONA_A}
       displayName: "Incident Responder"
       systemPrompt: "You are an incident responder."
@@ -227,8 +227,8 @@ EOF
   inst_a_found=false
   inst_b_found=false
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    api_check "/api/v1/instances/${PACK_NAME}-${PERSONA_A}" && inst_a_found=true
-    api_check "/api/v1/instances/${PACK_NAME}-${PERSONA_B}" && inst_b_found=true
+    api_check "/api/v1/agents/${PACK_NAME}-${PERSONA_A}" && inst_a_found=true
+    api_check "/api/v1/agents/${PACK_NAME}-${PERSONA_B}" && inst_b_found=true
     [[ "$inst_a_found" == "true" && "$inst_b_found" == "true" ]] && break
     sleep 3
     elapsed=$((elapsed + 3))
@@ -245,14 +245,14 @@ EOF
   pass "Both non-excluded persona instances were stamped"
 
   # ── Verify excluded persona was NOT stamped ──
-  if api_check "/api/v1/instances/${PACK_NAME}-${PERSONA_C}"; then
+  if api_check "/api/v1/agents/${PACK_NAME}-${PERSONA_C}"; then
     fail "Excluded persona '${PERSONA_C}' should NOT have a stamped instance"
     exit 1
   fi
   pass "Excluded persona '${PERSONA_C}' correctly skipped"
 
   # ── Verify persona A model override propagated ──
-  inst_a_json="$(api_request GET "/api/v1/instances/${PACK_NAME}-${PERSONA_A}")"
+  inst_a_json="$(api_request GET "/api/v1/agents/${PACK_NAME}-${PERSONA_A}")"
   inst_a_model="$(printf "%s" "$inst_a_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("spec",{}).get("agents",{}).get("default",{}).get("model",""))')"
   if [[ "$inst_a_model" != "gpt-4o-mini" ]]; then
     fail "Persona A model not propagated (got '${inst_a_model}', want 'gpt-4o-mini')"
@@ -315,8 +315,8 @@ print("true" if any(
   elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
     a_gone=true; b_gone=true
-    api_check "/api/v1/instances/${PACK_NAME}-${PERSONA_A}" && a_gone=false
-    api_check "/api/v1/instances/${PACK_NAME}-${PERSONA_B}" && b_gone=false
+    api_check "/api/v1/agents/${PACK_NAME}-${PERSONA_A}" && a_gone=false
+    api_check "/api/v1/agents/${PACK_NAME}-${PERSONA_B}" && b_gone=false
     [[ "$a_gone" == "true" && "$b_gone" == "true" ]] && break
     sleep 3
     elapsed=$((elapsed + 3))

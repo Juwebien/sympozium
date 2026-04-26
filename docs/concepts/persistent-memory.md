@@ -1,6 +1,6 @@
 # Persistent Memory
 
-Each `SympoziumInstance` can enable **persistent memory** — a SQLite database with FTS5 full-text search, served by a memory sidecar that runs alongside agent pods. The database lives on a PersistentVolume, so memory survives across ephemeral agent runs.
+Each `Agent` can enable **persistent memory** — a SQLite database with FTS5 full-text search, served by a memory sidecar that runs alongside agent pods. The database lives on a PersistentVolume, so memory survives across ephemeral agent runs.
 
 Agents interact with memory through three tools exposed via file-based JSON IPC (the same pattern used by MCP tools):
 
@@ -30,7 +30,7 @@ Add the `memory` SkillPack to your instance's skills list:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: my-agent
 spec:
@@ -73,7 +73,7 @@ The memory SkillPack is defined at `config/skills/memory.yaml`. It follows the s
 |--------|--------|
 | **Storage** | One PVC per instance, named `<instance>-memory` |
 | **Database** | SQLite 3 with FTS5 extension |
-| **Lifecycle** | PVC persists until the SympoziumInstance is deleted (or manually removed) |
+| **Lifecycle** | PVC persists until the Agent is deleted (or manually removed) |
 | **Backup** | Standard PV backup tools apply (Velero, volume snapshots, etc.) |
 | **Upgradeable** | The SQLite schema is designed to support a future upgrade path to vector search |
 

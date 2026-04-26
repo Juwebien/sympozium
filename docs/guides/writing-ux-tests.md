@@ -71,7 +71,7 @@ boilerplate:
 | Helper | Purpose |
 |---|---|
 | `cy.createLMStudioInstance(name)` | POST to `/api/v1/instances` with an LM Studio + qwen3.5-9b config |
-| `cy.dispatchRun(instanceRef, task)` | POST to `/api/v1/runs`; resolves with the created AgentRun name |
+| `cy.dispatchRun(agentRef, task)` | POST to `/api/v1/runs`; resolves with the created AgentRun name |
 | `cy.waitForRunTerminal(runName)` | Polls `/api/v1/runs/:name` until `status.phase` is `Succeeded` or `Failed` |
 | `cy.waitForDeleted(path)` | Polls until a GET returns 404 (handles finalizer delays) |
 | `cy.deleteInstance(name)` / `cy.deleteRun(name)` / `cy.deleteSchedule(name)` / `cy.deleteEnsemble(name)` | API-level cleanup helpers |

@@ -80,7 +80,7 @@ kind: AgentRun
 metadata:
   name: my-secure-run
 spec:
-  instanceRef: my-agent
+  agentRef: my-agent
   task: "Analyze cluster security"
   model:
     provider: anthropic
@@ -92,13 +92,13 @@ spec:
     warmPoolRef: wp-my-agent   # Optional: claim from a warm pool
 ```
 
-### Per-Instance (SympoziumInstance)
+### Per-Instance (Agent)
 
 Set defaults for all runs from this instance:
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: secure-agent
 spec:
@@ -158,7 +158,7 @@ With warm pool:
   (~1 second)
 ```
 
-When configured on a SympoziumInstance, the controller automatically creates and manages a `SandboxWarmPool` CR. Runs with `warmPoolRef` set create a `SandboxClaim` instead of a bare `Sandbox`.
+When configured on a Agent, the controller automatically creates and manages a `SandboxWarmPool` CR. Runs with `warmPoolRef` set create a `SandboxClaim` instead of a bare `Sandbox`.
 
 ## Relationship to Existing Safeguards
 

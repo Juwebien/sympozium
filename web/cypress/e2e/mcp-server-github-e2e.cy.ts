@@ -33,7 +33,7 @@ describe("MCP Server — GitHub install, configure, and tool call", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
     // Clean up the installed MCP server from default namespace.
     cy.request({
       method: "DELETE",

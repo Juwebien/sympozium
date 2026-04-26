@@ -69,7 +69,7 @@ func (cr *ChannelRouter) Start(ctx context.Context) error {
 // resolveProvider returns the AI provider for the instance.
 // It prefers the explicit Provider field on AuthRefs, falling back to
 // guessing from the auth secret names.
-func resolveProvider(inst *sympoziumv1alpha1.SympoziumInstance) string {
+func resolveProvider(inst *sympoziumv1alpha1.Agent) string {
 	for _, ref := range inst.Spec.AuthRefs {
 		if ref.Provider != "" {
 			return ref.Provider
@@ -98,7 +98,7 @@ func resolveProvider(inst *sympoziumv1alpha1.SympoziumInstance) string {
 }
 
 // resolveAuthSecret returns the first non-empty auth secret reference.
-func resolveAuthSecret(inst *sympoziumv1alpha1.SympoziumInstance) string {
+func resolveAuthSecret(inst *sympoziumv1alpha1.Agent) string {
 	for _, ref := range inst.Spec.AuthRefs {
 		if strings.TrimSpace(ref.Secret) != "" {
 			return ref.Secret
@@ -141,14 +141,14 @@ func (cr *ChannelRouter) handleInbound(ctx context.Context, event *eventbus.Even
 		"text", truncateForLog(msg.Text, 80),
 	)
 
-	// Look up the SympoziumInstance to get config and namespace.
-	var instances sympoziumv1alpha1.SympoziumInstanceList
+	// Look up the Agent to get config and namespace.
+	var instances sympoziumv1alpha1.AgentList
 	if err := cr.Client.List(ctx, &instances); err != nil {
-		cr.Log.Error(err, "failed to list SympoziumInstances")
+		cr.Log.Error(err, "failed to list Agents")
 		return
 	}
 
-	var inst *sympoziumv1alpha1.SympoziumInstance
+	var inst *sympoziumv1alpha1.Agent
 	for i := range instances.Items {
 		if instances.Items[i].Name == msg.InstanceName {
 			inst = &instances.Items[i]
@@ -156,7 +156,7 @@ func (cr *ChannelRouter) handleInbound(ctx context.Context, event *eventbus.Even
 		}
 	}
 	if inst == nil {
-		cr.Log.Info("SympoziumInstance not found for channel message", "instance", msg.InstanceName)
+		cr.Log.Info("Agent not found for channel message", "instance", msg.InstanceName)
 		return
 	}
 
@@ -172,7 +172,7 @@ func (cr *ChannelRouter) handleInbound(ctx context.Context, event *eventbus.Even
 		return
 	}
 
-	// Resolve model configuration from the SympoziumInstance (same logic as TUI).
+	// Resolve model configuration from the Agent (same logic as TUI).
 	provider := resolveProvider(inst)
 	authSecret := resolveAuthSecret(inst)
 
@@ -194,7 +194,7 @@ func (cr *ChannelRouter) handleInbound(ctx context.Context, event *eventbus.Even
 			},
 		},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: msg.InstanceName,
+			AgentRef: msg.InstanceName,
 			AgentID:     "primary",
 			SessionKey:  fmt.Sprintf("channel-%s-%s-%d", msg.Channel, msg.ChatID, time.Now().UnixNano()),
 			Task:        msg.Text,
@@ -356,7 +356,7 @@ func truncateForLog(s string, n int) string {
 // checkChannelAccess evaluates access control rules for the channel that
 // produced this message. Returns (allowed, denyMessage).
 func checkChannelAccess(
-	inst *sympoziumv1alpha1.SympoziumInstance,
+	inst *sympoziumv1alpha1.Agent,
 	msg *channelpkg.InboundMessage,
 ) (bool, string) {
 	var ch *sympoziumv1alpha1.ChannelSpec

@@ -69,8 +69,8 @@ export function RunDetailPage() {
           items={[
             { label: "Ensembles", to: "/ensembles" },
             {
-              label: run.spec.instanceRef,
-              to: `/instances/${run.spec.instanceRef}`,
+              label: run.spec.agentRef,
+              to: `/agents/${run.spec.agentRef}`,
             },
             { label: run.metadata.name },
           ]}

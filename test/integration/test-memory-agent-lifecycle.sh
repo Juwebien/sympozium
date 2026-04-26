@@ -116,13 +116,13 @@ mem_count() {
 info "Memory agent lifecycle test — namespace '${NAMESPACE}'"
 info "Using LM Studio model '${LM_STUDIO_MODEL}' at ${LM_STUDIO_BASE_URL}"
 
-# ── Create SympoziumInstance with memory skill ────────────────────────────────
+# ── Create Agent with memory skill ────────────────────────────────
 
-info "Creating SympoziumInstance '${INSTANCE}' with memory skill"
+info "Creating Agent '${INSTANCE}' with memory skill"
 
 cat <<EOF | kubectl apply -n "$NAMESPACE" -f -
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE}
 spec:
@@ -169,7 +169,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "mem-success-${SUFFIX}"
   task: "Use the memory_store tool to store the following text: 'Integration test proof: namespaces checked at SUFFIX'. You MUST call the memory_store tool. After storing, respond with 'done'."
@@ -254,7 +254,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "mem-followup-${SUFFIX}"
   task: "Respond with the word 'hello'. This is a simple test."
@@ -322,7 +322,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "mem-fail-${SUFFIX}"
   task: "This run should fail because the LLM endpoint is unreachable."
@@ -394,7 +394,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "mem-postfail-${SUFFIX}"
   task: "Say hello. This is a simple test."

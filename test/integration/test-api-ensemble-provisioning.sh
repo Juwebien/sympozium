@@ -162,7 +162,7 @@ spec:
   category: "integration"
   version: "1.0.0"
   enabled: false
-  personas:
+  agentConfigs:
     - name: planner
       displayName: "Test Planner"
       systemPrompt: "You are a planner for integration testing."
@@ -191,7 +191,7 @@ EOF
   # Wait for stamped instances and schedules to appear.
   elapsed=0
   while [[ "$elapsed" -lt "$TIMEOUT" ]]; do
-    instances_json="$(api_request GET "/api/v1/instances")"
+    instances_json="$(api_request GET "/api/v1/agents")"
     schedules_json="$(api_request GET "/api/v1/schedules")"
 
     inst_count="$(printf "%s" "$instances_json" | python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(sys.stdin); print(sum(1 for i in d if i.get("metadata",{}).get("labels",{}).get("sympozium.ai/ensemble")==p))' "$PACK_NAME")"

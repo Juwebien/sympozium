@@ -55,7 +55,7 @@ stop_port_forward() {
 
 cleanup() {
   info "Cleaning up capability API test resources..."
-  api_request DELETE "/api/v1/instances/${CLAUDE_INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${CLAUDE_INSTANCE_NAME}" >/dev/null 2>&1 || true
   # kubectl fallback: instance, auto-created anthropic secret, configmaps
   kubectl delete sympoziuminstance "$CLAUDE_INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete secret "${CLAUDE_INSTANCE_NAME}-anthropic-key" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1 || true
@@ -170,9 +170,9 @@ main() {
     local_ran="true"
     info "Validating Anthropic provider wiring via CLAUDE_TOKEN"
 
-    api_request POST "/api/v1/instances" "{\"name\":\"${CLAUDE_INSTANCE_NAME}\",\"provider\":\"anthropic\",\"model\":\"claude-3-5-sonnet\",\"apiKey\":\"${CLAUDE_TOKEN}\"}" >/dev/null
+    api_request POST "/api/v1/agents" "{\"name\":\"${CLAUDE_INSTANCE_NAME}\",\"provider\":\"anthropic\",\"model\":\"claude-3-5-sonnet\",\"apiKey\":\"${CLAUDE_TOKEN}\"}" >/dev/null
 
-    inst_json="$(api_request GET "/api/v1/instances/${CLAUDE_INSTANCE_NAME}")"
+    inst_json="$(api_request GET "/api/v1/agents/${CLAUDE_INSTANCE_NAME}")"
     provider="$(printf "%s" "$inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); refs=d.get("spec",{}).get("authRefs",[]); print(refs[0].get("provider","") if refs else "")')"
     secret_name="$(printf "%s" "$inst_json" | python3 -c 'import json,sys; d=json.load(sys.stdin); refs=d.get("spec",{}).get("authRefs",[]); print(refs[0].get("secret","") if refs else "")')"
 

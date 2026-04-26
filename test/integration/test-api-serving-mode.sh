@@ -76,7 +76,7 @@ for r in items:
       done
     fi
   fi
-  api_request DELETE "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_request DELETE "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1 || true
   # kubectl fallback: instance, secret, agentruns, deployments, services, configmaps
   kubectl delete sympoziuminstance "$INSTANCE_NAME" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete secret "${INSTANCE_NAME}-openai-key" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
@@ -180,7 +180,7 @@ main() {
 
   # --- Create instance with web-endpoint skill ---
   info "Creating instance with web-endpoint skill"
-  api_request POST "/api/v1/instances" \
+  api_request POST "/api/v1/agents" \
     "{\"name\":\"${INSTANCE_NAME}\",\"provider\":\"openai\",\"model\":\"gpt-4o-mini\",\"apiKey\":\"${OPENAI_API_KEY}\",\"skills\":[{\"skillPackRef\":\"web-endpoint\"}]}" >/dev/null
   pass "Instance with web-endpoint created"
 
@@ -290,7 +290,7 @@ for r in items:
 
   # --- Check web-endpoint status endpoint ---
   info "Checking web-endpoint status endpoint"
-  status_json="$(api_request GET "/api/v1/instances/${INSTANCE_NAME}/web-endpoint")"
+  status_json="$(api_request GET "/api/v1/agents/${INSTANCE_NAME}/web-endpoint")"
   status_enabled="$(printf "%s" "$status_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("enabled", False))')"
   status_deploy="$(printf "%s" "$status_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("deploymentName", ""))')"
   status_svc="$(printf "%s" "$status_json" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("serviceName", ""))')"

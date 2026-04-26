@@ -26,7 +26,7 @@ rules:
     resources:
       - skillpacks
       - ensembles
-      - sympoziuminstances
+      - agents
       - agentruns
       - sympoziumpolicies
       - sympoziumschedules
@@ -36,7 +36,7 @@ rules:
     resources:
       - skillpacks/finalizers
       - ensembles/finalizers
-      - sympoziuminstances/finalizers
+      - agents/finalizers
       - agentruns/finalizers
       - sympoziumpolicies/finalizers
       - sympoziumschedules/finalizers
@@ -103,7 +103,7 @@ spec:
               kubectl scale deployment sympozium-controller-manager -n "$NAMESPACE" --replicas=0 2>/dev/null || true
               kubectl rollout status deployment/sympozium-controller-manager -n "$NAMESPACE" --timeout=60s 2>/dev/null || true
 
-              RESOURCES="skillpacks.sympozium.ai ensembles.sympozium.ai sympoziuminstances.sympozium.ai agentruns.sympozium.ai sympoziumpolicies.sympozium.ai sympoziumschedules.sympozium.ai sympoziumconfigs.sympozium.ai"
+              RESOURCES="skillpacks.sympozium.ai ensembles.sympozium.ai agents.sympozium.ai agentruns.sympozium.ai sympoziumpolicies.sympozium.ai sympoziumschedules.sympozium.ai sympoziumconfigs.sympozium.ai"
               for res in $RESOURCES; do
                 echo "Stripping finalizers from $res..."
                 items=$(kubectl get "$res" --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}' 2>/dev/null || true)

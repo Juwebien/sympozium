@@ -22,7 +22,7 @@ Connect channels during onboarding or via the TUI edit modal:
 
 | Channel | How to connect |
 |---------|----------------|
-| **Telegram** | Create a bot with [@BotFather](https://t.me/BotFather), get the token, pass it during onboarding or set it in the SympoziumInstance channel config |
+| **Telegram** | Create a bot with [@BotFather](https://t.me/BotFather), get the token, pass it during onboarding or set it in the Agent channel config |
 | **Slack** | Create a Slack app with Socket Mode enabled, add the bot/app token during onboarding |
 | **Discord** | Create a Discord bot, grab the token, and connect it during onboarding |
 | **WhatsApp** | Use the WhatsApp Business API — Sympozium displays a QR code in the TUI for pairing |

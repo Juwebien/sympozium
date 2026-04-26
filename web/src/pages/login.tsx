@@ -32,7 +32,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       // Validate the token against the API before saving it.
-      const res = await fetch("/api/v1/instances?namespace=default", {
+      const res = await fetch("/api/v1/agents?namespace=default", {
         headers: { Authorization: `Bearer ${safeToken}` },
       });
       if (res.status === 401) {

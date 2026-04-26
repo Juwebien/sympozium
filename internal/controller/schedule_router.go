@@ -72,7 +72,7 @@ func (sr *ScheduleRouter) handleScheduleEvent(ctx context.Context, event *eventb
 	// Resolve namespace from the instance.
 	namespace := "default"
 	if instanceName != "" {
-		var instances sympoziumv1alpha1.SympoziumInstanceList
+		var instances sympoziumv1alpha1.AgentList
 		if err := sr.Client.List(ctx, &instances); err == nil {
 			for i := range instances.Items {
 				if instances.Items[i].Name == instanceName {
@@ -121,7 +121,7 @@ func (sr *ScheduleRouter) createSchedule(ctx context.Context, namespace, name, i
 			},
 		},
 		Spec: sympoziumv1alpha1.SympoziumScheduleSpec{
-			InstanceRef:       instanceName,
+			AgentRef:       instanceName,
 			Schedule:          req.Schedule,
 			Task:              req.Task,
 			Type:              "heartbeat",

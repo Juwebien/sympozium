@@ -39,7 +39,7 @@ func TestPatchEnsembleRejectsMissingSecret(t *testing.T) {
 	pack := &sympoziumv1alpha1.Ensemble{
 		ObjectMeta: metav1.ObjectMeta{Name: "platform-team", Namespace: "default"},
 		Spec: sympoziumv1alpha1.EnsembleSpec{
-			Personas: []sympoziumv1alpha1.PersonaSpec{{Name: "sre"}},
+			AgentConfigs: []sympoziumv1alpha1.AgentConfigSpec{{Name: "sre"}},
 		},
 	}
 	srv, cl := newTestServer(t, pack)
@@ -69,7 +69,7 @@ func TestPatchEnsembleAutoCreatesProviderSecretWithNewName(t *testing.T) {
 	pack := &sympoziumv1alpha1.Ensemble{
 		ObjectMeta: metav1.ObjectMeta{Name: "platform-team", Namespace: "default"},
 		Spec: sympoziumv1alpha1.EnsembleSpec{
-			Personas: []sympoziumv1alpha1.PersonaSpec{{Name: "sre"}},
+			AgentConfigs: []sympoziumv1alpha1.AgentConfigSpec{{Name: "sre"}},
 		},
 	}
 	srv, cl := newTestServer(t, pack)

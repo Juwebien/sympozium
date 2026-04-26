@@ -232,7 +232,7 @@ While in `v0.x.x`, the API is not yet stable and breaking changes may occur in m
 - **Go** — Follow standard Go conventions. Run `make fmt` and `make vet`.
 - **Error handling** — Return errors, don't panic. Use `fmt.Errorf("context: %w", err)` for wrapping.
 - **Logging** — Use the structured logger (`log.Info`, `log.Error`) with key-value pairs, not `fmt.Printf`.
-- **Naming** — CRD types use PascalCase (`SympoziumInstance`). Tool names use snake_case (`execute_command`). NATS topics use dot-separated (`agent.run.completed`).
+- **Naming** — CRD types use PascalCase (`Agent`). Tool names use snake_case (`execute_command`). NATS topics use dot-separated (`agent.run.completed`).
 - **IPC protocol** — New IPC-based tools must follow the JSON file drop pattern: write to `/ipc/<dir>/`, bridge watches with fsnotify, publishes to NATS.
 
 ---

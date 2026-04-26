@@ -90,7 +90,7 @@ describe("Response gate -- manual approval via UI", () => {
 
   after(() => {
     if (RUN_NAME) cy.deleteRun(RUN_NAME);
-    cy.deleteInstance(INSTANCE);
+    cy.deleteAgent(INSTANCE);
   });
 
   it("shows gate pending badge on runs list and approval bar on detail page", () => {

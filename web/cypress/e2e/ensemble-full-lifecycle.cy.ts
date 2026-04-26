@@ -33,7 +33,7 @@ spec:
 describe("Ensemble — full lifecycle", () => {
   after(() => {
     cy.deleteEnsemble(PACK);
-    cy.deleteInstance(STAMPED_INSTANCE);
+    cy.deleteAgent(STAMPED_INSTANCE);
   });
 
   it("enables a pack, verifies stamped instance appears, then disables and verifies removal", () => {

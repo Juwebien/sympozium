@@ -81,7 +81,7 @@ curl http://172.18.0.1:8080/v1/models
 
 ---
 
-## Creating a SympoziumInstance
+## Creating a Agent
 
 Unsloth-served models do not require an API key, but `authRefs` is mandatory —
 create a Secret with a placeholder value.
@@ -93,7 +93,7 @@ kubectl create secret generic unsloth-key \
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: unsloth-agent
 spec:
@@ -124,7 +124,7 @@ kind: AgentRun
 metadata:
   name: unsloth-test
 spec:
-  instanceRef: unsloth-agent
+  agentRef: unsloth-agent
   task: "List all pods across every namespace and summarise their status."
   model:
     provider: unsloth

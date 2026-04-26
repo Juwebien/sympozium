@@ -64,7 +64,7 @@ Sympozium offers two onboarding paths:
 1. **Ensembles (recommended)** — activate a pre-built bundle of agents via
    the TUI wizard. One action creates multiple purpose-built agents with skills,
    schedules, memory, and tool policies.
-2. **Manual onboard** — create a single SympoziumInstance with `sympozium onboard`.
+2. **Manual onboard** — create a single Agent with `sympozium onboard`.
    Best for custom setups or CI/headless environments.
 
 ### Ensemble activation (recommended)
@@ -101,7 +101,7 @@ their own skills, memory, and tool policies. The TUI switches to the
 
 For each persona in the pack, the Ensemble controller creates:
 
-- A **SympoziumInstance** — the agent identity with model, skills, and auth
+- A **Agent** — the agent identity with model, skills, and auth
 - A **SympoziumSchedule** — the recurring task (heartbeat, sweep, or cron)
 - A **ConfigMap** — persistent memory seeded with initial context
 
@@ -131,7 +131,7 @@ The wizard walks you through six steps:
 The wizard creates:
 
 - A **Kubernetes Secret** with your API key
-- A **SympoziumInstance** custom resource (your agent identity)
+- A **Agent** custom resource (your agent identity)
 - A **SympoziumPolicy** (tool-gating rules)
 - A **SympoziumSchedule** heartbeat (unless you chose "disabled")
 
@@ -179,7 +179,7 @@ kubectl get secret sympozium-ui-token -n sympozium-system \
 The web dashboard provides a graphical interface for **all** Sympozium actions:
 
 - **Dashboard** — cluster overview with instance counts, run stats, and recent activity
-- **Instances** — list, create, and delete SympoziumInstances
+- **Instances** — list, create, and delete Agents
 - **Runs** — view all AgentRuns, inspect logs, create new runs
 - **Policies** — browse SympoziumPolicy rules
 - **Skills** — explore installed SkillPacks
@@ -216,7 +216,7 @@ From the dashboard you can:
 - **View runs** — see live status of current and past AgentRuns.
 - **Edit an instance** — open the edit modal (press `e`) to change the
   heartbeat schedule, review memory, or toggle skills.
-- **Switch instances** — if you have multiple SympoziumInstances.
+- **Switch instances** — if you have multiple Agents.
 
 ---
 
@@ -259,7 +259,7 @@ automatically. You can also create these manually if you prefer fine-grained
 control.
 
 Below are three practical agent personas. Each combines a
-**SympoziumInstance**, one or more **SkillPacks**, and a tailored **schedule** to
+**Agent**, one or more **SkillPacks**, and a tailored **schedule** to
 create a purpose-built agent.
 
 > **Tip:** The `platform-team` Ensemble creates the SRE and Security agents
@@ -275,7 +275,7 @@ perform rollbacks.
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: sre-oncall
 spec:
@@ -296,7 +296,7 @@ kind: SympoziumSchedule
 metadata:
   name: sre-oncall-heartbeat
 spec:
-  instanceRef: sre-oncall
+  agentRef: sre-oncall
   schedule: "*/30 * * * *"
   type: heartbeat
   includeMemory: true
@@ -338,7 +338,7 @@ anti-patterns. Runs on a daily schedule.
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: security-auditor
 spec:
@@ -359,7 +359,7 @@ kind: SympoziumSchedule
 metadata:
   name: security-daily-scan
 spec:
-  instanceRef: security-auditor
+  agentRef: security-auditor
   schedule: "0 9 * * *"
   type: scheduled
   includeMemory: true
@@ -399,7 +399,7 @@ troubleshooting. Runs with a permissive policy on development clusters.
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: devops
 spec:
@@ -420,7 +420,7 @@ kind: SympoziumSchedule
 metadata:
   name: devops-heartbeat
 spec:
-  instanceRef: devops
+  agentRef: devops
   schedule: "0 * * * *"
   type: heartbeat
   includeMemory: true
@@ -454,7 +454,7 @@ iteration without approval gates.
 ## Built-in SkillPacks
 
 Sympozium ships with six built-in SkillPacks. Enable them on any
-SympoziumInstance:
+Agent:
 
 | SkillPack | Category | What it includes |
 |-----------|----------|------------------|
@@ -482,7 +482,7 @@ Connect your agent to a messaging platform so you can interact over chat:
 
 | Channel | How to connect |
 |---------|----------------|
-| **Telegram** | Create a bot with [@BotFather](https://t.me/BotFather), get the token, pass it during onboarding or set it in the SympoziumInstance channel config. |
+| **Telegram** | Create a bot with [@BotFather](https://t.me/BotFather), get the token, pass it during onboarding or set it in the Agent channel config. |
 | **Slack** | Create a Slack app with Socket Mode enabled, add the bot/app token during onboarding. |
 | **Discord** | Create a Discord bot, grab the token, and connect it during onboarding. |
 | **WhatsApp** | Use the WhatsApp Business API — Sympozium displays a QR code in the TUI for pairing. |
@@ -534,7 +534,7 @@ kind: AgentRun
 metadata:
   name: quick-check
 spec:
-  instanceRef: devops
+  agentRef: devops
   task: "How many nodes are in the cluster and what are their roles?"
   model:
     name: gpt-4o

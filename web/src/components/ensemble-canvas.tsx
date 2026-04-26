@@ -30,8 +30,8 @@ import { Save, Plus, Trash2, Database, Cpu } from "lucide-react";
 import type {
   Ensemble,
   Model,
-  PersonaSpec,
-  PersonaRelationship,
+  AgentConfigSpec,
+  AgentConfigRelationship,
   AgentRun,
   SecretRef,
 } from "@/lib/api";
@@ -66,10 +66,10 @@ function useRunEventInvalidation() {
 
 // ── Shared node data ────────────────────────────────────────────────────────
 
-export interface PersonaNodeData {
-  persona: PersonaSpec;
+export interface AgentConfigNodeData {
+  persona: AgentConfigSpec;
   packName?: string;
-  instanceName?: string;
+  agentName?: string;
   runPhase?: string;
   runTask?: string;
   hasSharedMemory?: boolean;
@@ -109,11 +109,11 @@ const phaseLabel: Record<string, string> = {
 
 // ── Custom persona node ─────────────────────────────────────────────────────
 
-function PersonaNode({ data }: NodeProps<Node<PersonaNodeData>>) {
+function AgentConfigNode({ data }: NodeProps<Node<AgentConfigNodeData>>) {
   const {
     persona,
     packName,
-    instanceName,
+    agentName,
     runPhase,
     runTask,
     hasSharedMemory,
@@ -200,9 +200,9 @@ function PersonaNode({ data }: NodeProps<Node<PersonaNodeData>>) {
         </p>
       )}
 
-      {instanceName && !runTask && (
+      {agentName && !runTask && (
         <p className="text-[9px] text-muted-foreground/60 mt-1.5 truncate">
-          {instanceName}
+          {agentName}
         </p>
       )}
 
@@ -372,7 +372,7 @@ function ProviderNode({ data }: NodeProps<Node<ProviderNodeData>>) {
   );
 }
 
-const nodeTypes = { persona: PersonaNode, model: ModelNode, provider: ProviderNode };
+const nodeTypes = { persona: AgentConfigNode, model: ModelNode, provider: ProviderNode };
 
 // ── Shared edge styling ─────────────────────────────────────────────────────
 
@@ -419,13 +419,13 @@ function styledEdge(
 /** Build a run-phase map from runs: persona name → { phase, task } */
 function buildRunPhaseMap(
   runs: AgentRun[] | undefined,
-  installedPersonas: Array<{ name: string; instanceName: string }> | undefined,
+  installedAgentConfigs: Array<{ name: string; agentName: string }> | undefined,
 ): Map<string, { phase: string; task?: string }> {
   const map = new Map<string, { phase: string; task?: string }>();
-  if (!runs || !installedPersonas) return map;
-  for (const ip of installedPersonas) {
+  if (!runs || !installedAgentConfigs) return map;
+  for (const ip of installedAgentConfigs) {
     const instanceRuns = runs
-      .filter((r) => r.spec.instanceRef === ip.instanceName)
+      .filter((r) => r.spec.agentRef === ip.agentName)
       .sort(
         (a, b) =>
           new Date(b.metadata.creationTimestamp || 0).getTime() -
@@ -442,12 +442,12 @@ function buildRunPhaseMap(
 }
 
 function layoutNodes(
-  personas: PersonaSpec[],
-  relationships: PersonaRelationship[],
+  personas: AgentConfigSpec[],
+  relationships: AgentConfigRelationship[],
   offsetX = 0,
   offsetY = 0,
   prefix = "",
-): Node<PersonaNodeData>[] {
+): Node<AgentConfigNodeData>[] {
   const outDegree = new Map<string, number>();
   const inDegree = new Map<string, number>();
   for (const r of relationships) {
@@ -477,7 +477,7 @@ function layoutNodes(
   }));
 }
 
-function buildEdges(relationships: PersonaRelationship[], prefix = ""): Edge[] {
+function buildEdges(relationships: AgentConfigRelationship[], prefix = ""): Edge[] {
   return relationships.map((rel, i) =>
     styledEdge(
       `e-${prefix}-${i}-${rel.source}-${rel.target}`,
@@ -538,7 +538,7 @@ function deriveProviders(
   }
 
   // 3. Per-persona provider overrides
-  for (const persona of pack.spec.personas || []) {
+  for (const persona of pack.spec.agentConfigs || []) {
     if (persona.provider && !seen.has(persona.provider)) {
       seen.add(persona.provider);
       const prov = PROVIDERS.find((p) => p.value === persona.provider);
@@ -559,7 +559,7 @@ function deriveProviders(
 }
 
 /** Determine which provider a persona connects to. */
-function personaProviderId(persona: PersonaSpec, pack: Ensemble): string | null {
+function personaProviderId(persona: AgentConfigSpec, pack: Ensemble): string | null {
   // Per-persona provider override
   if (persona.provider) return persona.provider;
   // Ensemble-level modelRef
@@ -574,7 +574,7 @@ function personaProviderId(persona: PersonaSpec, pack: Ensemble): string | null 
 function buildProviderNodesAndEdges(
   pack: Ensemble,
   modelMap: Map<string, Model>,
-  personas: PersonaSpec[],
+  personas: AgentConfigSpec[],
   offsetX: number,
   prefix: string,
 ): { nodes: Node<ProviderNodeData | ModelNodeData>[]; edges: Edge[] } {
@@ -638,11 +638,11 @@ function buildProviderNodesAndEdges(
   return { nodes, edges };
 }
 
-function edgesToRelationships(edges: Edge[]): PersonaRelationship[] {
+function edgesToRelationships(edges: Edge[]): AgentConfigRelationship[] {
   return edges.map((e) => ({
     source: e.source.includes("/") ? e.source.split("/")[1] : e.source,
     target: e.target.includes("/") ? e.target.split("/")[1] : e.target,
-    type: (e.data?.relType as PersonaRelationship["type"]) || "delegation",
+    type: (e.data?.relType as AgentConfigRelationship["type"]) || "delegation",
   }));
 }
 
@@ -758,7 +758,7 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
   const { data: models } = useModels();
   const patchMutation = usePatchEnsembleRelationships();
   const relationships = pack.spec.relationships || [];
-  const personas = pack.spec.personas || [];
+  const personas = pack.spec.agentConfigs || [];
 
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(
     null,
@@ -773,8 +773,8 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
   }, [models]);
 
   const runPhaseMap = useMemo(
-    () => buildRunPhaseMap(runs, pack.status?.installedPersonas),
-    [runs, pack.status?.installedPersonas],
+    () => buildRunPhaseMap(runs, pack.status?.installedAgentConfigs),
+    [runs, pack.status?.installedAgentConfigs],
   );
 
   const initialNodes = useMemo(() => {
@@ -783,15 +783,15 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
     const hasProviders = provResult.nodes.length > 0;
     const yOffset = hasProviders ? 140 : 0;
 
-    const nodes: Node<PersonaNodeData | ModelNodeData | ProviderNodeData>[] =
+    const nodes: Node<AgentConfigNodeData | ModelNodeData | ProviderNodeData>[] =
       layoutNodes(personas, relationships, 0, yOffset);
     const sharedMemEnabled = pack.spec.sharedMemory?.enabled ?? false;
     for (const node of nodes) {
       node.data.hasSharedMemory = sharedMemEnabled;
-      const ip = pack.status?.installedPersonas?.find(
+      const ip = pack.status?.installedAgentConfigs?.find(
         (p) => p.name === node.id,
       );
-      if (ip) node.data.instanceName = ip.instanceName;
+      if (ip) node.data.agentName = ip.agentName;
       const status = runPhaseMap.get(node.id);
       if (status) {
         node.data.runPhase = status.phase;
@@ -808,7 +808,7 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
     relationships,
     pack,
     pack.spec.sharedMemory?.enabled,
-    pack.status?.installedPersonas,
+    pack.status?.installedAgentConfigs,
     runPhaseMap,
     modelMap,
   ]);
@@ -1002,14 +1002,14 @@ export function GlobalEnsembleCanvas() {
 
   // Build layout (positions + edges) only when packs change — NOT on run updates.
   const { layoutedNodes, allEdges } = useMemo(() => {
-    const nodes: Node<PersonaNodeData | ModelNodeData | ProviderNodeData>[] = [];
+    const nodes: Node<AgentConfigNodeData | ModelNodeData | ProviderNodeData>[] = [];
     const edges: Edge[] = [];
 
     const packGapX = 50;
     let currentX = 0;
 
     for (const pack of enabledPacks) {
-      const personas = pack.spec.personas || [];
+      const personas = pack.spec.agentConfigs || [];
       const relationships = pack.spec.relationships || [];
       const prefix = pack.metadata.name;
 
@@ -1031,10 +1031,10 @@ export function GlobalEnsembleCanvas() {
         node.data.packName = pack.metadata.name;
         node.data.hasSharedMemory = sharedMemoryEnabled;
         const personaName = node.id.split("/")[1] || node.id;
-        const ip = pack.status?.installedPersonas?.find(
+        const ip = pack.status?.installedAgentConfigs?.find(
           (p) => p.name === personaName,
         );
-        if (ip) node.data.instanceName = ip.instanceName;
+        if (ip) node.data.agentName = ip.agentName;
       }
 
       nodes.push(...provResult.nodes);
@@ -1058,13 +1058,13 @@ export function GlobalEnsembleCanvas() {
     for (const pack of enabledPacks) {
       runPhaseMaps.set(
         pack.metadata.name,
-        buildRunPhaseMap(runs, pack.status?.installedPersonas),
+        buildRunPhaseMap(runs, pack.status?.installedAgentConfigs),
       );
     }
     return layoutedNodes.map((node) => {
       // Model nodes don't have run status — pass through unchanged.
       if (node.type === "model") return node;
-      const packName = (node.data as PersonaNodeData).packName || "";
+      const packName = (node.data as AgentConfigNodeData).packName || "";
       const personaName = node.id.split("/")[1] || node.id;
       const status = runPhaseMaps.get(packName)?.get(personaName);
       if (!status) return node;
@@ -1137,12 +1137,12 @@ export function DashboardEnsembleCanvas() {
 
   // Build layout only when packs change — NOT on run updates.
   const { layoutedNodes: dashLayoutNodes, allEdges } = useMemo(() => {
-    const nodes: Node<PersonaNodeData>[] = [];
+    const nodes: Node<AgentConfigNodeData>[] = [];
     const edges: Edge[] = [];
     let currentX = 0;
 
     for (const pack of visiblePacks) {
-      const personas = pack.spec.personas || [];
+      const personas = pack.spec.agentConfigs || [];
       const relationships = pack.spec.relationships || [];
       const prefix = pack.metadata.name;
 
@@ -1159,10 +1159,10 @@ export function DashboardEnsembleCanvas() {
           visiblePacks.length > 1 ? pack.metadata.name : undefined;
         node.data.hasSharedMemory = sharedMemEnabled;
         const personaName = node.id.split("/")[1] || node.id;
-        const ip = pack.status?.installedPersonas?.find(
+        const ip = pack.status?.installedAgentConfigs?.find(
           (p) => p.name === personaName,
         );
-        if (ip) node.data.instanceName = ip.instanceName;
+        if (ip) node.data.agentName = ip.agentName;
       }
 
       nodes.push(...packNodes);
@@ -1183,7 +1183,7 @@ export function DashboardEnsembleCanvas() {
     for (const pack of visiblePacks) {
       runPhaseMaps.set(
         pack.metadata.name,
-        buildRunPhaseMap(runs, pack.status?.installedPersonas),
+        buildRunPhaseMap(runs, pack.status?.installedAgentConfigs),
       );
     }
     return dashLayoutNodes.map((node) => {
@@ -1219,7 +1219,7 @@ export function DashboardEnsembleCanvas() {
           <option value="__all__">All Packs ({enabledPacks.length})</option>
           {enabledPacks.map((p) => (
             <option key={p.metadata.name} value={p.metadata.name}>
-              {p.metadata.name} ({p.spec.personas?.length ?? 0})
+              {p.metadata.name} ({p.spec.agentConfigs?.length ?? 0})
             </option>
           ))}
         </select>

@@ -52,7 +52,7 @@ func TestReconcileRunning_JobNotFoundGuard_DoesNotOverrideSucceeded(t *testing.T
 	run := &sympoziumv1alpha1.AgentRun{
 		ObjectMeta: metav1.ObjectMeta{Name: "regression-run", Namespace: "default"},
 		Spec: sympoziumv1alpha1.AgentRunSpec{
-			InstanceRef: "regression-inst",
+			AgentRef: "regression-inst",
 		},
 		Status: sympoziumv1alpha1.AgentRunStatus{
 			Phase:   sympoziumv1alpha1.AgentRunPhaseSucceeded,
@@ -102,7 +102,7 @@ func TestReconcileRunning_JobNotFoundGuard_DoesNotOverrideSucceeded(t *testing.T
 func TestReconcileRunning_JobNotFoundGuard_DoesNotOverrideFailed(t *testing.T) {
 	run := &sympoziumv1alpha1.AgentRun{
 		ObjectMeta: metav1.ObjectMeta{Name: "failed-run", Namespace: "default"},
-		Spec:       sympoziumv1alpha1.AgentRunSpec{InstanceRef: "x"},
+		Spec:       sympoziumv1alpha1.AgentRunSpec{AgentRef: "x"},
 		Status: sympoziumv1alpha1.AgentRunStatus{
 			Phase:   sympoziumv1alpha1.AgentRunPhaseFailed,
 			Error:   "agent container exited with code 137 (OOMKilled)",
@@ -137,7 +137,7 @@ func TestReconcileRunning_JobNotFoundGuard_DoesNotOverrideFailed(t *testing.T) {
 func TestReconcileRunning_JobNotFoundGuard_RequeuesForPostRunning(t *testing.T) {
 	run := &sympoziumv1alpha1.AgentRun{
 		ObjectMeta: metav1.ObjectMeta{Name: "postrun-run", Namespace: "default"},
-		Spec:       sympoziumv1alpha1.AgentRunSpec{InstanceRef: "x"},
+		Spec:       sympoziumv1alpha1.AgentRunSpec{AgentRef: "x"},
 		Status: sympoziumv1alpha1.AgentRunStatus{
 			Phase:   sympoziumv1alpha1.AgentRunPhasePostRunning,
 			JobName: "postrun-run-job",
@@ -163,7 +163,7 @@ func TestReconcileRunning_JobNotFoundGuard_RequeuesForPostRunning(t *testing.T) 
 func TestReconcileRunning_JobNotFoundGuard_FailsWhenReallyRunning(t *testing.T) {
 	run := &sympoziumv1alpha1.AgentRun{
 		ObjectMeta: metav1.ObjectMeta{Name: "stuck-run", Namespace: "default"},
-		Spec:       sympoziumv1alpha1.AgentRunSpec{InstanceRef: "x"},
+		Spec:       sympoziumv1alpha1.AgentRunSpec{AgentRef: "x"},
 		Status: sympoziumv1alpha1.AgentRunStatus{
 			Phase:   sympoziumv1alpha1.AgentRunPhaseRunning,
 			JobName: "stuck-run-job",

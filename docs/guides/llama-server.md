@@ -88,7 +88,7 @@ target covers llama-server since they share the same endpoints (`/health` and
 
 ---
 
-## Creating a SympoziumInstance
+## Creating a Agent
 
 llama-server does not require an API key, but the `authRefs` field is mandatory —
 create a Secret with a placeholder value.
@@ -100,7 +100,7 @@ kubectl create secret generic llama-server-key \
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: llama-server-agent
 spec:
@@ -126,7 +126,7 @@ kind: AgentRun
 metadata:
   name: llama-server-test
 spec:
-  instanceRef: llama-server-agent
+  agentRef: llama-server-agent
   task: "List all pods across every namespace and summarise their status."
   model:
     provider: llama-server

@@ -57,7 +57,7 @@ cleanup() {
   info "Cleaning up smoke-test resources..."
   # Best effort cleanup via API
   api_delete "/api/v1/schedules/${SCHEDULE_NAME}" >/dev/null 2>&1 || true
-  api_delete "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1 || true
+  api_delete "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1 || true
   # kubectl fallback: agentruns, schedule, instance, any auto-created secret, configmaps
   kubectl delete agentrun -n "$NAMESPACE" -l "sympozium.ai/instance=${INSTANCE_NAME}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   kubectl delete sympoziumschedule "$SCHEDULE_NAME" -n "$NAMESPACE" --ignore-not-found --wait=false >/dev/null 2>&1 || true
@@ -217,7 +217,7 @@ main() {
 
   info "Running API smoke tests in namespace '${NAMESPACE}'"
 
-  if ! kubectl get crd sympoziuminstances.sympozium.ai >/dev/null 2>&1; then
+  if ! kubectl get crd agents.sympozium.ai >/dev/null 2>&1; then
     fail "Sympozium CRDs not installed"
     exit 1
   fi
@@ -280,20 +280,20 @@ main() {
 {"name":"${INSTANCE_NAME}","provider":"openai","model":"gpt-4o-mini"}
 EOF
 )"
-  api_post /api/v1/instances "$create_instance_body" >/dev/null
+  api_post /api/v1/agents "$create_instance_body" >/dev/null
 
-  inst_list_json="$(api_get /api/v1/instances)"
+  inst_list_json="$(api_get /api/v1/agents)"
   found_instance="$(printf "%s" "$inst_list_json" | json_contains_name "$INSTANCE_NAME")"
   if [[ "$found_instance" != "true" ]]; then
     fail "Created instance '${INSTANCE_NAME}' not found in list"
     exit 1
   fi
-  api_get "/api/v1/instances/${INSTANCE_NAME}" >/dev/null
+  api_get "/api/v1/agents/${INSTANCE_NAME}" >/dev/null
   pass "Ad-hoc instance create/list/get OK"
 
   # 6) Schedule create/list/get/delete
   create_schedule_body="$(cat <<EOF
-{"name":"${SCHEDULE_NAME}","instanceRef":"${INSTANCE_NAME}","schedule":"*/10 * * * *","task":"heartbeat smoke","type":"heartbeat"}
+{"name":"${SCHEDULE_NAME}","agentRef":"${INSTANCE_NAME}","schedule":"*/10 * * * *","task":"heartbeat smoke","type":"heartbeat"}
 EOF
 )"
   api_post /api/v1/schedules "$create_schedule_body" >/dev/null
@@ -322,14 +322,14 @@ EOF
   pass "Schedule delete OK"
 
   # 7) Instance delete
-  api_delete "/api/v1/instances/${INSTANCE_NAME}" >/dev/null
+  api_delete "/api/v1/agents/${INSTANCE_NAME}" >/dev/null
   elapsed=0
   while [[ "$elapsed" -lt 15 ]]; do
-    api_get "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1 || break
+    api_get "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1 || break
     sleep 2
     elapsed=$((elapsed + 2))
   done
-  if api_get "/api/v1/instances/${INSTANCE_NAME}" >/dev/null 2>&1; then
+  if api_get "/api/v1/agents/${INSTANCE_NAME}" >/dev/null 2>&1; then
     fail "Instance '${INSTANCE_NAME}' still exists after delete"
     exit 1
   fi

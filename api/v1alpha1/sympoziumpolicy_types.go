@@ -156,7 +156,7 @@ type EgressRule struct {
 
 // SympoziumPolicyStatus defines the observed state of SympoziumPolicy.
 type SympoziumPolicyStatus struct {
-	// BoundInstances is the number of SympoziumInstances bound to this policy.
+	// BoundInstances is the number of Agents bound to this policy.
 	// +optional
 	BoundInstances int `json:"boundInstances,omitempty"`
 
@@ -172,7 +172,7 @@ type SympoziumPolicyStatus struct {
 
 // SympoziumPolicy is the Schema for the sympoziumpolicies API.
 // It enforces governance, sandbox requirements, network isolation,
-// and tool access for bound SympoziumInstances.
+// and tool access for bound Agents.
 type SympoziumPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

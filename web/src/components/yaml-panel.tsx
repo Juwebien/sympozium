@@ -10,11 +10,11 @@ import { FileCode, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toYaml, type YamlValue } from "@/lib/yaml";
 import type { WizardResult } from "@/components/onboarding-wizard";
-import type { SympoziumInstance, Ensemble } from "@/lib/api";
+import type { Agent, Ensemble } from "@/lib/api";
 
 // ── YAML builders ─────────────────────────────────────────────────────────────
 
-/** Build a SympoziumInstance YAML manifest from wizard form state. */
+/** Build a Agent YAML manifest from wizard form state. */
 export function instanceYamlFromWizard(result: WizardResult): string {
   const skills = result.skills
     .filter((s) => s !== "memory")
@@ -59,7 +59,7 @@ export function instanceYamlFromWizard(result: WizardResult): string {
 
   const obj: Record<string, YamlValue> = {
     apiVersion: "sympozium.ai/v1alpha1",
-    kind: "SympoziumInstance",
+    kind: "Agent",
     metadata: { name: result.name || "<instance-name>" },
     spec: {
       agents: { default: agentConfig },
@@ -78,7 +78,7 @@ export function instanceYamlFromWizard(result: WizardResult): string {
 export function ensembleYamlFromWizard(
   packName: string,
   result: WizardResult,
-  personaCount?: number,
+  agentConfigCount?: number,
 ): string {
   const authRefs: Record<string, string>[] = [];
   if (result.secretName) {
@@ -113,7 +113,7 @@ export function ensembleYamlFromWizard(
         }
       : {}),
     personas: [
-      `# ${personaCount ?? "?"} personas defined in pack (omitted for brevity)`,
+      `# ${agentConfigCount ?? "?"} personas defined in pack (omitted for brevity)`,
     ],
   };
 
@@ -127,8 +127,8 @@ export function ensembleYamlFromWizard(
   return toYaml(obj);
 }
 
-/** Build a SympoziumInstance YAML from an existing API resource. */
-export function instanceYamlFromResource(inst: SympoziumInstance): string {
+/** Build a Agent YAML from an existing API resource. */
+export function instanceYamlFromResource(inst: Agent): string {
   const spec: Record<string, YamlValue> = {};
 
   if (inst.spec.agents) spec.agents = inst.spec.agents as unknown as YamlValue;
@@ -143,7 +143,7 @@ export function instanceYamlFromResource(inst: SympoziumInstance): string {
 
   const obj: Record<string, YamlValue> = {
     apiVersion: "sympozium.ai/v1alpha1",
-    kind: "SympoziumInstance",
+    kind: "Agent",
     metadata: {
       name: inst.metadata.name,
       ...(inst.metadata.labels && Object.keys(inst.metadata.labels).length > 0
@@ -176,7 +176,7 @@ export function ensembleYamlFromResource(pack: Ensemble): string {
   if (pack.spec.policyRef) spec.policyRef = pack.spec.policyRef;
   if (pack.spec.taskOverride) spec.taskOverride = pack.spec.taskOverride;
 
-  spec.personas = pack.spec.personas.map((p) => {
+  spec.agentConfigs = pack.spec.agentConfigs.map((p) => {
     const persona: Record<string, YamlValue> = {
       name: p.name,
       systemPrompt: p.systemPrompt,

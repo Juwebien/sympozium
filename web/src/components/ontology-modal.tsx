@@ -35,39 +35,39 @@ const CONCEPTS: Concept[] = [
     icon: "E",
     short: "A team of AI agents bundled together",
     detail:
-      "An Ensemble is a Helm-like bundle that defines a group of Personas, their relationships (delegation, sequential, supervision), shared memory, and the AI provider they use. Activating an Ensemble stamps out Instances, Schedules, and memory for each Persona.",
-    relates: "Contains Personas, creates Instances when activated",
+      "An Ensemble is a Helm-like bundle that defines a group of Agent Configs, their relationships (delegation, sequential, supervision), shared memory, and the AI provider they use. Activating an Ensemble stamps out Agents, Schedules, and memory for each Agent Config.",
+    relates: "Contains Agent Configs, creates Agents when activated",
   },
   {
-    name: "Persona",
-    icon: "P",
+    name: "Agent Config",
+    icon: "C",
     short: "A role definition within an Ensemble",
     detail:
-      "A Persona defines an agent's identity: its name, system prompt, model, skills, and schedule. Each Persona in an Ensemble becomes a SympoziumInstance when the Ensemble is activated. Personas can have different models and provider overrides.",
-    relates: "Lives inside an Ensemble, becomes an Instance",
+      "An Agent Config defines an agent's identity: its name, system prompt, model, skills, and schedule. Each Agent Config in an Ensemble becomes an Agent when the Ensemble is activated. Agent Configs can have different models and provider overrides.",
+    relates: "Lives inside an Ensemble, becomes an Agent",
   },
   {
-    name: "Instance",
-    icon: "I",
+    name: "Agent",
+    icon: "A",
     short: "A configured, ready-to-run agent",
     detail:
-      "A SympoziumInstance is a running agent configuration created from a Persona. It holds the agent's model, provider, API key reference, skills, memory settings, and channel bindings. Instances are the launchpad for AgentRuns.",
-    relates: "Created from a Persona, runs AgentRuns",
+      "An Agent is a running agent configuration. It holds the agent's model, provider, API key reference, skills, memory settings, and channel bindings. Agents are the launchpad for AgentRuns.",
+    relates: "Created from an Agent Config, runs AgentRuns",
   },
   {
     name: "AgentRun",
     icon: "R",
     short: "A single execution of an agent task",
     detail:
-      "An AgentRun is a Job-like resource that executes a task using an Instance's configuration. Each run gets its own ephemeral Pod with least-privilege RBAC, skill sidecars, and network policies. Runs can delegate to other agents or be triggered on a schedule.",
-    relates: "Launched from an Instance, runs in a Pod",
+      "An AgentRun is a Job-like resource that executes a task using an Agent's configuration. Each run gets its own ephemeral Pod with least-privilege RBAC, skill sidecars, and network policies. Runs can delegate to other agents or be triggered on a schedule.",
+    relates: "Launched from an Agent, runs in a Pod",
   },
   {
     name: "Workflow",
     icon: "W",
-    short: "How Personas coordinate within an Ensemble",
+    short: "How Agent Configs coordinate within an Ensemble",
     detail:
-      "Workflows define relationships between Personas: delegation (one agent asks another for help), sequential pipelines (output flows to next), and supervision (one agent oversees another). Visualised on the interactive canvas.",
+      "Workflows define relationships between Agent Configs: delegation (one agent asks another for help), sequential pipelines (output flows to next), and supervision (one agent oversees another). Visualised on the interactive canvas.",
     relates: "Defined by Ensemble relationships, visible on the canvas",
   },
   {
@@ -117,9 +117,9 @@ export function OntologyModal() {
                 <ArrowRight className="h-3 w-3" />
                 <span className="text-blue-400">Ensemble</span>
                 <ArrowRight className="h-3 w-3" />
-                <span className="text-cyan-400">Persona</span>
+                <span className="text-cyan-400">Agent Config</span>
                 <ArrowRight className="h-3 w-3" />
-                <span className="text-emerald-400">Instance</span>
+                <span className="text-emerald-400">Agent</span>
                 <ArrowRight className="h-3 w-3" />
                 <span className="text-amber-400">AgentRun</span>
               </div>
@@ -188,9 +188,9 @@ export function OntologyModalExpanded() {
                 <ArrowRight className="h-3 w-3" />
                 <span className="text-blue-400">Ensemble</span>
                 <ArrowRight className="h-3 w-3" />
-                <span className="text-cyan-400">Persona</span>
+                <span className="text-cyan-400">Agent Config</span>
                 <ArrowRight className="h-3 w-3" />
-                <span className="text-emerald-400">Instance</span>
+                <span className="text-emerald-400">Agent</span>
                 <ArrowRight className="h-3 w-3" />
                 <span className="text-amber-400">AgentRun</span>
               </div>

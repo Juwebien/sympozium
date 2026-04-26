@@ -46,8 +46,8 @@ describe("City Distance Research — sequential workflow with shared memory", ()
     // Wait for instances to drain before deleting
     cy.wait(3000);
     cy.deleteEnsemble(ENSEMBLE);
-    cy.deleteInstance(LEAD_INSTANCE);
-    cy.deleteInstance(CHECKER_INSTANCE);
+    cy.deleteAgent(LEAD_INSTANCE);
+    cy.deleteAgent(CHECKER_INSTANCE);
     cy.exec(
       `kubectl delete agentrun -n ${NS} -l sympozium.ai/instance=${LEAD_INSTANCE} --ignore-not-found --wait=false`,
       { failOnNonZeroExit: false },
@@ -197,7 +197,7 @@ Do NOT write code. Just search memory, verify the fact, store your result, and r
       }
       return cy
         .request({
-          url: `/api/v1/instances/${LEAD_INSTANCE}?namespace=${NS}`,
+          url: `/api/v1/agents/${LEAD_INSTANCE}?namespace=${NS}`,
           headers: authHeaders(),
           failOnStatusCode: false,
         })

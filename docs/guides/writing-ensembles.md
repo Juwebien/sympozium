@@ -1,7 +1,7 @@
 # Writing Ensembles
 
 A Ensemble bundles multiple agent personas into a single CRD. When activated,
-the Ensemble controller stamps out all the Kubernetes resources — SympoziumInstances,
+the Ensemble controller stamps out all the Kubernetes resources — Agents,
 SympoziumSchedules, and memory seeds — automatically.
 
 This guide walks through creating a custom Ensemble from scratch.
@@ -65,7 +65,7 @@ spec:
 ## Step 1: Define personas
 
 Start by defining the agents in your team. Each persona gets its own
-SympoziumInstance when the pack is activated.
+Agent when the pack is activated.
 
 ```yaml
 apiVersion: sympozium.ai/v1alpha1
@@ -393,7 +393,7 @@ kubectl patch ensemble data-team --type=merge -p '{
 ### Verify
 
 ```bash
-kubectl get sympoziuminstance -l sympozium.ai/ensemble=data-team
+kubectl get agent -l sympozium.ai/ensemble=data-team
 kubectl get sympoziumschedule -l sympozium.ai/ensemble=data-team
 ```
 
@@ -409,11 +409,11 @@ Ensemble "data-team" (2 personas)
   │
   ├── Secret: data-team-key (created by user)
   │
-  ├── SympoziumInstance: data-team-pipeline-monitor
+  ├── Agent: data-team-pipeline-monitor
   │   ├── SympoziumSchedule: data-team-pipeline-monitor-schedule
   │   └── ConfigMap: data-team-pipeline-monitor-memory
   │
-  └── SympoziumInstance: data-team-schema-auditor
+  └── Agent: data-team-schema-auditor
       ├── SympoziumSchedule: data-team-schema-auditor-schedule
       └── ConfigMap: data-team-schema-auditor-memory
 ```

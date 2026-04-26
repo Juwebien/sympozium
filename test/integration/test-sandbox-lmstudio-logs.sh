@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Integration test: Sandbox + LM Studio — controller log verification.
 #
-# Creates a SympoziumInstance with sandboxing enabled and LM Studio as the
+# Creates a Agent with sandboxing enabled and LM Studio as the
 # provider, submits a simple AgentRun, then verifies the controller manager
 # emits the expected sandbox-lifecycle log lines.
 #
@@ -112,7 +112,7 @@ kubectl create secret generic "${INSTANCE}-lms-key" \
 
 cat <<EOF | kubectl apply -f - >/dev/null 2>&1
 apiVersion: sympozium.ai/v1alpha1
-kind: SympoziumInstance
+kind: Agent
 metadata:
   name: ${INSTANCE}
   namespace: ${NAMESPACE}
@@ -144,7 +144,7 @@ metadata:
     sympozium.ai/instance: ${INSTANCE}
     sympozium.ai/component: agent-run
 spec:
-  instanceRef: ${INSTANCE}
+  agentRef: ${INSTANCE}
   agentId: default
   sessionKey: "test-sb-lms-${SUFFIX}"
   task: "Say hello world"
