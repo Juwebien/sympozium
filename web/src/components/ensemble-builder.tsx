@@ -593,6 +593,16 @@ export function EnsembleBuilder({
     null,
   );
 
+  // Expose connection setter for Cypress demo recording.
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__testSetPendingConnection = setPendingConnection;
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).__testSetPendingConnection;
+    };
+  }, [setPendingConnection]);
+
   // ── Show provider setup if not configured ──────────────────────────────
 
   if (!providerCtx) {

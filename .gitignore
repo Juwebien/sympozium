@@ -52,4 +52,8 @@ whatsapp
 _bmad/
 _bmad-output/
 .claude/
+
+# Demo recording artifacts
+*.mp4
+web/demo.gif
 mcp-bridge
