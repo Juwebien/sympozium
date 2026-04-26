@@ -92,7 +92,7 @@ spec:
       target: qa-engineer
       type: supervision
 
-  personas:
+  agentConfigs:
     - name: tech-lead
       displayName: "Tech Lead"
       systemPrompt: |

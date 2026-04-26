@@ -11,7 +11,7 @@ spec:
   description: "A 2-pizza software development team — tech lead, backend, frontend, QA, reviewer, DevOps, and docs — collaborating on a single GitHub repository."
   category: development
   version: "1.0.0"
-  personas:
+  agentConfigs:
     - name: tech-lead
       displayName: "Tech Lead"
       systemPrompt: |

@@ -12,7 +12,7 @@ spec:
   authRefs:
     - secret: my-team-openai-key
   policyRef: default-policy
-  personas:
+  agentConfigs:
     - name: reviewer
       displayName: "Code Reviewer"
       systemPrompt: |

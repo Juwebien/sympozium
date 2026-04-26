@@ -70,7 +70,7 @@ defaultPersonas:
 #     github-gitops:
 #       repo: "myorg/myapp"
 #   taskOverride: "Ship the MVP by end of sprint."
-#   personas:
+#   agentConfigs:
 #     - name: dev
 #       displayName: "Developer"
 #       systemPrompt: "You are a full-stack developer."

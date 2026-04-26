@@ -16,7 +16,7 @@ spec:
   category: local
   version: "1.0.0"
   modelRef: qwen3-8b-q4
-  personas:
+  agentConfigs:
     - name: assistant
       displayName: "Local Assistant"
       systemPrompt: |

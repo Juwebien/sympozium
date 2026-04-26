@@ -44,7 +44,7 @@ spec:
   # overarching goal guiding their work.
   taskOverride: "We are building a REST API for user management. Focus on the /api/v1/users endpoints. Follow the existing Go project conventions."
 
-  personas:
+  agentConfigs:
     - name: tech-lead
       displayName: "Tech Lead"
       model: gpt-4o

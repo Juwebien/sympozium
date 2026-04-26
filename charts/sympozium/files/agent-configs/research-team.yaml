@@ -38,7 +38,7 @@ spec:
       target: reviewer
       type: supervision
 
-  personas:
+  agentConfigs:
     - name: lead
       displayName: "Research Lead"
       systemPrompt: |

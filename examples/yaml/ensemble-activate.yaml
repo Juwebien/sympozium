@@ -41,7 +41,7 @@ spec:
   authRefs:
     - secret: my-openai-key
   policyRef: default-policy
-  personas:
+  agentConfigs:
     - name: assistant
       displayName: "General Assistant"
       systemPrompt: |

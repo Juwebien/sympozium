@@ -14,7 +14,7 @@ spec:
   authRefs:
     - secret: my-openai-key
   policyRef: default-policy
-  personas:
+  agentConfigs:
     - name: analyst
       displayName: "Data Analyst"
       systemPrompt: |

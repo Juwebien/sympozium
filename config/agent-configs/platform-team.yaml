@@ -10,7 +10,7 @@ spec:
   description: "Core platform engineering agents — security, SRE, and platform support."
   category: platform
   version: "1.0.0"
-  personas:
+  agentConfigs:
     - name: security-guardian
       displayName: "Security Guardian"
       systemPrompt: |
