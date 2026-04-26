@@ -136,13 +136,13 @@ export function AgentConfigPanel({
         {/* Model selector — provider-aware */}
         <div className="space-y-1.5">
           <Label className="text-xs">Model</Label>
-          {providerCtx.modelRef ? (
+          {providerCtx.modelRef || draft.provider === "local-model" ? (
             <div className="rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs">
               <p className="font-mono text-violet-400">
-                {providerCtx.modelRef}
+                {draft.model || providerCtx.modelRef || "local model"}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                Using cluster-local model via ensemble modelRef
+                Using cluster-local model
               </p>
             </div>
           ) : (

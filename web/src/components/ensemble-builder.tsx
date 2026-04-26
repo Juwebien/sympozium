@@ -748,13 +748,31 @@ function BuilderCanvas({
           const isModelRef = provId.startsWith("model:");
           const updated = { ...targetPersona };
           if (isModelRef) {
-            updated.provider = undefined;
+            const modelName = provId.replace("model:", "");
+            updated.model = modelName;
+            updated.provider = "local-model";
             updated.baseURL = undefined;
           } else {
             updated.provider = provId;
           }
           setPersonas((prev) =>
             prev.map((p) => (p.name === connection.target ? updated : p)),
+          );
+          // Update the node data so the canvas reflects the change
+          setNodes((prev) =>
+            prev.map((n) =>
+              n.id === connection.target
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      persona: updated,
+                      isConfigured: !!(updated.name && updated.systemPrompt),
+                      label: updated.displayName || updated.name,
+                    },
+                  }
+                : n,
+            ),
           );
           // Add a visual edge
           setEdges((eds) =>
