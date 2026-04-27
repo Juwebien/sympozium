@@ -3480,21 +3480,24 @@ func (s *Server) getModel(w http.ResponseWriter, r *http.Request) {
 }
 
 type createModelRequest struct {
-	Name         string            `json:"name"`
-	URL          string            `json:"url"`
-	Filename     string            `json:"filename"`
-	StorageSize  string            `json:"storageSize"`
-	StorageClass string            `json:"storageClass"`
-	GPU          int               `json:"gpu"`
-	Memory       string            `json:"memory"`
-	CPU          string            `json:"cpu"`
-	ContextSize  int               `json:"contextSize"`
-	Image        string            `json:"image"`
-	Port         int32             `json:"port"`
-	Args         []string          `json:"args"`
-	NodeSelector map[string]string `json:"nodeSelector"`
-	Placement    string            `json:"placement"` // "auto" or "manual" (default "manual")
-	Namespace    string            `json:"namespace"` // target namespace (default "sympozium-system")
+	Name                   string            `json:"name"`
+	ServerType             string            `json:"serverType"` // "llama-cpp", "vllm", "tgi", "custom"
+	URL                    string            `json:"url"`
+	ModelID                string            `json:"modelID"` // HuggingFace model ID (for vllm/tgi)
+	Filename               string            `json:"filename"`
+	StorageSize            string            `json:"storageSize"`
+	StorageClass           string            `json:"storageClass"`
+	GPU                    int               `json:"gpu"`
+	Memory                 string            `json:"memory"`
+	CPU                    string            `json:"cpu"`
+	ContextSize            int               `json:"contextSize"`
+	Image                  string            `json:"image"`
+	Port                   int32             `json:"port"`
+	Args                   []string          `json:"args"`
+	NodeSelector           map[string]string `json:"nodeSelector"`
+	Placement              string            `json:"placement"`              // "auto" or "manual" (default "manual")
+	Namespace              string            `json:"namespace"`              // target namespace (default "sympozium-system")
+	HuggingFaceTokenSecret string            `json:"huggingFaceTokenSecret"` // Secret name for HF_TOKEN
 }
 
 func (s *Server) createModel(w http.ResponseWriter, r *http.Request) {
@@ -3504,9 +3507,28 @@ func (s *Server) createModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Name == "" || req.URL == "" {
-		http.Error(w, "name and url are required", http.StatusBadRequest)
+	if req.Name == "" {
+		http.Error(w, "name is required", http.StatusBadRequest)
 		return
+	}
+
+	// Validate source based on server type.
+	serverType := sympoziumv1alpha1.InferenceServerType(req.ServerType)
+	switch serverType {
+	case sympoziumv1alpha1.InferenceServerVLLM, sympoziumv1alpha1.InferenceServerTGI:
+		if req.ModelID == "" {
+			http.Error(w, "modelID is required for vllm/tgi server types", http.StatusBadRequest)
+			return
+		}
+	case sympoziumv1alpha1.InferenceServerCustom:
+		// Custom: no source validation.
+	default:
+		// llama-cpp (default): requires URL.
+		if req.URL == "" {
+			http.Error(w, "url is required for llama-cpp server type", http.StatusBadRequest)
+			return
+		}
+		serverType = sympoziumv1alpha1.InferenceServerLlamaCpp
 	}
 
 	// Defaults
@@ -3536,6 +3558,7 @@ func (s *Server) createModel(w http.ResponseWriter, r *http.Request) {
 		Spec: sympoziumv1alpha1.ModelCRDSpec{
 			Source: sympoziumv1alpha1.ModelSource{
 				URL:      req.URL,
+				ModelID:  req.ModelID,
 				Filename: req.Filename,
 			},
 			Storage: sympoziumv1alpha1.ModelStorage{
@@ -3557,6 +3580,7 @@ func (s *Server) createModel(w http.ResponseWriter, r *http.Request) {
 		model.Spec.NodeSelector = nil // Auto mode will determine the node.
 	}
 
+	model.Spec.Inference.ServerType = serverType
 	if req.Image != "" {
 		model.Spec.Inference.Image = req.Image
 	}
@@ -3568,6 +3592,9 @@ func (s *Server) createModel(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(req.Args) > 0 {
 		model.Spec.Inference.Args = req.Args
+	}
+	if req.HuggingFaceTokenSecret != "" {
+		model.Spec.Inference.HuggingFaceTokenSecret = req.HuggingFaceTokenSecret
 	}
 
 	if err := s.client.Create(r.Context(), model); err != nil {

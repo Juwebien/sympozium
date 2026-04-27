@@ -11,7 +11,12 @@ metadata:
     app.kubernetes.io/part-of: sympozium
 spec:
   source:
+    {{- if .url }}
     url: {{ .url | quote }}
+    {{- end }}
+    {{- if .modelID }}
+    modelID: {{ .modelID | quote }}
+    {{- end }}
     filename: {{ .filename | default "model.gguf" | quote }}
   storage:
     size: {{ .storageSize | default "10Gi" | quote }}
@@ -22,13 +27,25 @@ spec:
     gpu: {{ .gpu | default 1 }}
     memory: {{ .memory | default "16Gi" | quote }}
     cpu: {{ .cpu | default "4" | quote }}
-  {{- if .args }}
   inference:
+    {{- if .serverType }}
+    serverType: {{ .serverType | quote }}
+    {{- end }}
+    {{- if .image }}
+    image: {{ .image | quote }}
+    {{- end }}
+    {{- if .contextSize }}
+    contextSize: {{ .contextSize }}
+    {{- end }}
+    {{- if .huggingFaceTokenSecret }}
+    huggingFaceTokenSecret: {{ .huggingFaceTokenSecret | quote }}
+    {{- end }}
+    {{- if .args }}
     args:
     {{- range .args }}
       - {{ . | quote }}
     {{- end }}
-  {{- end }}
+    {{- end }}
   {{- if .nodeSelector }}
   nodeSelector:
     {{- toYaml .nodeSelector | nindent 4 }}

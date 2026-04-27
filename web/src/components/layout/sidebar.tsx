@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -39,7 +40,7 @@ const navSections: NavSection[] = [
   {
     items: [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/gateway", label: "Gateway", icon: Globe },
+      { to: "/topology", label: "Topology", icon: Network },
     ],
   },
   {
@@ -52,8 +53,9 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: "Configuration",
+    label: "Infrastructure",
     items: [
+      { to: "/gateway", label: "Gateway", icon: Globe },
       { to: "/policies", label: "Policies", icon: Shield },
       { to: "/models", label: "Models", icon: Cpu },
       { to: "/skills", label: "Skills", icon: Wrench },

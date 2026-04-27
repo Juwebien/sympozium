@@ -19,6 +19,7 @@ import { McpServerDetailPage } from "@/pages/mcp-server-detail";
 import { ModelsPage } from "@/pages/models";
 import { ModelDetailPage } from "@/pages/model-detail";
 import { SettingsPage } from "@/pages/settings";
+import { TopologyPage } from "@/pages/topology";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -49,6 +50,7 @@ export default function App() {
       >
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/topology" element={<TopologyPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/agents/:name" element={<AgentDetailPage />} />
         <Route path="/runs" element={<RunsPage />} />

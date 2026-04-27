@@ -36,7 +36,16 @@ import {
 import { Plus, Trash2, ExternalLink, Cpu } from "lucide-react";
 import { formatAge, cn } from "@/lib/utils";
 
-const MODEL_PRESETS = [
+type ServerType = "llama-cpp" | "vllm" | "tgi" | "custom";
+
+const SERVER_TYPES: { value: ServerType; label: string }[] = [
+  { value: "llama-cpp", label: "llama.cpp" },
+  { value: "vllm", label: "vLLM" },
+  { value: "tgi", label: "TGI" },
+  { value: "custom", label: "Custom" },
+];
+
+const LLAMACPP_PRESETS = [
   {
     label: "Qwen3 8B (Q4)",
     name: "qwen3-8b-q4",
@@ -44,8 +53,9 @@ const MODEL_PRESETS = [
     storageSize: "8Gi",
     memory: "12Gi",
     cpu: "8",
+    gpu: 0,
     contextSize: 8192,
-    description: "5 GB \u00b7 8K context \u00b7 strong reasoning",
+    description: "5 GB · 8K context · strong reasoning",
   },
   {
     label: "Qwen3.5 9B (Q4)",
@@ -54,8 +64,9 @@ const MODEL_PRESETS = [
     storageSize: "8Gi",
     memory: "12Gi",
     cpu: "8",
+    gpu: 0,
     contextSize: 8192,
-    description: "5.7 GB \u00b7 8K context \u00b7 latest Qwen",
+    description: "5.7 GB · 8K context · latest Qwen",
   },
   {
     label: "Phi-3 Mini 4K (Q4)",
@@ -64,8 +75,9 @@ const MODEL_PRESETS = [
     storageSize: "4Gi",
     memory: "6Gi",
     cpu: "6",
+    gpu: 0,
     contextSize: 4096,
-    description: "2.2 GB \u00b7 4K context \u00b7 fast & lightweight",
+    description: "2.2 GB · 4K context · fast & lightweight",
   },
   {
     label: "Qwen3 0.6B (Q8)",
@@ -74,8 +86,70 @@ const MODEL_PRESETS = [
     storageSize: "2Gi",
     memory: "4Gi",
     cpu: "4",
+    gpu: 0,
     contextSize: 4096,
-    description: "0.6 GB \u00b7 4K context \u00b7 tiny, for testing",
+    description: "0.6 GB · 4K context · tiny, for testing",
+  },
+];
+
+const VLLM_PRESETS = [
+  {
+    label: "Llama 3.1 8B Instruct",
+    name: "llama-3-1-8b-vllm",
+    modelID: "meta-llama/Llama-3.1-8B-Instruct",
+    storageSize: "30Gi",
+    memory: "24Gi",
+    cpu: "4",
+    gpu: 1,
+    contextSize: 8192,
+    description: "16 GB VRAM · 8K context · general purpose",
+  },
+  {
+    label: "Qwen 2.5 7B Instruct",
+    name: "qwen-2-5-7b-vllm",
+    modelID: "Qwen/Qwen2.5-7B-Instruct",
+    storageSize: "30Gi",
+    memory: "20Gi",
+    cpu: "4",
+    gpu: 1,
+    contextSize: 8192,
+    description: "14 GB VRAM · 8K context · strong reasoning",
+  },
+  {
+    label: "Mistral 7B Instruct v0.3",
+    name: "mistral-7b-vllm",
+    modelID: "mistralai/Mistral-7B-Instruct-v0.3",
+    storageSize: "30Gi",
+    memory: "20Gi",
+    cpu: "4",
+    gpu: 1,
+    contextSize: 8192,
+    description: "14 GB VRAM · 8K context · fast inference",
+  },
+];
+
+const TGI_PRESETS = [
+  {
+    label: "Llama 3.1 8B Instruct",
+    name: "llama-3-1-8b-tgi",
+    modelID: "meta-llama/Llama-3.1-8B-Instruct",
+    storageSize: "30Gi",
+    memory: "24Gi",
+    cpu: "4",
+    gpu: 1,
+    contextSize: 8192,
+    description: "16 GB VRAM · 8K context · general purpose",
+  },
+  {
+    label: "Mistral 7B Instruct v0.3",
+    name: "mistral-7b-tgi",
+    modelID: "mistralai/Mistral-7B-Instruct-v0.3",
+    storageSize: "30Gi",
+    memory: "20Gi",
+    cpu: "4",
+    gpu: 1,
+    contextSize: 8192,
+    description: "14 GB VRAM · 8K context · fast inference",
   },
 ];
 
@@ -87,9 +161,11 @@ export function ModelsPage() {
   const { data: namespaces } = useNamespaces();
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [serverType, setServerType] = useState<ServerType>("llama-cpp");
   const [form, setForm] = useState({
     name: "",
     url: "",
+    modelID: "",
     filename: "model.gguf",
     storageSize: "10Gi",
     gpu: 0,
@@ -100,6 +176,7 @@ export function ModelsPage() {
     node: "",
     placement: "auto" as "auto" | "manual",
     namespace: "sympozium-system",
+    huggingFaceTokenSecret: "",
   });
 
   const readyNodes = (clusterNodes || []).filter((n) => n.ready);
@@ -114,6 +191,33 @@ export function ModelsPage() {
       return bTime.localeCompare(aTime);
     });
 
+  const needsURL = serverType === "llama-cpp";
+  const needsModelID = serverType === "vllm" || serverType === "tgi";
+  const canDeploy =
+    form.name &&
+    (needsURL ? form.url : true) &&
+    (needsModelID ? form.modelID : true) &&
+    (serverType === "custom" ? true : true);
+
+  function resetForm() {
+    setForm({
+      name: "",
+      url: "",
+      modelID: "",
+      filename: "model.gguf",
+      storageSize: "10Gi",
+      gpu: 0,
+      memory: "12Gi",
+      cpu: "8",
+      contextSize: 4096,
+      args: "",
+      node: "",
+      placement: "auto",
+      namespace: "sympozium-system",
+      huggingFaceTokenSecret: "",
+    });
+  }
+
   function handleCreate() {
     const args = form.args
       .split(/\s+/)
@@ -121,8 +225,10 @@ export function ModelsPage() {
     createModel.mutate(
       {
         name: form.name,
-        url: form.url,
-        filename: form.filename,
+        serverType,
+        url: needsURL ? form.url : undefined,
+        modelID: needsModelID ? form.modelID : undefined,
+        filename: needsURL ? form.filename : undefined,
         storageSize: form.storageSize,
         gpu: form.gpu,
         memory: form.memory,
@@ -131,6 +237,7 @@ export function ModelsPage() {
         args: args.length > 0 ? args : undefined,
         placement: form.placement,
         namespace: form.namespace,
+        huggingFaceTokenSecret: form.huggingFaceTokenSecret || undefined,
         nodeSelector:
           form.placement === "manual" && form.node
             ? { "kubernetes.io/hostname": form.node }
@@ -139,20 +246,7 @@ export function ModelsPage() {
       {
         onSuccess: () => {
           setShowCreate(false);
-          setForm({
-            name: "",
-            url: "",
-            filename: "model.gguf",
-            storageSize: "10Gi",
-            gpu: 0,
-            memory: "12Gi",
-            cpu: "8",
-            contextSize: 4096,
-            args: "",
-            node: "",
-            placement: "auto",
-            namespace: "sympozium-system",
-          });
+          resetForm();
         },
       },
     );
@@ -197,7 +291,7 @@ export function ModelsPage() {
           </p>
           {!search && (
             <p className="text-xs text-muted-foreground/60">
-              Deploy a GGUF model to run local inference in your cluster
+              Deploy a model to run local inference in your cluster
             </p>
           )}
         </div>
@@ -265,48 +359,80 @@ export function ModelsPage() {
 
       {/* Deploy Model Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Deploy Model</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Preset selector */}
-            <div className="space-y-2">
-              <Label>Quick Start</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {MODEL_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        name: preset.name,
-                        url: preset.url,
-                        storageSize: preset.storageSize,
-                        memory: preset.memory,
-                        cpu: preset.cpu,
-                        contextSize: preset.contextSize,
-                      })
-                    }
-                    className={cn(
-                      "rounded-md border px-3 py-2 text-left text-xs transition-colors",
-                      form.name === preset.name
-                        ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
-                        : "border-border/50 hover:bg-white/5",
-                    )}
-                  >
-                    <div className="font-medium">{preset.label}</div>
-                    <div className="text-muted-foreground">{preset.description}</div>
-                  </button>
-                ))}
-              </div>
+            {/* Server type tabs */}
+            <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
+              {SERVER_TYPES.map((st) => (
+                <button
+                  key={st.value}
+                  type="button"
+                  onClick={() => {
+                    setServerType(st.value);
+                    resetForm();
+                  }}
+                  className={cn(
+                    "flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    serverType === st.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {st.label}
+                </button>
+              ))}
             </div>
+
+            {/* Preset selector (not shown for custom) */}
+            {serverType !== "custom" && (
+              <div className="space-y-2">
+                <Label>Quick Start</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(serverType === "llama-cpp"
+                    ? LLAMACPP_PRESETS
+                    : serverType === "vllm"
+                      ? VLLM_PRESETS
+                      : TGI_PRESETS
+                  ).map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          name: preset.name,
+                          url: "url" in preset ? (preset as { url: string }).url : "",
+                          modelID: "modelID" in preset ? (preset as { modelID: string }).modelID : "",
+                          storageSize: preset.storageSize,
+                          memory: preset.memory,
+                          cpu: preset.cpu,
+                          gpu: preset.gpu,
+                          contextSize: preset.contextSize,
+                        })
+                      }
+                      className={cn(
+                        "rounded-md border px-3 py-2 text-left text-xs transition-colors",
+                        form.name === preset.name
+                          ? "border-blue-500/40 bg-blue-500/15 text-blue-300"
+                          : "border-border/50 hover:bg-white/5",
+                      )}
+                    >
+                      <div className="font-medium">{preset.label}</div>
+                      <div className="text-muted-foreground">{preset.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Name</Label>
                 <Input
-                  placeholder="llama-3.1-8b-q4"
+                  placeholder={serverType === "vllm" ? "llama-3-1-8b-vllm" : "llama-3.1-8b-q4"}
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
@@ -330,24 +456,80 @@ export function ModelsPage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>GGUF Download URL</Label>
-              <Input
-                placeholder="https://huggingface.co/..."
-                value={form.url}
-                onChange={(e) => setForm({ ...form, url: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Filename</Label>
-                <Input
-                  value={form.filename}
-                  onChange={(e) =>
-                    setForm({ ...form, filename: e.target.value })
-                  }
-                />
-              </div>
+
+            {/* Source: URL for llama-cpp, ModelID for vllm/tgi */}
+            {needsURL && (
+              <>
+                <div className="space-y-2">
+                  <Label>GGUF Download URL</Label>
+                  <Input
+                    placeholder="https://huggingface.co/..."
+                    value={form.url}
+                    onChange={(e) => setForm({ ...form, url: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Filename</Label>
+                    <Input
+                      value={form.filename}
+                      onChange={(e) =>
+                        setForm({ ...form, filename: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Storage Size</Label>
+                    <Input
+                      value={form.storageSize}
+                      onChange={(e) =>
+                        setForm({ ...form, storageSize: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+            {needsModelID && (
+              <>
+                <div className="space-y-2">
+                  <Label>HuggingFace Model ID</Label>
+                  <Input
+                    placeholder="meta-llama/Llama-3.1-8B-Instruct"
+                    value={form.modelID}
+                    onChange={(e) => setForm({ ...form, modelID: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The model will be pulled from HuggingFace at container startup
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>HF Token Secret</Label>
+                    <Input
+                      placeholder="hf-token (optional)"
+                      value={form.huggingFaceTokenSecret}
+                      onChange={(e) =>
+                        setForm({ ...form, huggingFaceTokenSecret: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      K8s Secret name for gated models (Llama, Mistral)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Storage Size (HF cache)</Label>
+                    <Input
+                      value={form.storageSize}
+                      onChange={(e) =>
+                        setForm({ ...form, storageSize: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+            {serverType === "custom" && (
               <div className="space-y-2">
                 <Label>Storage Size</Label>
                 <Input
@@ -357,7 +539,8 @@ export function ModelsPage() {
                   }
                 />
               </div>
-            </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>GPU</Label>
@@ -407,12 +590,18 @@ export function ModelsPage() {
             <div className="space-y-2">
               <Label>Extra Args</Label>
               <Input
-                placeholder="--ctx-size 8192 --n-gpu-layers 99"
+                placeholder={
+                  serverType === "vllm"
+                    ? "--dtype auto --gpu-memory-utilization 0.9"
+                    : serverType === "tgi"
+                      ? "--quantize awq --max-batch-prefill-tokens 4096"
+                      : "--n-gpu-layers 99"
+                }
                 value={form.args}
                 onChange={(e) => setForm({ ...form, args: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                Additional llama-server arguments (space-separated)
+                Additional {serverType === "vllm" ? "vLLM" : serverType === "tgi" ? "TGI" : "inference server"} arguments (space-separated)
               </p>
             </div>
             <div className="space-y-2">
@@ -471,9 +660,7 @@ export function ModelsPage() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={
-                !form.name || !form.url || createModel.isPending
-              }
+              disabled={!canDeploy || createModel.isPending}
             >
               {createModel.isPending ? "Deploying..." : "Deploy"}
             </Button>

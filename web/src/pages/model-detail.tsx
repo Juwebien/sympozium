@@ -144,15 +144,21 @@ export function ModelDetailPage() {
             <CardTitle className="text-sm">Source</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <Row
-              label="URL"
-              value={
-                <span className="truncate max-w-[300px] block text-right">
-                  {model.spec.source.url}
-                </span>
-              }
-            />
-            <Row label="Filename" value={model.spec.source.filename || "model.gguf"} />
+            {model.spec.source.modelID ? (
+              <Row label="Model ID" value={model.spec.source.modelID} />
+            ) : (
+              <>
+                <Row
+                  label="URL"
+                  value={
+                    <span className="truncate max-w-[300px] block text-right">
+                      {model.spec.source.url}
+                    </span>
+                  }
+                />
+                <Row label="Filename" value={model.spec.source.filename || "model.gguf"} />
+              </>
+            )}
             <Row label="Storage" value={model.spec.storage?.size || "10Gi"} />
           </CardContent>
         </Card>
@@ -175,12 +181,16 @@ export function ModelDetailPage() {
             <CardTitle className="text-sm">Inference Server</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
+            <Row label="Server Type" value={model.spec.inference?.serverType || "llama-cpp"} />
             <Row
               label="Image"
               value={model.spec.inference?.image || "ghcr.io/ggml-org/llama.cpp:server"}
             />
             <Row label="Port" value={model.spec.inference?.port || 8080} />
             <Row label="Context Size" value={model.spec.inference?.contextSize || 4096} />
+            {model.spec.inference?.huggingFaceTokenSecret && (
+              <Row label="HF Token Secret" value={model.spec.inference.huggingFaceTokenSecret} />
+            )}
             {model.spec.inference?.args && model.spec.inference.args.length > 0 && (
               <Row label="Args" value={model.spec.inference.args.join(" ")} />
             )}

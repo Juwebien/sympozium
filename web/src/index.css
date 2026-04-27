@@ -196,3 +196,27 @@
     linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
   background-size: 60px 60px;
 }
+
+/* Dark-themed ReactFlow controls for topology canvas */
+.topology-canvas .react-flow__controls {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.topology-canvas .react-flow__controls-button {
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  fill: hsl(var(--foreground));
+}
+.topology-canvas .react-flow__controls-button:hover {
+  background: hsl(var(--muted));
+}
+.topology-canvas .react-flow__controls-button svg {
+  fill: hsl(var(--foreground));
+}
+.topology-canvas .react-flow__minimap {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+}

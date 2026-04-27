@@ -5,9 +5,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// InferenceServerType selects the inference server backend.
+type InferenceServerType string
+
+const (
+	InferenceServerLlamaCpp InferenceServerType = "llama-cpp"
+	InferenceServerVLLM     InferenceServerType = "vllm"
+	InferenceServerTGI      InferenceServerType = "tgi"
+	InferenceServerCustom   InferenceServerType = "custom"
+)
+
 // ModelCRDSpec defines the desired state of a Model.
-// A Model declares a GGUF model to be downloaded, served via llama-server,
-// and exposed as an OpenAI-compatible endpoint within the cluster.
+// A Model declares a model to be served via an inference server (llama-server,
+// vLLM, TGI, or custom) and exposed as an OpenAI-compatible endpoint.
 type ModelCRDSpec struct {
 	// Source defines where to obtain the model weights.
 	Source ModelSource `json:"source"`
@@ -16,7 +26,7 @@ type ModelCRDSpec struct {
 	// +optional
 	Storage ModelStorage `json:"storage,omitempty"`
 
-	// Inference configures the inference server (llama-server).
+	// Inference configures the inference server.
 	// +optional
 	Inference InferenceSpec `json:"inference,omitempty"`
 
@@ -39,14 +49,22 @@ type ModelCRDSpec struct {
 
 // ModelSource defines where to obtain the model weights.
 type ModelSource struct {
-	// URL is the download URL for the GGUF model file.
-	// +kubebuilder:validation:MinLength=1
-	URL string `json:"url"`
+	// URL is the download URL for a model file (e.g. GGUF).
+	// Required when serverType is "llama-cpp" or unset.
+	// +optional
+	URL string `json:"url,omitempty"`
 
 	// Filename is the target filename on the PVC.
 	// +kubebuilder:default="model.gguf"
 	// +optional
 	Filename string `json:"filename,omitempty"`
+
+	// ModelID is a HuggingFace model identifier
+	// (e.g. "meta-llama/Llama-3.1-8B-Instruct").
+	// Required for vllm and tgi server types. These servers pull
+	// directly from HuggingFace at container startup.
+	// +optional
+	ModelID string `json:"modelID,omitempty"`
 }
 
 // ModelStorage configures the PersistentVolumeClaim for model weights.
@@ -63,17 +81,26 @@ type ModelStorage struct {
 
 // InferenceSpec configures the inference server.
 type InferenceSpec struct {
-	// Image is the llama-server container image.
-	// +kubebuilder:default="ghcr.io/ggml-org/llama.cpp:server"
+	// ServerType selects the inference server backend.
+	// Defaults to "llama-cpp" for backward compatibility.
+	// +kubebuilder:default="llama-cpp"
+	// +kubebuilder:validation:Enum=llama-cpp;vllm;tgi;custom
+	// +optional
+	ServerType InferenceServerType `json:"serverType,omitempty"`
+
+	// Image is the container image for the inference server.
+	// Defaults vary by serverType: llama-cpp uses ghcr.io/ggml-org/llama.cpp:server,
+	// vllm uses vllm/vllm-openai:latest, tgi uses ghcr.io/huggingface/text-generation-inference:latest.
 	// +optional
 	Image string `json:"image,omitempty"`
 
 	// Port is the inference server listen port.
-	// +kubebuilder:default=8080
+	// Defaults: llama-cpp=8080, vllm=8000, tgi=8080.
 	// +optional
 	Port int32 `json:"port,omitempty"`
 
 	// ContextSize is the maximum context window size in tokens.
+	// Maps to --ctx-size (llama-cpp), --max-model-len (vllm), or --max-input-length (tgi).
 	// +kubebuilder:default=4096
 	// +optional
 	ContextSize int `json:"contextSize,omitempty"`
@@ -81,6 +108,16 @@ type InferenceSpec struct {
 	// Args are additional command-line arguments for the inference server.
 	// +optional
 	Args []string `json:"args,omitempty"`
+
+	// Env are additional environment variables for the inference server container.
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// HuggingFaceTokenSecret references a Secret containing a HuggingFace API token.
+	// The controller mounts the "token" key as the HF_TOKEN environment variable,
+	// allowing vllm and tgi to access gated models (e.g. Llama, Mistral).
+	// +optional
+	HuggingFaceTokenSecret string `json:"huggingFaceTokenSecret,omitempty"`
 }
 
 // ModelResources defines compute requirements for the inference server.
@@ -167,14 +204,15 @@ type ModelStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Server",type="string",JSONPath=".spec.inference.serverType"
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".status.endpoint"
 // +kubebuilder:printcolumn:name="GPU",type="integer",JSONPath=".spec.resources.gpu"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Model is the Schema for the models API.
-// A Model declares a GGUF model to be downloaded, served via llama-server,
-// and exposed as an OpenAI-compatible inference endpoint within the cluster.
+// A Model declares a model to be served via an inference server (llama-server,
+// vLLM, TGI, or custom) and exposed as an OpenAI-compatible endpoint.
 type Model struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

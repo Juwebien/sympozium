@@ -156,7 +156,7 @@ func (r *ModelReconciler) reconcilePlacing(ctx context.Context, model *sympozium
 			return r.transitionToPending(ctx, model, log)
 		}
 
-		modelQuery := modelQueryFromURL(model.Spec.Source.URL)
+		modelQuery := r.backendFor(model).ModelQuery(model)
 		log.Info("Creating llmfit probe pods", "nodes", len(readyNodes), "modelQuery", modelQuery)
 
 		for _, node := range readyNodes {
@@ -413,24 +413,58 @@ func modelQueryFromURL(rawURL string) string {
 
 // reconcilePending creates the PVC and starts the download Job.
 func (r *ModelReconciler) reconcilePending(ctx context.Context, model *sympoziumv1alpha1.Model, log logr.Logger) (ctrl.Result, error) {
-	// Ensure PVC
+	backend := r.backendFor(model)
+
+	// Ensure PVC (all backends use a PVC — for model weights or HF cache).
 	if err := r.ensurePVC(ctx, model, log); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Create download Job
-	if err := r.ensureDownloadJob(ctx, model, log); err != nil {
+	if backend.NeedsDownload() {
+		// llama-cpp: download GGUF file, then transition to Downloading phase.
+		if err := r.ensureDownloadJob(ctx, model, log); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		model.Status.Phase = sympoziumv1alpha1.ModelPhaseDownloading
+		model.Status.Message = "Downloading model weights"
+		meta.SetStatusCondition(&model.Status.Conditions, metav1.Condition{
+			Type:               "Downloaded",
+			Status:             metav1.ConditionFalse,
+			Reason:             "Downloading",
+			Message:            "Model download in progress",
+			ObservedGeneration: model.Generation,
+		})
+		if err := r.Status().Update(ctx, model); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	// vLLM/TGI: no download needed — go straight to Loading.
+	// Mark download as N/A and start the inference server immediately.
+	meta.SetStatusCondition(&model.Status.Conditions, metav1.Condition{
+		Type:               "Downloaded",
+		Status:             metav1.ConditionTrue,
+		Reason:             "NotRequired",
+		Message:            "Server type pulls model at startup",
+		ObservedGeneration: model.Generation,
+	})
+
+	if err := r.ensureDeployment(ctx, model, log); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := r.ensureService(ctx, model, log); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Transition to Downloading
-	model.Status.Phase = sympoziumv1alpha1.ModelPhaseDownloading
-	model.Status.Message = "Downloading model weights"
+	model.Status.Phase = sympoziumv1alpha1.ModelPhaseLoading
+	model.Status.Message = "Starting inference server (model will be pulled from HuggingFace)"
 	meta.SetStatusCondition(&model.Status.Conditions, metav1.Condition{
-		Type:               "Downloaded",
+		Type:               "ServerReady",
 		Status:             metav1.ConditionFalse,
-		Reason:             "Downloading",
-		Message:            "Model download in progress",
+		Reason:             "Loading",
+		Message:            "Inference server starting",
 		ObservedGeneration: model.Generation,
 	})
 	if err := r.Status().Update(ctx, model); err != nil {
@@ -625,18 +659,22 @@ func (r *ModelReconciler) serviceName(model *sympoziumv1alpha1.Model) string {
 	return fmt.Sprintf("model-%s", model.Name)
 }
 
+func (r *ModelReconciler) backendFor(model *sympoziumv1alpha1.Model) inferenceBackend {
+	return newInferenceBackend(model.Spec.Inference.ServerType)
+}
+
 func (r *ModelReconciler) inferencePort(model *sympoziumv1alpha1.Model) int32 {
 	if model.Spec.Inference.Port > 0 {
 		return model.Spec.Inference.Port
 	}
-	return 8080
+	return r.backendFor(model).DefaultPort()
 }
 
 func (r *ModelReconciler) inferenceImage(model *sympoziumv1alpha1.Model) string {
 	if model.Spec.Inference.Image != "" {
 		return model.Spec.Inference.Image
 	}
-	return "ghcr.io/ggml-org/llama.cpp:server"
+	return r.backendFor(model).DefaultImage()
 }
 
 func (r *ModelReconciler) modelFilename(model *sympoziumv1alpha1.Model) string {
@@ -768,6 +806,8 @@ echo "Download complete"`,
 }
 
 func (r *ModelReconciler) ensureDeployment(ctx context.Context, model *sympoziumv1alpha1.Model, log logr.Logger) error {
+	backend := r.backendFor(model)
+
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.deploymentName(model),
@@ -776,7 +816,6 @@ func (r *ModelReconciler) ensureDeployment(ctx context.Context, model *sympozium
 	}
 
 	port := r.inferencePort(model)
-	filename := r.modelFilename(model)
 	image := r.inferenceImage(model)
 
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, deploy, func() error {
@@ -795,31 +834,12 @@ func (r *ModelReconciler) ensureDeployment(ctx context.Context, model *sympozium
 		deploy.Spec.Selector = &metav1.LabelSelector{MatchLabels: labels}
 		deploy.Spec.Template.ObjectMeta = metav1.ObjectMeta{Labels: labels}
 
-		// Build args: --model <path> --port <port> --host 0.0.0.0 --ctx-size <n> --threads <n> + user args
-		ctxSize := model.Spec.Inference.ContextSize
-		if ctxSize <= 0 {
-			ctxSize = 4096
-		}
-
-		// Set thread count from CPU request so llama.cpp uses all allocated cores.
-		cpuStr := model.Spec.Resources.CPU
-		if cpuStr == "" {
-			cpuStr = "4"
-		}
-		cpuQty := resource.MustParse(cpuStr)
-		threads := cpuQty.Value()
-		if threads < 1 {
-			threads = 1
-		}
-
-		args := []string{
-			"--model", filepath.Join(modelMountPath, filename),
-			"--port", fmt.Sprintf("%d", port),
-			"--host", "0.0.0.0",
-			"--ctx-size", fmt.Sprintf("%d", ctxSize),
-			"--threads", fmt.Sprintf("%d", threads),
-		}
-		args = append(args, model.Spec.Inference.Args...)
+		// Delegate args, env, volumes to the backend.
+		args := backend.BuildArgs(model, port)
+		env := backend.BuildEnv(model)
+		volumeMounts := backend.VolumeMounts(model)
+		volumes := backend.Volumes(model, r.pvcName(model))
+		healthPath := backend.HealthPath()
 
 		// Resource requirements
 		resources := corev1.ResourceRequirements{}
@@ -848,32 +868,31 @@ func (r *ModelReconciler) ensureDeployment(ctx context.Context, model *sympozium
 		}
 
 		container := corev1.Container{
-			Name:      "llama-server",
-			Image:     image,
-			Args:      args,
-			Resources: resources,
+			Name:         backend.ContainerName(),
+			Image:        image,
+			Args:         args,
+			Env:          env,
+			Resources:    resources,
 			Ports: []corev1.ContainerPort{
 				{ContainerPort: port, Protocol: corev1.ProtocolTCP},
 			},
-			VolumeMounts: []corev1.VolumeMount{
-				{Name: "model-storage", MountPath: modelMountPath, ReadOnly: true},
-			},
+			VolumeMounts: volumeMounts,
 			ReadinessProbe: &corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{
 					HTTPGet: &corev1.HTTPGetAction{
-						Path: "/health",
+						Path: healthPath,
 						Port: intstr.FromInt32(port),
 					},
 				},
 				InitialDelaySeconds: 10,
 				PeriodSeconds:       5,
 				TimeoutSeconds:      3,
-				FailureThreshold:    60, // Allow up to 5 minutes for large model loading
+				FailureThreshold:    backend.ReadinessFailureThreshold(),
 			},
 			LivenessProbe: &corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{
 					HTTPGet: &corev1.HTTPGetAction{
-						Path: "/health",
+						Path: healthPath,
 						Port: intstr.FromInt32(port),
 					},
 				},
@@ -885,18 +904,8 @@ func (r *ModelReconciler) ensureDeployment(ctx context.Context, model *sympozium
 		}
 
 		deploy.Spec.Template.Spec = corev1.PodSpec{
-			Containers: []corev1.Container{container},
-			Volumes: []corev1.Volume{
-				{
-					Name: "model-storage",
-					VolumeSource: corev1.VolumeSource{
-						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: r.pvcName(model),
-							ReadOnly:  true,
-						},
-					},
-				},
-			},
+			Containers:   []corev1.Container{container},
+			Volumes:      volumes,
 			NodeSelector: model.Spec.NodeSelector,
 			Tolerations:  model.Spec.Tolerations,
 		}

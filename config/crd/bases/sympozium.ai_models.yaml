@@ -15,6 +15,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .spec.inference.serverType
+      name: Server
+      type: string
     - jsonPath: .status.phase
       name: Phase
       type: string
@@ -32,8 +35,8 @@ spec:
       openAPIV3Schema:
         description: |-
           Model is the Schema for the models API.
-          A Model declares a GGUF model to be downloaded, served via llama-server,
-          and exposed as an OpenAI-compatible inference endpoint within the cluster.
+          A Model declares a model to be served via an inference server (llama-server,
+          vLLM, TGI, or custom) and exposed as an OpenAI-compatible endpoint.
         properties:
           apiVersion:
             description: |-
@@ -55,11 +58,11 @@ spec:
           spec:
             description: |-
               ModelCRDSpec defines the desired state of a Model.
-              A Model declares a GGUF model to be downloaded, served via llama-server,
-              and exposed as an OpenAI-compatible endpoint within the cluster.
+              A Model declares a model to be served via an inference server (llama-server,
+              vLLM, TGI, or custom) and exposed as an OpenAI-compatible endpoint.
             properties:
               inference:
-                description: Inference configures the inference server (llama-server).
+                description: Inference configures the inference server.
                 properties:
                   args:
                     description: Args are additional command-line arguments for the
@@ -69,18 +72,198 @@ spec:
                     type: array
                   contextSize:
                     default: 4096
-                    description: ContextSize is the maximum context window size in
-                      tokens.
+                    description: |-
+                      ContextSize is the maximum context window size in tokens.
+                      Maps to --ctx-size (llama-cpp), --max-model-len (vllm), or --max-input-length (tgi).
                     type: integer
+                  env:
+                    description: Env are additional environment variables for the
+                      inference server container.
+                    items:
+                      description: EnvVar represents an environment variable present
+                        in a Container.
+                      properties:
+                        name:
+                          description: |-
+                            Name of the environment variable.
+                            May consist of any printable ASCII characters except '='.
+                          type: string
+                        value:
+                          description: |-
+                            Variable references $(VAR_NAME) are expanded
+                            using the previously defined environment variables in the container and
+                            any service environment variables. If a variable cannot be resolved,
+                            the reference in the input string will be unchanged. Double $$ are reduced
+                            to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                            "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                            Escaped references will never be expanded, regardless of whether the variable
+                            exists or not.
+                            Defaults to "".
+                          type: string
+                        valueFrom:
+                          description: Source for the environment variable's value.
+                            Cannot be used if value is not empty.
+                          properties:
+                            configMapKeyRef:
+                              description: Selects a key of a ConfigMap.
+                              properties:
+                                key:
+                                  description: The key to select.
+                                  type: string
+                                name:
+                                  default: ""
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                  type: string
+                                optional:
+                                  description: Specify whether the ConfigMap or its
+                                    key must be defined
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            fieldRef:
+                              description: |-
+                                Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                                spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+                              properties:
+                                apiVersion:
+                                  description: Version of the schema the FieldPath
+                                    is written in terms of, defaults to "v1".
+                                  type: string
+                                fieldPath:
+                                  description: Path of the field to select in the
+                                    specified API version.
+                                  type: string
+                              required:
+                              - fieldPath
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            fileKeyRef:
+                              description: |-
+                                FileKeyRef selects a key of the env file.
+                                Requires the EnvFiles feature gate to be enabled.
+                              properties:
+                                key:
+                                  description: |-
+                                    The key within the env file. An invalid key will prevent the pod from starting.
+                                    The keys defined within a source may consist of any printable ASCII characters except '='.
+                                    During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.
+                                  type: string
+                                optional:
+                                  default: false
+                                  description: |-
+                                    Specify whether the file or its key must be defined. If the file or key
+                                    does not exist, then the env var is not published.
+                                    If optional is set to true and the specified key does not exist,
+                                    the environment variable will not be set in the Pod's containers.
+
+                                    If optional is set to false and the specified key does not exist,
+                                    an error will be returned during Pod creation.
+                                  type: boolean
+                                path:
+                                  description: |-
+                                    The path within the volume from which to select the file.
+                                    Must be relative and may not contain the '..' path or start with '..'.
+                                  type: string
+                                volumeName:
+                                  description: The name of the volume mount containing
+                                    the env file.
+                                  type: string
+                              required:
+                              - key
+                              - path
+                              - volumeName
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            resourceFieldRef:
+                              description: |-
+                                Selects a resource of the container: only resources limits and requests
+                                (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+                              properties:
+                                containerName:
+                                  description: 'Container name: required for volumes,
+                                    optional for env vars'
+                                  type: string
+                                divisor:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: Specifies the output format of the
+                                    exposed resources, defaults to "1"
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                resource:
+                                  description: 'Required: resource to select'
+                                  type: string
+                              required:
+                              - resource
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            secretKeyRef:
+                              description: Selects a key of a secret in the pod's
+                                namespace
+                              properties:
+                                key:
+                                  description: The key of the secret to select from.  Must
+                                    be a valid secret key.
+                                  type: string
+                                name:
+                                  default: ""
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                  type: string
+                                optional:
+                                  description: Specify whether the Secret or its key
+                                    must be defined
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                              x-kubernetes-map-type: atomic
+                          type: object
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  huggingFaceTokenSecret:
+                    description: |-
+                      HuggingFaceTokenSecret references a Secret containing a HuggingFace API token.
+                      The controller mounts the "token" key as the HF_TOKEN environment variable,
+                      allowing vllm and tgi to access gated models (e.g. Llama, Mistral).
+                    type: string
                   image:
-                    default: ghcr.io/ggml-org/llama.cpp:server
-                    description: Image is the llama-server container image.
+                    description: |-
+                      Image is the container image for the inference server.
+                      Defaults vary by serverType: llama-cpp uses ghcr.io/ggml-org/llama.cpp:server,
+                      vllm uses vllm/vllm-openai:latest, tgi uses ghcr.io/huggingface/text-generation-inference:latest.
                     type: string
                   port:
-                    default: 8080
-                    description: Port is the inference server listen port.
+                    description: |-
+                      Port is the inference server listen port.
+                      Defaults: llama-cpp=8080, vllm=8000, tgi=8080.
                     format: int32
                     type: integer
+                  serverType:
+                    default: llama-cpp
+                    description: |-
+                      ServerType selects the inference server backend.
+                      Defaults to "llama-cpp" for backward compatibility.
+                    enum:
+                    - llama-cpp
+                    - vllm
+                    - tgi
+                    - custom
+                    type: string
                 type: object
               nodeSelector:
                 additionalProperties:
@@ -130,12 +313,18 @@ spec:
                     default: model.gguf
                     description: Filename is the target filename on the PVC.
                     type: string
-                  url:
-                    description: URL is the download URL for the GGUF model file.
-                    minLength: 1
+                  modelID:
+                    description: |-
+                      ModelID is a HuggingFace model identifier
+                      (e.g. "meta-llama/Llama-3.1-8B-Instruct").
+                      Required for vllm and tgi server types. These servers pull
+                      directly from HuggingFace at container startup.
                     type: string
-                required:
-                - url
+                  url:
+                    description: |-
+                      URL is the download URL for a model file (e.g. GGUF).
+                      Required when serverType is "llama-cpp" or unset.
+                    type: string
                 type: object
               storage:
                 description: Storage configures the PersistentVolumeClaim for model

@@ -572,8 +572,9 @@ export interface MCPServerAuthStatusResponse {
 // ── Model (cluster-local inference) ──────────────────────────────────────────
 
 export interface ModelSource {
-  url: string;
+  url?: string;
   filename?: string;
+  modelID?: string;
 }
 
 export interface ModelStorage {
@@ -582,10 +583,12 @@ export interface ModelStorage {
 }
 
 export interface InferenceSpec {
+  serverType?: "llama-cpp" | "vllm" | "tgi" | "custom";
   image?: string;
   port?: number;
   contextSize?: number;
   args?: string[];
+  huggingFaceTokenSecret?: string;
 }
 
 export interface ModelResources {
@@ -1061,7 +1064,9 @@ export const api = {
       ),
     create: (data: {
       name: string;
-      url: string;
+      serverType?: string;
+      url?: string;
+      modelID?: string;
       filename?: string;
       storageSize?: string;
       storageClass?: string;
@@ -1075,6 +1080,7 @@ export const api = {
       nodeSelector?: Record<string, string>;
       placement?: string;
       namespace?: string;
+      huggingFaceTokenSecret?: string;
     }) =>
       apiFetch<Model>("/api/v1/models", {
         method: "POST",
