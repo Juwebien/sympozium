@@ -214,6 +214,16 @@ func (r *EnsembleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		modelEndpoint = model.Status.Endpoint
 	}
 
+	// Validate the relationship graph for cycles before proceeding.
+	if err := validateRelationshipGraph(pack.Spec.AgentConfigs, pack.Spec.Relationships); err != nil {
+		log.Error(err, "Invalid relationship graph")
+		pack.Status.Phase = "Error"
+		if statusErr := r.Status().Update(ctx, pack); statusErr != nil {
+			return ctrl.Result{}, statusErr
+		}
+		return ctrl.Result{}, nil
+	}
+
 	// Reconcile each persona → instance + schedule + memory
 	var installed []sympoziumv1alpha1.InstalledAgentConfig
 	var installErr error
@@ -1077,6 +1087,77 @@ func (r *EnsembleReconciler) cleanupSharedMemory(ctx context.Context, log logr.L
 
 	log.Info("Cleaned up shared memory resources", "pack", ensembleName)
 	pack.Status.SharedMemoryReady = false
+	return nil
+}
+
+// validateRelationshipGraph checks that all relationship source/target names
+// reference existing personas and that the sequential edges form a DAG (no
+// cycles). Delegation and supervision edges are not checked for cycles because
+// delegation is on-demand and supervision has no runtime effect.
+func validateRelationshipGraph(personas []sympoziumv1alpha1.AgentConfigSpec, relationships []sympoziumv1alpha1.AgentConfigRelationship) error {
+	if len(relationships) == 0 {
+		return nil
+	}
+
+	// Build the set of valid persona names.
+	names := make(map[string]bool, len(personas))
+	for _, p := range personas {
+		names[p.Name] = true
+	}
+
+	// Validate references and build the adjacency list for sequential edges.
+	adj := make(map[string][]string)
+	for _, rel := range relationships {
+		if !names[rel.Source] {
+			return fmt.Errorf("relationship references unknown persona %q (source)", rel.Source)
+		}
+		if !names[rel.Target] {
+			return fmt.Errorf("relationship references unknown persona %q (target)", rel.Target)
+		}
+		if rel.Type == "sequential" {
+			adj[rel.Source] = append(adj[rel.Source], rel.Target)
+		}
+	}
+
+	// DFS cycle detection using coloring: 0=white, 1=gray, 2=black.
+	color := make(map[string]int, len(names))
+	var path []string
+
+	var dfs func(node string) error
+	dfs = func(node string) error {
+		color[node] = 1 // gray — currently visiting
+		path = append(path, node)
+		for _, next := range adj[node] {
+			if color[next] == 1 {
+				// Found a cycle — build the cycle path for the error message.
+				cycleStart := 0
+				for i, n := range path {
+					if n == next {
+						cycleStart = i
+						break
+					}
+				}
+				cycle := append(path[cycleStart:], next)
+				return fmt.Errorf("cycle detected in sequential pipeline: %s", strings.Join(cycle, " -> "))
+			}
+			if color[next] == 0 {
+				if err := dfs(next); err != nil {
+					return err
+				}
+			}
+		}
+		path = path[:len(path)-1]
+		color[node] = 2 // black — done
+		return nil
+	}
+
+	for name := range names {
+		if color[name] == 0 {
+			if err := dfs(name); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"strings"
 	"testing"
 
 	sympoziumv1alpha1 "github.com/sympozium-ai/sympozium/api/v1alpha1"
@@ -89,5 +90,85 @@ func TestBuildInstance_ChannelAccessControlPrecedence(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// ── Relationship graph validation tests ────────────────────────────────────
+
+func testPersonas(names ...string) []sympoziumv1alpha1.AgentConfigSpec {
+	out := make([]sympoziumv1alpha1.AgentConfigSpec, len(names))
+	for i, n := range names {
+		out[i] = sympoziumv1alpha1.AgentConfigSpec{Name: n}
+	}
+	return out
+}
+
+func TestValidateRelationshipGraph_NoCycle(t *testing.T) {
+	personas := testPersonas("a", "b", "c")
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "a", Target: "b", Type: "sequential"},
+		{Source: "b", Target: "c", Type: "sequential"},
+	}
+	if err := validateRelationshipGraph(personas, rels); err != nil {
+		t.Errorf("expected no error for linear pipeline, got: %v", err)
+	}
+}
+
+func TestValidateRelationshipGraph_Cycle(t *testing.T) {
+	personas := testPersonas("a", "b", "c")
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "a", Target: "b", Type: "sequential"},
+		{Source: "b", Target: "c", Type: "sequential"},
+		{Source: "c", Target: "a", Type: "sequential"},
+	}
+	err := validateRelationshipGraph(personas, rels)
+	if err == nil {
+		t.Fatal("expected cycle error")
+	}
+	if !strings.Contains(err.Error(), "cycle detected") {
+		t.Errorf("error should mention cycle, got: %v", err)
+	}
+}
+
+func TestValidateRelationshipGraph_SelfLoop(t *testing.T) {
+	personas := testPersonas("a")
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "a", Target: "a", Type: "sequential"},
+	}
+	err := validateRelationshipGraph(personas, rels)
+	if err == nil {
+		t.Fatal("expected cycle error for self-loop")
+	}
+}
+
+func TestValidateRelationshipGraph_DanglingRef(t *testing.T) {
+	personas := testPersonas("a", "b")
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "a", Target: "nonexistent", Type: "sequential"},
+	}
+	err := validateRelationshipGraph(personas, rels)
+	if err == nil {
+		t.Fatal("expected error for dangling reference")
+	}
+	if !strings.Contains(err.Error(), "nonexistent") {
+		t.Errorf("error should mention missing persona, got: %v", err)
+	}
+}
+
+func TestValidateRelationshipGraph_IgnoresNonSequential(t *testing.T) {
+	personas := testPersonas("a", "b")
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "a", Target: "b", Type: "delegation"},
+		{Source: "b", Target: "a", Type: "supervision"},
+	}
+	if err := validateRelationshipGraph(personas, rels); err != nil {
+		t.Errorf("non-sequential edges should not trigger cycle detection, got: %v", err)
+	}
+}
+
+func TestValidateRelationshipGraph_EmptyRelationships(t *testing.T) {
+	personas := testPersonas("a", "b")
+	if err := validateRelationshipGraph(personas, nil); err != nil {
+		t.Errorf("empty relationships should pass, got: %v", err)
 	}
 }

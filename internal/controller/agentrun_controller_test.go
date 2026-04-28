@@ -1514,6 +1514,126 @@ func TestLifecycleRBACRules_ConfigMapAccess(t *testing.T) {
 
 // ── Sandbox + lifecycle integration ─────────────────────────────────────────
 
+// ── Structured handoff card tests ───────────────────────────────────────────
+
+func TestBuildHandoffTask_Basic(t *testing.T) {
+	got := buildHandoffTask("researcher", "Find population data", "Paris has 2.1M people", "Write an article about Paris")
+
+	for _, want := range []string{
+		"## Handoff from researcher",
+		"### Previous Task\nFind population data",
+		"### Result\nParis has 2.1M people",
+		"### Your Task\nWrite an article about Paris",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("handoff card missing %q\ngot:\n%s", want, got)
+		}
+	}
+}
+
+func TestBuildHandoffTask_NoTargetTask(t *testing.T) {
+	got := buildHandoffTask("researcher", "Find data", "result here", "")
+	if !strings.Contains(got, "Continue the workflow as your role requires.") {
+		t.Errorf("expected default target task, got:\n%s", got)
+	}
+}
+
+func TestBuildHandoffTask_TruncatesResult(t *testing.T) {
+	longResult := strings.Repeat("x", 1000)
+	got := buildHandoffTask("researcher", "task", longResult, "next")
+	if !strings.Contains(got, "...") {
+		t.Error("expected truncation marker in result")
+	}
+	// Result section should be at most 803 chars (800 + "...")
+	idx := strings.Index(got, "### Result\n")
+	if idx < 0 {
+		t.Fatal("missing Result section")
+	}
+	resultSection := got[idx+len("### Result\n"):]
+	endIdx := strings.Index(resultSection, "\n\n### ")
+	if endIdx >= 0 {
+		resultSection = resultSection[:endIdx]
+	}
+	if len(resultSection) > 803 {
+		t.Errorf("result section too long: %d chars", len(resultSection))
+	}
+}
+
+func TestBuildHandoffTask_TruncatesPreviousTask(t *testing.T) {
+	longTask := strings.Repeat("y", 300)
+	got := buildHandoffTask("src", longTask, "result", "next")
+	idx := strings.Index(got, "### Previous Task\n")
+	if idx < 0 {
+		t.Fatal("missing Previous Task section")
+	}
+	taskSection := got[idx+len("### Previous Task\n"):]
+	endIdx := strings.Index(taskSection, "\n\n### ")
+	if endIdx >= 0 {
+		taskSection = taskSection[:endIdx]
+	}
+	if len(taskSection) > 203 {
+		t.Errorf("previous task section too long: %d chars", len(taskSection))
+	}
+}
+
+func TestExtractOriginalTask_PlainTask(t *testing.T) {
+	got := extractOriginalTask("Do some research")
+	if got != "Do some research" {
+		t.Errorf("got %q, want plain task returned as-is", got)
+	}
+}
+
+func TestExtractOriginalTask_NestedHandoff(t *testing.T) {
+	handoff := "## Handoff from researcher\n\n### Previous Task\nFind population data\n\n### Result\nParis: 2.1M\n\n### Your Task\nWrite article"
+	got := extractOriginalTask(handoff)
+	if got != "Find population data" {
+		t.Errorf("got %q, want %q", got, "Find population data")
+	}
+}
+
+func TestExtractOriginalTask_DoubleNested(t *testing.T) {
+	// Simulate A→B→C where C receives B's handoff which itself was a handoff from A
+	inner := "## Handoff from agent-a\n\n### Previous Task\nOriginal task from user\n\n### Result\nA's result\n\n### Your Task\nB's job"
+	outer := buildHandoffTask("agent-b", inner, "B's result", "C's job")
+	got := extractOriginalTask(outer)
+	if got != "Original task from user" {
+		t.Errorf("double-nested extraction got %q, want %q", got, "Original task from user")
+	}
+}
+
+// ── Dry run tests ──────────────────────────────────────────────────────────
+
+func TestBuildContainers_DryRunEnvVar(t *testing.T) {
+	r := &AgentRunReconciler{}
+	run := newTestRun()
+	run.Spec.DryRun = true
+	cs, _ := r.buildContainers(run, false, nil, nil, nil)
+
+	var found bool
+	for _, e := range cs[0].Env {
+		if e.Name == "DRY_RUN" && e.Value == "true" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("agent container missing DRY_RUN=true env var")
+	}
+}
+
+func TestBuildContainers_NoDryRunEnvByDefault(t *testing.T) {
+	r := &AgentRunReconciler{}
+	cs, _ := r.buildContainers(newTestRun(), false, nil, nil, nil)
+
+	for _, e := range cs[0].Env {
+		if e.Name == "DRY_RUN" {
+			t.Errorf("DRY_RUN env var should not be present by default, got value=%q", e.Value)
+		}
+	}
+}
+
+// ── Sandbox + lifecycle integration ─────────────────────────────────────────
+
 func TestBuildVolumes_WorkspacePVCWithSandboxEnabled(t *testing.T) {
 	r := &AgentRunReconciler{}
 	run := newTestRunWithLifecycle(

@@ -70,6 +70,12 @@ type AgentRunSpec struct {
 	// +optional
 	Mode string `json:"mode,omitempty"`
 
+	// DryRun skips the LLM call and produces a synthetic result, allowing
+	// pipeline execution paths to be traced without burning tokens.
+	// The flag is automatically propagated to sequential successors.
+	// +optional
+	DryRun bool `json:"dryRun,omitempty"`
+
 	// ImagePullSecrets are secrets to use when pulling container images.
 	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`

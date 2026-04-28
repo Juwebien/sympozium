@@ -140,6 +140,29 @@ func main() {
 		fatal("TASK env var is empty and no /ipc/input/task.json found")
 	}
 
+	// Dry run mode: produce a synthetic result without calling the LLM.
+	// Used to trace sequential pipeline execution paths.
+	if getEnv("DRY_RUN", "") == "true" {
+		log.Println("DRY RUN mode — skipping LLM call")
+		// Brief pause to let the ipc-bridge sidecar set up its fsnotify
+		// watches on /ipc/output/ — the agent normally takes seconds to
+		// minutes before writing results, but dry run exits in microseconds.
+		time.Sleep(3 * time.Second)
+		persona := getEnv("INSTANCE_NAME", "unknown")
+		res := agentResult{
+			Status:   "success",
+			Response: fmt.Sprintf("DRY RUN: [%s] would execute task: %s", persona, truncate(task, 300)),
+		}
+		_ = os.MkdirAll("/ipc/output", 0o755)
+		writeJSON("/ipc/output/result.json", res)
+		_ = os.WriteFile("/ipc/done", []byte("done"), 0o644)
+		if markerBytes, err := json.Marshal(res); err == nil {
+			fmt.Fprintf(os.Stdout, "\n__SYMPOZIUM_RESULT__%s__SYMPOZIUM_END__\n", string(markerBytes))
+		}
+		log.Println("agent-runner dry run finished")
+		os.Exit(0)
+	}
+
 	systemPrompt := getEnv("SYSTEM_PROMPT", "You are a helpful AI assistant.")
 	provider := strings.ToLower(getEnv("MODEL_PROVIDER", "openai"))
 	modelName := getEnv("MODEL_NAME", "gpt-4o-mini")

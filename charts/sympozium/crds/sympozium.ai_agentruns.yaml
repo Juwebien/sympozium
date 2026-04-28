@@ -106,6 +106,12 @@ spec:
                 - delete
                 - keep
                 type: string
+              dryRun:
+                description: |-
+                  DryRun skips the LLM call and produces a synthetic result, allowing
+                  pipeline execution paths to be traced without burning tokens.
+                  The flag is automatically propagated to sequential successors.
+                type: boolean
               env:
                 additionalProperties:
                   type: string
