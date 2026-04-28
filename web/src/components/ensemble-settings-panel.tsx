@@ -15,7 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X } from "lucide-react";
-import type { SharedMemorySpec } from "@/lib/api";
+import type {
+  SharedMemorySpec,
+  AgentConfigRelationship,
+  PermeabilityRule,
+} from "@/lib/api";
 
 export interface EnsembleSettings {
   name: string;
@@ -25,16 +29,53 @@ export interface EnsembleSettings {
   sharedMemory: SharedMemorySpec | null;
 }
 
+/**
+ * Auto-derive permeability rules from relationships:
+ * - Delegation sources → trusted (produce findings for peers)
+ * - Supervision targets → public (supervisors need full visibility)
+ * - Terminal nodes (only targets) → private
+ * - Everyone else → ensemble default
+ */
+function derivePermeability(
+  personaNames: string[],
+  relationships: AgentConfigRelationship[],
+  defaultVis: "public" | "trusted" | "private" = "public",
+): PermeabilityRule[] {
+  const delegationSources = new Set<string>();
+  const supervisionTargets = new Set<string>();
+  const sources = new Set<string>();
+
+  for (const rel of relationships) {
+    sources.add(rel.source);
+    if (rel.type === "delegation") delegationSources.add(rel.source);
+    if (rel.type === "supervision") supervisionTargets.add(rel.target);
+  }
+
+  return personaNames.map((name) => {
+    let vis = defaultVis;
+    if (delegationSources.has(name)) vis = "trusted";
+    else if (supervisionTargets.has(name)) vis = "public";
+    else if (!sources.has(name) && relationships.length > 0) vis = "private";
+    return { agentConfig: name, defaultVisibility: vis };
+  });
+}
+
 interface EnsembleSettingsPanelProps {
   settings: EnsembleSettings;
   onChange: (settings: EnsembleSettings) => void;
   onClose: () => void;
+  /** Names of personas in the ensemble (for auto-deriving permeability). */
+  personaNames?: string[];
+  /** Relationships between personas (for auto-deriving permeability). */
+  relationships?: AgentConfigRelationship[];
 }
 
 export function EnsembleSettingsPanel({
   settings,
   onChange,
   onClose,
+  personaNames = [],
+  relationships = [],
 }: EnsembleSettingsPanelProps) {
   function update(partial: Partial<EnsembleSettings>) {
     onChange({ ...settings, ...partial });
@@ -179,16 +220,31 @@ export function EnsembleSettingsPanel({
                     type="checkbox"
                     id="membrane-enable"
                     checked={!!settings.sharedMemory.membrane}
-                    onChange={(e) =>
-                      update({
-                        sharedMemory: {
-                          ...settings.sharedMemory!,
-                          membrane: e.target.checked
-                            ? { defaultVisibility: "public" }
-                            : undefined,
-                        },
-                      })
-                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const defaultVis = "public" as const;
+                        const derived =
+                          personaNames.length > 0 && relationships.length > 0
+                            ? derivePermeability(personaNames, relationships, defaultVis)
+                            : undefined;
+                        update({
+                          sharedMemory: {
+                            ...settings.sharedMemory!,
+                            membrane: {
+                              defaultVisibility: defaultVis,
+                              permeability: derived,
+                            },
+                          },
+                        });
+                      } else {
+                        update({
+                          sharedMemory: {
+                            ...settings.sharedMemory!,
+                            membrane: undefined,
+                          },
+                        });
+                      }
+                    }}
                     className="rounded"
                   />
                   <Label htmlFor="membrane-enable" className="text-xs cursor-pointer">

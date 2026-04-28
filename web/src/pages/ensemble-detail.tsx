@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
-import { useEnsemble, useActivateEnsemble, useSkills } from "@/hooks/use-api";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import {
+  useEnsemble,
+  useActivateEnsemble,
+  useDeleteEnsemble,
+  useSkills,
+} from "@/hooks/use-api";
 import {
   YamlButton,
   ensembleYamlFromResource,
@@ -31,6 +36,7 @@ import {
   Workflow,
   Database,
   Settings,
+  Trash2,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { formatAge } from "@/lib/utils";
@@ -47,9 +53,11 @@ interface PersonaEditState {
 
 export function EnsembleDetailPage() {
   const { name } = useParams<{ name: string }>();
+  const navigate = useNavigate();
   const { data: pack, isLoading } = useEnsemble(name || "");
   const { data: skillPacks } = useSkills();
   const patchMutation = useActivateEnsemble();
+  const deleteMutation = useDeleteEnsemble();
 
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -196,6 +204,27 @@ export function EnsembleDetailPage() {
             yaml={ensembleYamlFromResource(pack)}
             title={`Ensemble — ${pack.metadata.name}`}
           />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs text-destructive hover:text-destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Delete ensemble "${pack.metadata.name}"? This will remove all associated agents, schedules, and shared memory.`,
+                )
+              ) {
+                deleteMutation.mutate(pack.metadata.name, {
+                  onSuccess: () => navigate("/ensembles"),
+                });
+              }
+            }}
+            title="Delete ensemble"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </Button>
           {pack.spec.category && (
             <Badge variant="outline" className="capitalize">
               {pack.spec.category}

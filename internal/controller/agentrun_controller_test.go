@@ -1939,3 +1939,76 @@ func TestUpdateTokenBudget(t *testing.T) {
 		t.Errorf("tokenBudgetUsed = %d, want 1500", updated.Status.TokenBudgetUsed)
 	}
 }
+
+// ── Auto-derive permeability tests ──────────────────────────────────────────
+
+func TestDerivePermeability_DelegationWorkflow(t *testing.T) {
+	configs := []sympoziumv1alpha1.AgentConfigSpec{
+		{Name: "researcher"},
+		{Name: "writer"},
+		{Name: "reviewer"},
+	}
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "researcher", Target: "writer", Type: "delegation"},
+		{Source: "writer", Target: "reviewer", Type: "sequential"},
+	}
+
+	rules := derivePermeability(configs, rels, "public")
+	ruleMap := map[string]string{}
+	for _, r := range rules {
+		ruleMap[r.AgentConfig] = r.DefaultVisibility
+	}
+
+	// researcher is delegation source → trusted
+	if ruleMap["researcher"] != "trusted" {
+		t.Errorf("researcher = %q, want trusted", ruleMap["researcher"])
+	}
+	// writer is source of sequential → public (default, since sequential doesn't set trusted)
+	// but writer is also a source (of the sequential edge), so not terminal
+	if ruleMap["writer"] != "public" {
+		t.Errorf("writer = %q, want public", ruleMap["writer"])
+	}
+	// reviewer is terminal (only target, never source) → private
+	if ruleMap["reviewer"] != "private" {
+		t.Errorf("reviewer = %q, want private", ruleMap["reviewer"])
+	}
+}
+
+func TestDerivePermeability_SupervisionMakesPublic(t *testing.T) {
+	configs := []sympoziumv1alpha1.AgentConfigSpec{
+		{Name: "lead"},
+		{Name: "worker"},
+	}
+	rels := []sympoziumv1alpha1.AgentConfigRelationship{
+		{Source: "lead", Target: "worker", Type: "supervision"},
+	}
+
+	rules := derivePermeability(configs, rels, "trusted")
+	ruleMap := map[string]string{}
+	for _, r := range rules {
+		ruleMap[r.AgentConfig] = r.DefaultVisibility
+	}
+
+	// worker is supervision target → public
+	if ruleMap["worker"] != "public" {
+		t.Errorf("worker = %q, want public (supervision target)", ruleMap["worker"])
+	}
+	// lead is source only → default (trusted) since it's not a delegation source
+	if ruleMap["lead"] != "trusted" {
+		t.Errorf("lead = %q, want trusted (default)", ruleMap["lead"])
+	}
+}
+
+func TestDerivePermeability_NoRelationships(t *testing.T) {
+	configs := []sympoziumv1alpha1.AgentConfigSpec{
+		{Name: "solo"},
+	}
+
+	rules := derivePermeability(configs, nil, "public")
+	if len(rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(rules))
+	}
+	if rules[0].DefaultVisibility != "public" {
+		t.Errorf("solo = %q, want public (default)", rules[0].DefaultVisibility)
+	}
+}

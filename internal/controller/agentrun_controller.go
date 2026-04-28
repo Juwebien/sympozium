@@ -2328,7 +2328,15 @@ func (r *AgentRunReconciler) injectSharedMemory(ctx context.Context, agentRun *s
 					personaName = inst.Labels["sympozium.ai/agent-config"]
 				}
 			}
-			membraneEnvs := resolveMembraneEnvVars(personaName, pack.Spec.SharedMemory.Membrane, pack.Spec.Relationships)
+
+			// Auto-derive permeability from relationships if not explicitly set.
+			membrane := pack.Spec.SharedMemory.Membrane
+			if len(membrane.Permeability) == 0 && len(pack.Spec.Relationships) > 0 {
+				membrane = membrane.DeepCopy()
+				membrane.Permeability = derivePermeability(pack.Spec.AgentConfigs, pack.Spec.Relationships, membrane.DefaultVisibility)
+			}
+
+			membraneEnvs := resolveMembraneEnvVars(personaName, membrane, pack.Spec.Relationships)
 			podSpec.Containers[0].Env = append(podSpec.Containers[0].Env, membraneEnvs...)
 		}
 	}
@@ -2361,6 +2369,53 @@ func (r *AgentRunReconciler) injectSharedMemory(ctx context.Context, agentRun *s
 			},
 		},
 	})
+}
+
+// derivePermeability auto-generates permeability rules from the ensemble's
+// relationship graph when the membrane is enabled but no explicit permeability
+// rules are configured. This gives users sensible defaults without manual config.
+//
+// Heuristics:
+//   - Delegation sources → "trusted" (they produce findings for trusted peers)
+//   - Supervision targets → "public" (supervisors need full visibility)
+//   - Terminal sequential targets (not source of any edge) → "private"
+//   - Everyone else → ensemble default visibility
+func derivePermeability(agentConfigs []sympoziumv1alpha1.AgentConfigSpec, relationships []sympoziumv1alpha1.AgentConfigRelationship, defaultVis string) []sympoziumv1alpha1.PermeabilityRule {
+	if defaultVis == "" {
+		defaultVis = "public"
+	}
+
+	// Build role sets from relationships.
+	delegationSources := map[string]bool{}
+	supervisionTargets := map[string]bool{}
+	isSource := map[string]bool{}
+	for _, rel := range relationships {
+		isSource[rel.Source] = true
+		if rel.Type == "delegation" {
+			delegationSources[rel.Source] = true
+		}
+		if rel.Type == "supervision" {
+			supervisionTargets[rel.Target] = true
+		}
+	}
+
+	var rules []sympoziumv1alpha1.PermeabilityRule
+	for _, ac := range agentConfigs {
+		vis := defaultVis
+		if delegationSources[ac.Name] {
+			vis = "trusted"
+		} else if supervisionTargets[ac.Name] {
+			vis = "public"
+		} else if !isSource[ac.Name] && len(relationships) > 0 {
+			// Terminal node (only a target, never a source) → private
+			vis = "private"
+		}
+		rules = append(rules, sympoziumv1alpha1.PermeabilityRule{
+			AgentConfig:       ac.Name,
+			DefaultVisibility: vis,
+		})
+	}
+	return rules
 }
 
 // resolveMembraneEnvVars computes the membrane environment variables for
