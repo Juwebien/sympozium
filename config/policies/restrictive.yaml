@@ -49,3 +49,12 @@ spec:
     sub-agents: true
     browser-automation: false
     file-access: false
+  imagePolicy:
+    allowedRegistries:
+      - ghcr.io/sympozium-ai/
+      - docker.io/library/
+  lifecyclePolicy:
+    deniedResources:
+      - secrets
+      - clusterroles
+      - clusterrolebindings

@@ -653,9 +653,13 @@ spec:
                 configMapKeyRef: { name: run-abc123-input, key: task }
             - name: MODEL_PROVIDER
               value: anthropic
-          envFrom:
-            - secretRef:
-                name: alice-anthropic-key
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: alice-anthropic-key
+                  key: ANTHROPIC_API_KEY
+                  optional: true
           volumeMounts:
             - name: workspace
               mountPath: /workspace

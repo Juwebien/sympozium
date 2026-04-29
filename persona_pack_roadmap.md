@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The objective is to transform `Ensemble` from a static collection of `SympoziumInstance` templates into a dynamic, relationship-aware coordination layer. This enables agents within a pack to work as a cohesive team via subagent workflows.
+The objective is to transform `Ensemble` from a static collection of `Agent` templates into a dynamic, relationship-aware coordination layer. This enables agents within a pack to work as a cohesive team via subagent workflows.
 
 ### Current status (as of 2026-04-16)
 
@@ -25,7 +25,7 @@ The objective is to transform `Ensemble` from a static collection of `SympoziumI
 | **Subagent spawning** | `internal/orchestrator/spawner.go` | Creates child `AgentRun` CRs via IPC file protocol (`/ipc/spawn/request-*.json`) |
 | **Persona-targeted spawning** | `spawner.go` `resolvePersonaTarget()` | Resolves `targetPersona` → instance name via Ensemble, validates relationship edges |
 | **Parent-child tracking** | `AgentRun.Spec.Parent` (`ParentRunRef`) | Stores `RunName`, `SessionKey`, `SpawnDepth`; labels include `sympozium.ai/parent-run` |
-| **Depth/concurrency guards** | `SubagentsSpec` on `SympoziumInstance` | `MaxDepth` (default 2), `MaxConcurrent` (default 5), `MaxChildrenPerAgent` (default 3) |
+| **Depth/concurrency guards** | `SubagentsSpec` on `Agent` | `MaxDepth` (default 2), `MaxConcurrent` (default 5), `MaxChildrenPerAgent` (default 3) |
 | **Policy-level limits** | `SympoziumPolicy.Spec.Subagents` | `MaxDepth`, `MaxConcurrent` enforced by controller |
 | **Response gate pattern** | `AgentRun` `PostRun` gate | Runs pause for external approval before completing — reusable pattern for await/resume |
 | **Relationship graph in CRD** | `EnsembleSpec.Relationships[]` | Typed edges (delegation, sequential, supervision) with condition, timeout, resultFormat |

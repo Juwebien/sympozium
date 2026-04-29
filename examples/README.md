@@ -38,7 +38,7 @@ examples/
 | Resource | Purpose | When to Use |
 |----------|---------|-------------|
 | **Ensemble** | Bundle multiple personas with skills & schedules | Setting up teams of agents |
-| **SympoziumInstance** | Single agent with channels & auth | Custom single-agent setups |
+| **Agent** | Single agent with channels & auth | Custom single-agent setups |
 | **AgentRun** | One-off task execution | Ad-hoc requests, testing |
 | **SympoziumSchedule** | Recurring heartbeat/cron tasks | Monitoring, periodic checks |
 | **SkillPack** | Custom skill definitions | Extend agent capabilities |

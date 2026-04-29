@@ -17,7 +17,7 @@ Sympozium is a **Kubernetes-native agent orchestration platform** written in Go.
 ## Repository Layout
 
 ```
-api/v1alpha1/           # CRD type definitions (SympoziumInstance, AgentRun, SympoziumPolicy, SkillPack, SympoziumSchedule, Ensemble)
+api/v1alpha1/           # CRD type definitions (Agent, AgentRun, SympoziumPolicy, SkillPack, SympoziumSchedule, Ensemble)
 cmd/
   agent-runner/         # Agent container — LLM loop + tool execution
   apiserver/            # HTTP + WebSocket API server
@@ -45,7 +45,7 @@ images/                 # Dockerfiles for all components
 internal/
   apiserver/            # API server implementation
   channel/              # Channel types
-  controller/           # Reconcilers (AgentRun, SympoziumInstance, SympoziumPolicy, SympoziumSchedule, SkillPack, Ensemble) + routers (Channel, Schedule)
+  controller/           # Reconcilers (AgentRun, Agent, SympoziumPolicy, SympoziumSchedule, SkillPack, Ensemble) + routers (Channel, Schedule)
   eventbus/             # NATS JetStream client + topic constants
   ipc/                  # IPC bridge (fsnotify watcher, protocol, file handlers)
   orchestrator/         # Pod builder + spawner for agent Jobs
@@ -63,12 +63,12 @@ docs/                   # Design & contributor documentation
 
 | CRD | Purpose |
 |-----|---------|
-| `SympoziumInstance` | An agent identity — provider config, model, enabled skills, channel bindings |
+| `Agent` | An agent identity — provider config, model, enabled skills, channel bindings |
 | `AgentRun` | A single agent invocation — task, result, phase lifecycle |
 | `SympoziumPolicy` | Policy rules enforced by the admission webhook |
 | `SkillPack` | Bundled skills (Markdown instructions) + optional sidecar container + RBAC |
 | `SympoziumSchedule` | Cron-based recurring AgentRun creation (heartbeat, scheduled, sweep) |
-| `Ensemble` | Pre-configured agent bundles — stamps out Instances, Schedules, and memory automatically |
+| `Ensemble` | Pre-configured agent bundles — stamps out Agents, Schedules, and memory automatically |
 
 Type definitions live in `api/v1alpha1/`. After modifying types, regenerate with:
 
@@ -183,7 +183,7 @@ TEST_MODEL=gpt-5.2 TEST_TIMEOUT=180 ./test/integration/test-write-file.sh
 
 See `docs/writing-integration-tests.md` for the full guide and template. Tests follow this pattern:
 
-1. Create a `SympoziumInstance` + `AgentRun` with a deterministic task
+1. Create a `Agent` + `AgentRun` with a deterministic task
 2. Poll `status.phase` until `Succeeded` or `Failed`
 3. Validate results (pod logs, status, filesystem)
 4. Clean up all test resources
@@ -231,11 +231,11 @@ Key topics in `internal/eventbus/types.go`:
 
 ### Memory
 
-Each SympoziumInstance has a ConfigMap (`<name>-memory`) mounted at `/memory/MEMORY.md`. The controller extracts memory markers (`__SYMPOZIUM_MEMORY__...__SYMPOZIUM_MEMORY_END__`) from agent output and patches the ConfigMap.
+Each Agent has a ConfigMap (`<name>-memory`) mounted at `/memory/MEMORY.md`. The controller extracts memory markers (`__SYMPOZIUM_MEMORY__...__SYMPOZIUM_MEMORY_END__`) from agent output and patches the ConfigMap.
 
 ### Skills
 
-SkillPacks are CRDs containing Markdown instructions + optional sidecar definitions. When enabled on a SympoziumInstance, skills are mounted at `/skills/` and sidecars are injected into agent pods. See `docs/writing-skills.md`.
+SkillPacks are CRDs containing Markdown instructions + optional sidecar definitions. When enabled on a Agent, skills are mounted at `/skills/` and sidecars are injected into agent pods. See `docs/writing-skills.md`.
 
 ---
 
@@ -249,7 +249,7 @@ SkillPacks are CRDs containing Markdown instructions + optional sidecar definiti
 | Writing integration tests | `docs/writing-integration-tests.md` | Test patterns and templates |
 | Web endpoint skill | `docs/skill-web-endpoint.md` | How to expose agents as HTTP APIs (OpenAI-compat + MCP) |
 | Serving mode | `docs/serving-mode.md` | How serving mode works for long-lived agent deployments |
-| Sample CRs | `config/samples/` | Example SympoziumInstance, AgentRun, SympoziumPolicy, SympoziumSchedule, SkillPack |
+| Sample CRs | `config/samples/` | Example Agent, AgentRun, SympoziumPolicy, SympoziumSchedule, SkillPack |
 | CRD definitions | `api/v1alpha1/` | Go type definitions for all CRDs |
 | Built-in Ensembles | `config/personas/` | Pre-configured agent bundles (platform-team, devops-essentials) |
 

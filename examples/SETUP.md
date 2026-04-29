@@ -101,7 +101,7 @@ sympozium install
 
 ### CRDs Not Found
 
-**Error:** `no matches for kind "SympoziumInstance"`
+**Error:** `no matches for kind "Agent"`
 
 **Fix:** Wait for CRDs to be registered (30-60 seconds after install):
 ```bash

@@ -12,8 +12,13 @@ Sympozium enforces defence-in-depth at every layer — from network isolation to
 | **Admission control** | `SympoziumPolicy` admission webhook | Feature and tool gates enforced before the pod is created |
 | **Skill RBAC** | Ephemeral `Role`/`ClusterRole` per AgentRun | Each skill declares exactly the API permissions it needs — the controller auto-provisions them at run start and revokes them on completion |
 | **RBAC lifecycle** | `ownerReference` (namespace) + label-based cleanup (cluster) | Namespace RBAC is garbage-collected by Kubernetes. Cluster RBAC is cleaned up by the controller on AgentRun completion and deletion |
-| **Controller privilege** | `cluster-admin` binding | The controller needs `cluster-admin` to create arbitrary RBAC rules declared by SkillPacks (Kubernetes prevents RBAC escalation otherwise) |
-| **Multi-tenancy** | Namespaced CRDs + Kubernetes RBAC | Instances, runs, and policies are namespace-scoped; standard K8s RBAC controls who can create them |
+| **Controller privilege** | Dedicated `sympozium-manager` ClusterRole | The controller has RBAC delegation permissions to provision skill roles. The API server has a **separate, scoped** `sympozium-apiserver` ClusterRole with no RBAC delegation or `pods/exec` access |
+| **Auth secret isolation** | Individual `secretKeyRef` per provider key | Auth secrets are mounted as individual env vars (e.g. `OPENAI_API_KEY`) rather than wholesale `envFrom`, preventing leakage of unrelated secret keys |
+| **Image allowlist** | `ImagePolicy.allowedRegistries` in `SympoziumPolicy` | Lifecycle hook, sandbox, and skill sidecar images can be restricted to approved registries |
+| **Lifecycle RBAC bounds** | `LifecyclePolicy.deniedResources` in `SympoziumPolicy` | Prevents lifecycle hooks from requesting RBAC access to sensitive resources (e.g. `secrets`, `clusterroles`) |
+| **Env var denylist** | Admission webhook validation | Blocks `spec.env` overrides of dangerous variables (`PATH`, `LD_PRELOAD`, `HOME`, etc.) |
+| **Model integrity** | SHA256 checksum verification | Model downloads can specify a `sha256` hash; the download job verifies integrity before loading |
+| **Multi-tenancy** | Namespaced CRDs + Kubernetes RBAC | Agents, runs, and policies are namespace-scoped; standard K8s RBAC controls who can create them |
 
 ## Ephemeral Skill RBAC
 
@@ -42,3 +47,16 @@ AgentRun completes/deleted
 | **Permissive** | Dev clusters, demos | All tools allowed, no approval needed, generous resource limits |
 | **Default** | General use | `execute_command` requires approval, everything else allowed |
 | **Restrictive** | Production, security | All tools denied by default, must be explicitly allowed, sandbox required |
+
+### Policy Fields
+
+| Field | Purpose |
+|-------|---------|
+| `sandboxPolicy` | Sandbox enforcement, resource limits, seccomp profiles |
+| `subagentPolicy` | Max nesting depth and concurrency for sub-agents |
+| `toolGating` | Per-tool allow/deny/ask rules |
+| `featureGates` | Toggle code-execution, sub-agents, browser-automation, file-access |
+| `networkPolicy` | Deny-all, DNS, event bus egress rules |
+| `modelPolicy` | Restrict which model names/namespaces can be used |
+| `imagePolicy` | Registry allowlist for lifecycle hooks, sandbox, and skill sidecar images |
+| `lifecyclePolicy` | Denied resources list to bound lifecycle hook RBAC requests |

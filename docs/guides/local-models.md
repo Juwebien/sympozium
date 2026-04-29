@@ -21,9 +21,9 @@ Click a preset to auto-fill the form, then click **Deploy**.
 
 The model will progress through phases: **Pending** → **Downloading** → **Loading** → **Ready**. Download time depends on model size and network speed.
 
-### 2. Create an Instance
+### 2. Create an Agent
 
-Once the model shows **Ready**, navigate to **Instances** → **Create Instance**.
+Once the model shows **Ready**, navigate to **Agents** → **Create Agent**.
 
 The provider dropdown now shows your model at the top as **(Local Model)**. Select it — the wizard automatically:
 - Skips the API key step (no key needed)
