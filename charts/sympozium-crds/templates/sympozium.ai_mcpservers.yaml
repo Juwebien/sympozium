@@ -4,7 +4,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.2
-    helm.sh/resource-policy: keep
   name: mcpservers.sympozium.ai
 spec:
   group: sympozium.ai

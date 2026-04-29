@@ -4,7 +4,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.2
-    helm.sh/resource-policy: keep
   name: sympoziumpolicies.sympozium.ai
 spec:
   group: sympozium.ai
@@ -57,6 +56,32 @@ spec:
                 additionalProperties:
                   type: boolean
                 description: FeatureGates controls which features are enabled/disabled.
+                type: object
+              imagePolicy:
+                description: |-
+                  ImagePolicy defines allowed container image registries for user-specified
+                  images in lifecycle hooks, sandbox overrides, and skill sidecars.
+                properties:
+                  allowedRegistries:
+                    description: |-
+                      AllowedRegistries is a list of registry prefixes that images must match.
+                      Example: ["ghcr.io/sympozium-ai/", "docker.io/library/"]
+                      When empty, all registries are allowed (no restriction).
+                    items:
+                      type: string
+                    type: array
+                type: object
+              lifecyclePolicy:
+                description: LifecyclePolicy defines bounds on lifecycle hook RBAC
+                  requests.
+                properties:
+                  deniedResources:
+                    description: |-
+                      DeniedResources is a list of Kubernetes resource types that lifecycle
+                      hooks may not request RBAC access to (e.g. "secrets", "clusterroles").
+                    items:
+                      type: string
+                    type: array
                 type: object
               modelPolicy:
                 description: ModelPolicy defines model access restrictions for bound

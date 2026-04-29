@@ -4,7 +4,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.2
-    helm.sh/resource-policy: keep
   name: models.sympozium.ai
 spec:
   group: sympozium.ai
@@ -320,6 +319,12 @@ spec:
                       (e.g. "meta-llama/Llama-3.1-8B-Instruct").
                       Required for vllm and tgi server types. These servers pull
                       directly from HuggingFace at container startup.
+                    type: string
+                  sha256:
+                    description: |-
+                      SHA256 is the expected SHA-256 hash of the downloaded model file.
+                      When set, the download job verifies the file integrity after download
+                      and fails if the checksum does not match. Recommended for production use.
                     type: string
                   url:
                     description: |-
