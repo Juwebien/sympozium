@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.10](https://github.com/sympozium-ai/sympozium/compare/v0.10.9...v0.10.10) (2026-04-29)
+
+
+### Bug Fixes
+
+* run make generate for new policy and model types ([2449644](https://github.com/sympozium-ai/sympozium/commit/244964411417572c54ca07f7ec2028a73c048842))
+
 ## [0.10.9](https://github.com/sympozium-ai/sympozium/compare/v0.10.8...v0.10.9) (2026-04-29)
 
 
