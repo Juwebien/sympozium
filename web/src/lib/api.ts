@@ -317,6 +317,30 @@ export interface PatchGatewayConfigRequest {
   tlsSecretName?: string;
 }
 
+export interface CanaryConfigResponse {
+  enabled: boolean;
+  interval?: string;
+  model?: string;
+  provider?: string;
+  baseURL?: string;
+  authSecretRef?: string;
+  ensembleCreated: boolean;
+  lastRunPhase?: string;
+  lastRunTime?: string;
+  healthStatus?: string;
+  lastRunResult?: string;
+}
+
+export interface PatchCanaryConfigRequest {
+  enabled?: boolean;
+  interval?: string;
+  model?: string;
+  provider?: string;
+  baseURL?: string;
+  authSecretRef?: string;
+  modelRef?: string;
+}
+
 export interface GithubAuthStatusResponse {
   status: string;
 }
@@ -1174,22 +1198,45 @@ export const api = {
   },
 
   gateway: {
-    get: () => apiFetch<GatewayConfigResponse>("/api/v1/gateway"),
+    get: () =>
+      apiFetch<GatewayConfigResponse>("/api/v1/gateway", {
+        skipNamespace: true,
+      }),
     create: (data: PatchGatewayConfigRequest) =>
       apiFetch<GatewayConfigResponse>("/api/v1/gateway", {
         method: "POST",
         body: JSON.stringify(data),
+        skipNamespace: true,
       }),
     patch: (data: PatchGatewayConfigRequest) =>
       apiFetch<GatewayConfigResponse>("/api/v1/gateway", {
         method: "PATCH",
         body: JSON.stringify(data),
+        skipNamespace: true,
       }),
-    delete: () => apiFetch<void>("/api/v1/gateway", { method: "DELETE" }),
+    delete: () =>
+      apiFetch<void>("/api/v1/gateway", {
+        method: "DELETE",
+        skipNamespace: true,
+      }),
     metrics: (range?: string) =>
       apiFetch<GatewayMetricsResponse>(
         `/api/v1/gateway/metrics${range ? `?range=${range}` : ""}`,
+        { skipNamespace: true },
       ),
+  },
+
+  canary: {
+    get: () =>
+      apiFetch<CanaryConfigResponse>("/api/v1/canary", {
+        skipNamespace: true,
+      }),
+    patch: (data: PatchCanaryConfigRequest) =>
+      apiFetch<CanaryConfigResponse>("/api/v1/canary", {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        skipNamespace: true,
+      }),
   },
 
   providers: {

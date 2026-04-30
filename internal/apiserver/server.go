@@ -166,6 +166,10 @@ func (s *Server) buildMux(frontendFS fs.FS, token string) http.Handler {
 	mux.HandleFunc("DELETE /api/v1/gateway", s.deleteGatewayConfig)
 	mux.HandleFunc("GET /api/v1/gateway/metrics", s.getGatewayMetrics)
 
+	// System canary endpoints
+	mux.HandleFunc("GET /api/v1/canary", s.getCanaryConfig)
+	mux.HandleFunc("PATCH /api/v1/canary", s.patchCanaryConfig)
+
 	// Provider discovery endpoints (model listing, node discovery)
 	mux.HandleFunc("GET /api/v1/providers/nodes", s.listProviderNodes)
 	mux.HandleFunc("GET /api/v1/providers/models", s.proxyProviderModels)
@@ -2703,11 +2707,17 @@ func gatewayConfigResponseFromCR(config *sympoziumv1alpha1.SympoziumConfig) Gate
 	return resp
 }
 
-func (s *Server) getGatewayConfig(w http.ResponseWriter, r *http.Request) {
-	ns := r.URL.Query().Get("namespace")
-	if ns == "" {
-		ns = "default"
+// configNamespace returns the namespace for SympoziumConfig operations.
+// The config is a platform-wide singleton that lives in sympozium-system.
+func configNamespace(r *http.Request) string {
+	if ns := r.URL.Query().Get("namespace"); ns != "" {
+		return ns
 	}
+	return "sympozium-system"
+}
+
+func (s *Server) getGatewayConfig(w http.ResponseWriter, r *http.Request) {
+	ns := configNamespace(r)
 
 	var config sympoziumv1alpha1.SympoziumConfig
 	if err := s.client.Get(r.Context(), types.NamespacedName{Name: "default", Namespace: ns}, &config); err != nil {
@@ -2724,10 +2734,7 @@ func (s *Server) getGatewayConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createGatewayConfig(w http.ResponseWriter, r *http.Request) {
-	ns := r.URL.Query().Get("namespace")
-	if ns == "" {
-		ns = "default"
-	}
+	ns := configNamespace(r)
 
 	var req PatchGatewayConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -2760,10 +2767,7 @@ func (s *Server) createGatewayConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) patchGatewayConfig(w http.ResponseWriter, r *http.Request) {
-	ns := r.URL.Query().Get("namespace")
-	if ns == "" {
-		ns = "default"
-	}
+	ns := configNamespace(r)
 
 	var req PatchGatewayConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -2795,10 +2799,7 @@ func (s *Server) patchGatewayConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteGatewayConfig(w http.ResponseWriter, r *http.Request) {
-	ns := r.URL.Query().Get("namespace")
-	if ns == "" {
-		ns = "default"
-	}
+	ns := configNamespace(r)
 
 	var config sympoziumv1alpha1.SympoziumConfig
 	if err := s.client.Get(r.Context(), types.NamespacedName{Name: "default", Namespace: ns}, &config); err != nil {
@@ -2845,6 +2846,180 @@ func applyGatewayPatch(gw *sympoziumv1alpha1.GatewaySpec, req *PatchGatewayConfi
 			gw.TLS.SecretName = *req.TLSSecretName
 		}
 	}
+}
+
+// ── System Canary endpoints ─────────────────────────────────────────────────
+
+// CanaryConfigResponse is the response for GET /api/v1/canary.
+type CanaryConfigResponse struct {
+	Enabled         bool   `json:"enabled"`
+	Interval        string `json:"interval,omitempty"`
+	Model           string `json:"model,omitempty"`
+	Provider        string `json:"provider,omitempty"`
+	BaseURL         string `json:"baseURL,omitempty"`
+	AuthSecretRef   string `json:"authSecretRef,omitempty"`
+	EnsembleCreated bool   `json:"ensembleCreated"`
+	LastRunPhase    string `json:"lastRunPhase,omitempty"`
+	LastRunTime     string `json:"lastRunTime,omitempty"`
+	HealthStatus    string `json:"healthStatus,omitempty"`
+	LastRunResult   string `json:"lastRunResult,omitempty"`
+}
+
+// PatchCanaryConfigRequest is the request body for PATCH /api/v1/canary.
+type PatchCanaryConfigRequest struct {
+	Enabled       *bool   `json:"enabled,omitempty"`
+	Interval      *string `json:"interval,omitempty"`
+	Model         *string `json:"model,omitempty"`
+	Provider      *string `json:"provider,omitempty"`
+	BaseURL       *string `json:"baseURL,omitempty"`
+	AuthSecretRef *string `json:"authSecretRef,omitempty"`
+}
+
+func (s *Server) getCanaryConfig(w http.ResponseWriter, r *http.Request) {
+	ns := configNamespace(r)
+
+	var config sympoziumv1alpha1.SympoziumConfig
+	if err := s.client.Get(r.Context(), types.NamespacedName{Name: "default", Namespace: ns}, &config); err != nil {
+		if k8serrors.IsNotFound(err) || meta.IsNoMatchError(err) {
+			writeJSON(w, CanaryConfigResponse{})
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := CanaryConfigResponse{}
+	if c := config.Spec.Canary; c != nil {
+		resp.Enabled = c.Enabled
+		resp.Interval = c.Interval
+		resp.Model = c.Model
+		resp.Provider = c.Provider
+		resp.BaseURL = c.BaseURL
+		resp.AuthSecretRef = c.AuthSecretRef
+	}
+	if c := config.Status.Canary; c != nil {
+		resp.EnsembleCreated = c.EnsembleCreated
+		resp.LastRunPhase = c.LastRunPhase
+		resp.LastRunTime = c.LastRunTime
+		resp.HealthStatus = c.HealthStatus
+	}
+
+	// Fetch latest canary run status directly (more current than controller status)
+	if resp.Enabled {
+		var runs sympoziumv1alpha1.AgentRunList
+		if err := s.client.List(r.Context(), &runs,
+			client.InNamespace(ns),
+			client.MatchingLabels{"sympozium.ai/instance": "system-canary-canary"},
+		); err == nil && len(runs.Items) > 0 {
+			// Sort to find the latest run
+			sort.Slice(runs.Items, func(i, j int) bool {
+				return runs.Items[j].CreationTimestamp.Before(&runs.Items[i].CreationTimestamp)
+			})
+			latest := &runs.Items[0]
+
+			// Override phase from live run data (more current than controller status)
+			resp.LastRunPhase = string(latest.Status.Phase)
+			if latest.Status.CompletedAt != nil {
+				resp.LastRunTime = latest.Status.CompletedAt.Format("2006-01-02T15:04:05Z")
+			}
+
+			// Use result if available
+			if latest.Status.Result != "" {
+				resp.LastRunResult = latest.Status.Result
+				upper := strings.ToUpper(latest.Status.Result)
+				switch {
+				case strings.Contains(upper, "UNHEALTHY"):
+					resp.HealthStatus = "unhealthy"
+				case strings.Contains(upper, "DEGRADED"):
+					resp.HealthStatus = "degraded"
+				case strings.Contains(upper, "HEALTHY"):
+					resp.HealthStatus = "healthy"
+				}
+			} else if latest.Status.Phase == "Failed" {
+				resp.HealthStatus = "unhealthy"
+			}
+		}
+	}
+
+	writeJSON(w, resp)
+}
+
+func (s *Server) patchCanaryConfig(w http.ResponseWriter, r *http.Request) {
+	ns := configNamespace(r)
+
+	var req PatchCanaryConfigRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var config sympoziumv1alpha1.SympoziumConfig
+	created := false
+	if err := s.client.Get(r.Context(), types.NamespacedName{Name: "default", Namespace: ns}, &config); err != nil {
+		if !k8serrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Auto-create the SympoziumConfig CR
+		config = sympoziumv1alpha1.SympoziumConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "default",
+				Namespace: ns,
+			},
+			Spec: sympoziumv1alpha1.SympoziumConfigSpec{
+				Canary: &sympoziumv1alpha1.CanarySpec{},
+			},
+		}
+		created = true
+	}
+
+	if config.Spec.Canary == nil {
+		config.Spec.Canary = &sympoziumv1alpha1.CanarySpec{}
+	}
+	if req.Enabled != nil {
+		config.Spec.Canary.Enabled = *req.Enabled
+	}
+	if req.Interval != nil {
+		config.Spec.Canary.Interval = *req.Interval
+	}
+	if req.Model != nil {
+		config.Spec.Canary.Model = *req.Model
+	}
+	if req.Provider != nil {
+		config.Spec.Canary.Provider = *req.Provider
+	}
+	if req.BaseURL != nil {
+		config.Spec.Canary.BaseURL = *req.BaseURL
+	}
+	if req.AuthSecretRef != nil {
+		config.Spec.Canary.AuthSecretRef = *req.AuthSecretRef
+	}
+
+	if created {
+		if err := s.client.Create(r.Context(), &config); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else if err := s.client.Update(r.Context(), &config); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := CanaryConfigResponse{
+		Enabled:       config.Spec.Canary.Enabled,
+		Interval:      config.Spec.Canary.Interval,
+		Model:         config.Spec.Canary.Model,
+		Provider:      config.Spec.Canary.Provider,
+		BaseURL:       config.Spec.Canary.BaseURL,
+		AuthSecretRef: config.Spec.Canary.AuthSecretRef,
+	}
+	if c := config.Status.Canary; c != nil {
+		resp.EnsembleCreated = c.EnsembleCreated
+		resp.LastRunPhase = c.LastRunPhase
+		resp.LastRunTime = c.LastRunTime
+		resp.HealthStatus = c.HealthStatus
+	}
+	writeJSON(w, resp)
 }
 
 // GatewayMetricsResponse is the response for the gateway metrics endpoint.

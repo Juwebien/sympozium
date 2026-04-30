@@ -21,6 +21,14 @@ spec:
     - jsonPath: .spec.gateway.baseDomain
       name: Domain
       type: string
+    - jsonPath: .spec.canary.enabled
+      name: Canary
+      priority: 1
+      type: boolean
+    - jsonPath: .status.canary.healthStatus
+      name: Health
+      priority: 1
+      type: string
     - jsonPath: .status.phase
       name: Phase
       type: string
@@ -54,6 +62,42 @@ spec:
           spec:
             description: SympoziumConfigSpec defines the desired platform-wide configuration.
             properties:
+              canary:
+                description: |-
+                  Canary configures the built-in system health canary.
+                  When enabled, a canary Ensemble is created that periodically
+                  validates end-to-end platform health.
+                properties:
+                  authSecretRef:
+                    description: AuthSecretRef is the name of a Secret containing
+                      provider API keys.
+                    type: string
+                  baseURL:
+                    description: BaseURL overrides the provider API endpoint (for
+                      local models or proxies).
+                    type: string
+                  enabled:
+                    default: false
+                    description: |-
+                      Enabled is the master switch for the system canary.
+                      When true, a canary Ensemble is created/enabled.
+                      When false, the canary Ensemble is disabled (but not deleted).
+                    type: boolean
+                  interval:
+                    default: 30m
+                    description: Interval is the health check interval (e.g. "15m",
+                      "30m", "1h").
+                    type: string
+                  model:
+                    description: Model is the LLM model to use (e.g. "gpt-4o", "claude-sonnet-4-20250514").
+                    type: string
+                  provider:
+                    description: Provider is the LLM provider (e.g. "openai", "anthropic",
+                      "ollama").
+                    type: string
+                required:
+                - enabled
+                type: object
               gateway:
                 description: Gateway configures the shared Envoy Gateway infrastructure.
                 properties:
@@ -103,6 +147,28 @@ spec:
           status:
             description: SympoziumConfigStatus defines the observed state of SympoziumConfig.
             properties:
+              canary:
+                description: Canary reports the observed state of the system canary.
+                properties:
+                  ensembleCreated:
+                    description: EnsembleCreated indicates the canary Ensemble CR
+                      exists.
+                    type: boolean
+                  healthStatus:
+                    description: 'HealthStatus is the overall health from the last
+                      report: healthy, degraded, unhealthy, unknown.'
+                    type: string
+                  lastRunPhase:
+                    description: LastRunPhase is the phase of the most recent canary
+                      run.
+                    type: string
+                  lastRunTime:
+                    description: LastRunTime is the completion time of the most recent
+                      canary run.
+                    type: string
+                required:
+                - ensembleCreated
+                type: object
               conditions:
                 description: Conditions represent the latest available observations.
                 items:

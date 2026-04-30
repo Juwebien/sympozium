@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -47,6 +49,8 @@ type SympoziumConfigReconciler struct {
 // +kubebuilder:rbac:groups=sympozium.ai,resources=sympoziumconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sympozium.ai,resources=sympoziumconfigs/finalizers,verbs=update
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses;gateways,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=sympozium.ai,resources=ensembles,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=sympozium.ai,resources=agentruns,verbs=get;list;watch
 
 // Reconcile handles SympoziumConfig reconciliation.
 func (r *SympoziumConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -67,6 +71,10 @@ func (r *SympoziumConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 				log.Error(err, "failed to clean up gateway resources")
 				return ctrl.Result{}, err
 			}
+			if err := r.cleanupCanaryResources(ctx, &config); err != nil {
+				log.Error(err, "failed to clean up canary resources")
+				return ctrl.Result{}, err
+			}
 			controllerutil.RemoveFinalizer(&config, sympoziumConfigFinalizer)
 			if err := r.Update(ctx, &config); err != nil {
 				return ctrl.Result{}, err
@@ -83,26 +91,40 @@ func (r *SympoziumConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		}
 	}
 
+	// Reconcile system canary (independent of gateway)
+	if err := r.reconcileCanary(ctx, log, &config); err != nil {
+		log.Error(err, "failed to reconcile canary")
+	}
+	canaryStatus := r.readCanaryStatus(ctx, &config)
+
 	// If gateway is nil or disabled, clean up and set status
 	if config.Spec.Gateway == nil || !config.Spec.Gateway.Enabled {
 		if err := r.cleanupGatewayResources(ctx, &config); err != nil {
 			log.Error(err, "failed to clean up gateway resources")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, r.updateStatus(ctx, &config, "Disabled", "", nil)
+		phase := "Disabled"
+		// Still requeue if canary is enabled to track its status
+		if err := r.updateStatusFull(ctx, &config, phase, "", nil, canaryStatus); err != nil {
+			return ctrl.Result{}, err
+		}
+		if config.Spec.Canary != nil && config.Spec.Canary.Enabled {
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// Reconcile GatewayClass (cluster-scoped — no ownerRef, use label)
 	if err := r.reconcileGatewayClass(ctx, &config); err != nil {
 		log.Error(err, "failed to reconcile GatewayClass")
-		_ = r.updateStatus(ctx, &config, "Error", fmt.Sprintf("GatewayClass: %v", err), nil)
+		_ = r.updateStatusFull(ctx, &config, "Error", fmt.Sprintf("GatewayClass: %v", err), nil, canaryStatus)
 		return ctrl.Result{}, err
 	}
 
 	// Reconcile Gateway (namespace-scoped — ownerRef)
 	if err := r.reconcileGateway(ctx, &config); err != nil {
 		log.Error(err, "failed to reconcile Gateway")
-		_ = r.updateStatus(ctx, &config, "Error", fmt.Sprintf("Gateway: %v", err), nil)
+		_ = r.updateStatusFull(ctx, &config, "Error", fmt.Sprintf("Gateway: %v", err), nil, canaryStatus)
 		return ctrl.Result{}, err
 	}
 
@@ -116,11 +138,11 @@ func (r *SympoziumConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if gwStatus != nil && gwStatus.Ready {
 		phase = "Ready"
 	}
-	if err := r.updateStatus(ctx, &config, phase, "", gwStatus); err != nil {
+	if err := r.updateStatusFull(ctx, &config, phase, "", gwStatus, canaryStatus); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Requeue to pick up Gateway status changes
+	// Requeue to pick up Gateway and canary status changes
 	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 }
 
@@ -326,9 +348,16 @@ func (r *SympoziumConfigReconciler) cleanupGatewayResources(ctx context.Context,
 }
 
 func (r *SympoziumConfigReconciler) updateStatus(ctx context.Context, config *sympoziumv1alpha1.SympoziumConfig, phase, message string, gwStatus *sympoziumv1alpha1.GatewayStatusInfo) error {
+	return r.updateStatusFull(ctx, config, phase, message, gwStatus, nil)
+}
+
+func (r *SympoziumConfigReconciler) updateStatusFull(ctx context.Context, config *sympoziumv1alpha1.SympoziumConfig, phase, message string, gwStatus *sympoziumv1alpha1.GatewayStatusInfo, canaryStatus *sympoziumv1alpha1.CanaryStatusInfo) error {
 	statusBase := config.DeepCopy()
 	config.Status.Phase = phase
 	config.Status.Gateway = gwStatus
+	if canaryStatus != nil {
+		config.Status.Canary = canaryStatus
+	}
 
 	condStatus := metav1.ConditionTrue
 	reason := "Ready"
@@ -354,6 +383,258 @@ func (r *SympoziumConfigReconciler) updateStatus(ctx context.Context, config *sy
 
 	return r.Status().Patch(ctx, config, client.MergeFrom(statusBase))
 }
+
+// ── Canary reconciliation ───────────────────────────────────────────────────
+
+const canaryEnsembleName = "system-canary"
+
+// reconcileCanary ensures the canary Ensemble exists and mirrors the config.
+func (r *SympoziumConfigReconciler) reconcileCanary(ctx context.Context, log logr.Logger, config *sympoziumv1alpha1.SympoziumConfig) error {
+	enabled := config.Spec.Canary != nil && config.Spec.Canary.Enabled
+	interval := "30m"
+	if config.Spec.Canary != nil && config.Spec.Canary.Interval != "" {
+		interval = config.Spec.Canary.Interval
+	}
+
+	var existing sympoziumv1alpha1.Ensemble
+	err := r.Get(ctx, types.NamespacedName{Name: canaryEnsembleName, Namespace: config.Namespace}, &existing)
+
+	if errors.IsNotFound(err) {
+		if !enabled {
+			return nil // nothing to do
+		}
+		// Create the canary ensemble
+		ensemble := r.buildCanaryEnsemble(config, interval)
+		if setErr := controllerutil.SetControllerReference(config, &ensemble, r.Scheme); setErr != nil {
+			return setErr
+		}
+		log.Info("Creating system canary ensemble", "interval", interval)
+		return r.Create(ctx, &ensemble)
+	}
+	if err != nil {
+		return err
+	}
+
+	// Ensemble exists — sync enabled state, interval, and provider config
+	desired := r.buildCanaryEnsemble(config, interval)
+	needsUpdate := false
+	if existing.Spec.Enabled != enabled {
+		existing.Spec.Enabled = enabled
+		needsUpdate = true
+	}
+	if enabled && len(existing.Spec.AgentConfigs) > 0 {
+		ac := &existing.Spec.AgentConfigs[0]
+		if ac.Schedule != nil && ac.Schedule.Interval != interval {
+			ac.Schedule.Interval = interval
+			needsUpdate = true
+		}
+		if ac.Model != desired.Spec.AgentConfigs[0].Model {
+			ac.Model = desired.Spec.AgentConfigs[0].Model
+			needsUpdate = true
+		}
+		if ac.Provider != desired.Spec.AgentConfigs[0].Provider {
+			ac.Provider = desired.Spec.AgentConfigs[0].Provider
+			needsUpdate = true
+		}
+		if ac.BaseURL != desired.Spec.AgentConfigs[0].BaseURL {
+			ac.BaseURL = desired.Spec.AgentConfigs[0].BaseURL
+			needsUpdate = true
+		}
+	}
+	if fmt.Sprintf("%v", existing.Spec.AuthRefs) != fmt.Sprintf("%v", desired.Spec.AuthRefs) {
+		existing.Spec.AuthRefs = desired.Spec.AuthRefs
+		needsUpdate = true
+	}
+	if existing.Spec.BaseURL != desired.Spec.BaseURL {
+		existing.Spec.BaseURL = desired.Spec.BaseURL
+		needsUpdate = true
+	}
+	if needsUpdate {
+		log.Info("Updating system canary ensemble", "enabled", enabled, "interval", interval)
+		return r.Update(ctx, &existing)
+	}
+	return nil
+}
+
+// readCanaryStatus reads the latest canary run and parses the health status.
+func (r *SympoziumConfigReconciler) readCanaryStatus(ctx context.Context, config *sympoziumv1alpha1.SympoziumConfig) *sympoziumv1alpha1.CanaryStatusInfo {
+	status := &sympoziumv1alpha1.CanaryStatusInfo{}
+
+	var ensemble sympoziumv1alpha1.Ensemble
+	if err := r.Get(ctx, types.NamespacedName{Name: canaryEnsembleName, Namespace: config.Namespace}, &ensemble); err != nil {
+		return status
+	}
+	status.EnsembleCreated = true
+
+	// Find the most recent canary AgentRun
+	var runs sympoziumv1alpha1.AgentRunList
+	if err := r.List(ctx, &runs,
+		client.InNamespace(config.Namespace),
+		client.MatchingLabels{"sympozium.ai/instance": canaryEnsembleName + "-canary"},
+	); err != nil {
+		return status
+	}
+
+	if len(runs.Items) == 0 {
+		return status
+	}
+
+	// Sort by creation timestamp descending to find the latest
+	sort.Slice(runs.Items, func(i, j int) bool {
+		return runs.Items[j].CreationTimestamp.Before(&runs.Items[i].CreationTimestamp)
+	})
+
+	latest := runs.Items[0]
+	status.LastRunPhase = string(latest.Status.Phase)
+	if latest.Status.CompletedAt != nil {
+		status.LastRunTime = latest.Status.CompletedAt.Format(time.RFC3339)
+	}
+
+	// Parse the health status from the result text
+	if latest.Status.Result != "" {
+		result := strings.ToUpper(latest.Status.Result)
+		switch {
+		case strings.Contains(result, "UNHEALTHY"):
+			status.HealthStatus = "unhealthy"
+		case strings.Contains(result, "DEGRADED"):
+			status.HealthStatus = "degraded"
+		case strings.Contains(result, "HEALTHY"):
+			status.HealthStatus = "healthy"
+		default:
+			status.HealthStatus = "unknown"
+		}
+	} else if latest.Status.Phase == "Failed" {
+		status.HealthStatus = "unhealthy"
+	}
+
+	return status
+}
+
+// cleanupCanaryResources removes the canary ensemble.
+func (r *SympoziumConfigReconciler) cleanupCanaryResources(ctx context.Context, config *sympoziumv1alpha1.SympoziumConfig) error {
+	var ensemble sympoziumv1alpha1.Ensemble
+	if err := r.Get(ctx, types.NamespacedName{Name: canaryEnsembleName, Namespace: config.Namespace}, &ensemble); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return r.Delete(ctx, &ensemble)
+}
+
+// buildCanaryEnsemble returns the canary Ensemble spec.
+func (r *SympoziumConfigReconciler) buildCanaryEnsemble(config *sympoziumv1alpha1.SympoziumConfig, interval string) sympoziumv1alpha1.Ensemble {
+	canary := config.Spec.Canary
+
+	persona := sympoziumv1alpha1.AgentConfigSpec{
+		Name:         "canary",
+		DisplayName:  "System Canary",
+		SystemPrompt: canarySystemPrompt,
+		ToolPolicy: &sympoziumv1alpha1.AgentConfigToolPolicy{
+			Allow: []string{"execute_command", "fetch_url", "read_file", "list_directory"},
+			Deny:  []string{"write_file", "send_channel_message", "delegate_to_persona"},
+		},
+		Schedule: &sympoziumv1alpha1.AgentConfigSchedule{
+			Type:     "heartbeat",
+			Interval: interval,
+			Task:     "Run the full system health check suite and produce a markdown health report. Clean up all test resources after completion.",
+		},
+		Memory: &sympoziumv1alpha1.AgentConfigMemory{
+			Enabled: true,
+			Seeds: []string{
+				"Track health check history to identify trends and recurring failures",
+				"Note any degraded components and when they recovered",
+			},
+		},
+	}
+
+	// Apply per-persona model/provider overrides from canary config.
+	if canary != nil {
+		if canary.Model != "" {
+			persona.Model = canary.Model
+		}
+		if canary.Provider != "" {
+			persona.Provider = canary.Provider
+		}
+		if canary.BaseURL != "" {
+			persona.BaseURL = canary.BaseURL
+		}
+	}
+
+	spec := sympoziumv1alpha1.EnsembleSpec{
+		Enabled:      true,
+		Description:  "System health canary — validates end-to-end platform health on a schedule.",
+		Category:     "platform",
+		Version:      "1.0.0",
+		WorkflowType: "autonomous",
+		AgentConfigs: []sympoziumv1alpha1.AgentConfigSpec{persona},
+	}
+
+	// Set ensemble-level auth and base URL.
+	if canary != nil {
+		if canary.AuthSecretRef != "" {
+			spec.AuthRefs = []sympoziumv1alpha1.SecretRef{{Secret: canary.AuthSecretRef}}
+		}
+		if canary.BaseURL != "" {
+			spec.BaseURL = canary.BaseURL
+		}
+	}
+
+	return sympoziumv1alpha1.Ensemble{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      canaryEnsembleName,
+			Namespace: config.Namespace,
+			Labels: map[string]string{
+				"sympozium.ai/canary":          "true",
+				"app.kubernetes.io/managed-by": "sympozium-config",
+			},
+		},
+		Spec: spec,
+	}
+}
+
+const canarySystemPrompt = `You are the Sympozium System Canary. Your job is to validate that the
+platform is functioning correctly by running a series of health checks.
+
+For each check, report PASS or FAIL with a short detail string. Format
+your final output as a markdown health report using this template:
+
+# System Health Report
+**Timestamp:** <current UTC time>
+**Overall:** HEALTHY | DEGRADED | UNHEALTHY
+
+## Checks
+| Check | Status | Details |
+|-------|--------|---------|
+| API Server | PASS/FAIL | ... |
+| Cluster Info | PASS/FAIL | ... |
+| Agent Lifecycle | PASS/FAIL | ... |
+| Schedule System | PASS/FAIL | ... |
+| MCP Servers | PASS/FAIL | ... |
+| Node Discovery | PASS/FAIL | ... |
+
+## Details
+<expand on any FAIL results here>
+
+Health checks to perform (in order):
+
+1. **Cleanup first**: Run ` + "`kubectl delete agent -n sympozium-system -l sympozium.ai/canary-test=true --ignore-not-found`" + ` to clean up stale test resources.
+
+2. **API Server**: Run ` + "`curl -sf http://sympozium-apiserver.sympozium-system.svc:8080/healthz`" + `. PASS if it returns "ok".
+
+3. **Cluster Info**: Run ` + "`curl -sf http://sympozium-apiserver.sympozium-system.svc:8080/api/v1/cluster`" + `. PASS if the JSON response contains a nodes count >= 1.
+
+4. **Agent Lifecycle**: Create a minimal test agent via kubectl apply with label sympozium.ai/canary-test=true, name canary-probe, verify it exists, then delete it. PASS if create and delete both succeed.
+
+5. **Schedule System**: Run ` + "`kubectl get sympoziumschedules -n sympozium-system -o name`" + `. PASS if the command succeeds.
+
+6. **MCP Servers**: Run ` + "`kubectl get mcpservers -A -o json`" + ` and check for any with status.ready == false. PASS if all are ready or none exist.
+
+7. **Node Discovery**: Run ` + "`kubectl get nodes -o json`" + ` and verify at least one node has condition Ready=True. PASS if so.
+
+Set Overall to HEALTHY if all pass, DEGRADED if non-critical checks fail (Schedule, MCP, Node Discovery), UNHEALTHY if critical checks fail (API Server, Cluster Info, Agent Lifecycle).
+
+IMPORTANT: Always clean up test resources. Never leave canary-probe resources behind.`
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SympoziumConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {

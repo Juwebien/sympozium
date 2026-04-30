@@ -635,6 +635,29 @@ export function useDeleteGatewayConfig() {
   });
 }
 
+// ── Canary ──────────────────────────────────────────────────────────────────
+
+export function useCanaryConfig() {
+  return useQuery({
+    queryKey: ["canary"],
+    queryFn: api.canary.get,
+    refetchInterval: 15000,
+  });
+}
+
+export function usePatchCanaryConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.canary.patch,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["canary"] });
+    },
+    onError: toastError,
+  });
+}
+
+// ── Observability ───────────────────────────────────────────────────────────
+
 export function useObservabilityMetrics() {
   return useQuery({
     queryKey: ["observability", "metrics"],

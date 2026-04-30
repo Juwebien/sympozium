@@ -18,9 +18,10 @@ import {
   useGateVerdict,
   useEnsembles,
   useModels,
+  useCanaryConfig,
 } from "@/hooks/use-api";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { formatAge, truncate } from "@/lib/utils";
+import { cn, formatAge, truncate } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import {
   Server,
@@ -414,6 +415,7 @@ export function DashboardPage() {
   const instances = useAgents();
   const runs = useRuns();
   const clusterInfo = useClusterInfo();
+  const { data: canaryConfig } = useCanaryConfig();
   const observability = useObservabilityMetrics();
   const { events, connected } = useWebSocket();
   const [range, setRange] = useState<RangeKey>("24h");
@@ -733,6 +735,28 @@ export function DashboardPage() {
                 <div className="text-xs text-muted-foreground">K8s Version</div>
                 <div className="text-lg font-semibold text-foreground">
                   {clusterInfo.data.version}
+                </div>
+              </div>
+            )}
+            {canaryConfig?.enabled && (
+              <div className="text-center">
+                <div className="text-xs text-muted-foreground">System Health</div>
+                <div
+                  className={cn(
+                    "text-lg font-semibold",
+                    canaryConfig.healthStatus === "healthy"
+                      ? "text-green-400"
+                      : canaryConfig.healthStatus === "degraded"
+                        ? "text-yellow-400"
+                        : canaryConfig.healthStatus === "unhealthy"
+                          ? "text-red-400"
+                          : "text-muted-foreground",
+                  )}
+                >
+                  {canaryConfig.healthStatus
+                    ? canaryConfig.healthStatus.charAt(0).toUpperCase() +
+                      canaryConfig.healthStatus.slice(1)
+                    : "Pending"}
                 </div>
               </div>
             )}

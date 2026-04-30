@@ -9,6 +9,42 @@ type SympoziumConfigSpec struct {
 	// Gateway configures the shared Envoy Gateway infrastructure.
 	// +optional
 	Gateway *GatewaySpec `json:"gateway,omitempty"`
+
+	// Canary configures the built-in system health canary.
+	// When enabled, a canary Ensemble is created that periodically
+	// validates end-to-end platform health.
+	// +optional
+	Canary *CanarySpec `json:"canary,omitempty"`
+}
+
+// CanarySpec configures the built-in system health canary.
+type CanarySpec struct {
+	// Enabled is the master switch for the system canary.
+	// When true, a canary Ensemble is created/enabled.
+	// When false, the canary Ensemble is disabled (but not deleted).
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled"`
+
+	// Interval is the health check interval (e.g. "15m", "30m", "1h").
+	// +kubebuilder:default="30m"
+	// +optional
+	Interval string `json:"interval,omitempty"`
+
+	// Model is the LLM model to use (e.g. "gpt-4o", "claude-sonnet-4-20250514").
+	// +optional
+	Model string `json:"model,omitempty"`
+
+	// Provider is the LLM provider (e.g. "openai", "anthropic", "ollama").
+	// +optional
+	Provider string `json:"provider,omitempty"`
+
+	// BaseURL overrides the provider API endpoint (for local models or proxies).
+	// +optional
+	BaseURL string `json:"baseURL,omitempty"`
+
+	// AuthSecretRef is the name of a Secret containing provider API keys.
+	// +optional
+	AuthSecretRef string `json:"authSecretRef,omitempty"`
 }
 
 // GatewaySpec defines the desired state of the shared Gateway.
@@ -65,9 +101,31 @@ type SympoziumConfigStatus struct {
 	// +optional
 	Gateway *GatewayStatusInfo `json:"gateway,omitempty"`
 
+	// Canary reports the observed state of the system canary.
+	// +optional
+	Canary *CanaryStatusInfo `json:"canary,omitempty"`
+
 	// Conditions represent the latest available observations.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// CanaryStatusInfo reports the observed canary state.
+type CanaryStatusInfo struct {
+	// EnsembleCreated indicates the canary Ensemble CR exists.
+	EnsembleCreated bool `json:"ensembleCreated"`
+
+	// LastRunPhase is the phase of the most recent canary run.
+	// +optional
+	LastRunPhase string `json:"lastRunPhase,omitempty"`
+
+	// LastRunTime is the completion time of the most recent canary run.
+	// +optional
+	LastRunTime string `json:"lastRunTime,omitempty"`
+
+	// HealthStatus is the overall health from the last report: healthy, degraded, unhealthy, unknown.
+	// +optional
+	HealthStatus string `json:"healthStatus,omitempty"`
 }
 
 // GatewayStatusInfo reports the observed Gateway state.
@@ -88,6 +146,8 @@ type GatewayStatusInfo struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Gateway",type="boolean",JSONPath=".spec.gateway.enabled"
 // +kubebuilder:printcolumn:name="Domain",type="string",JSONPath=".spec.gateway.baseDomain"
+// +kubebuilder:printcolumn:name="Canary",type="boolean",JSONPath=".spec.canary.enabled",priority=1
+// +kubebuilder:printcolumn:name="Health",type="string",JSONPath=".status.canary.healthStatus",priority=1
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 

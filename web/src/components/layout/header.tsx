@@ -1,6 +1,6 @@
 import { useAuth } from "@/components/auth-provider";
 import { getNamespace, setNamespace } from "@/lib/api";
-import { useNamespaces } from "@/hooks/use-api";
+import { useNamespaces, useCanaryConfig } from "@/hooks/use-api";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,14 +9,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogOut, Wifi, WifiOff } from "lucide-react";
+import { Activity, LogOut, Wifi, WifiOff } from "lucide-react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useState } from "react";
+import { formatAge } from "@/lib/utils";
 
 export function Header() {
   const { logout } = useAuth();
   const { connected } = useWebSocket();
   const { data: namespaces } = useNamespaces();
+  const { data: canary } = useCanaryConfig();
   const [ns, setNs] = useState(getNamespace());
 
   const handleNsChange = (value: string) => {
@@ -45,6 +47,27 @@ export function Header() {
         </div>
       </div>
       <div className="flex items-center gap-3">
+        {/* Canary health indicator */}
+        {canary?.enabled && canary.healthStatus && (
+          <div
+            title={`System Canary${canary.lastRunTime ? ` — last check: ${formatAge(canary.lastRunTime)}` : ""}`}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border cursor-default ${
+              canary.healthStatus === "healthy"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                : canary.healthStatus === "degraded"
+                  ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                  : canary.healthStatus === "unhealthy"
+                    ? "bg-red-500/10 text-red-400 border-red-500/20"
+                    : "bg-muted/50 text-muted-foreground border-border/50"
+            }`}
+          >
+            <Activity className="h-3 w-3" />
+            <span>
+              {canary.healthStatus.charAt(0).toUpperCase() +
+                canary.healthStatus.slice(1)}
+            </span>
+          </div>
+        )}
         {/* Connection status indicator */}
         <div
           className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium border ${

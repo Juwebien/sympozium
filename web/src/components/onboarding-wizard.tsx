@@ -165,7 +165,7 @@ const HEARTBEAT_INTERVALS = [
   { value: "24h", label: "Once a day" },
 ];
 
-function heartbeatOptions(mode: "agent" | "persona") {
+function heartbeatOptions(mode: "agent" | "persona" | "canary") {
   return [
     {
       value: "",
@@ -217,8 +217,8 @@ export interface WizardResult {
 interface OnboardingWizardProps {
   open: boolean;
   onClose: () => void;
-  /** "agent" shows a Name step first; "persona" skips it */
-  mode: "agent" | "persona";
+  /** "agent" shows a Name step first; "persona" skips it; "canary" shows only provider/apikey/model */
+  mode: "agent" | "persona" | "canary";
   /** Display name shown in the dialog title */
   targetName?: string;
   /** Number of personas in the pack (persona mode only) */
@@ -245,7 +245,10 @@ type WizardStep =
   | "confirm"
   | "channelAction";
 
-function stepsForMode(mode: "agent" | "persona"): WizardStep[] {
+function stepsForMode(mode: "agent" | "persona" | "canary"): WizardStep[] {
+  if (mode === "canary") {
+    return ["provider", "apikey", "model"];
+  }
   if (mode === "agent") {
     return [
       "name",
@@ -617,7 +620,11 @@ export function OnboardingWizard({
     ) {
       nextIdx++;
     }
-    if (nextIdx < steps.length) setStep(steps[nextIdx]);
+    if (nextIdx < steps.length) {
+      setStep(steps[nextIdx]);
+    } else {
+      completeWithDefaults();
+    }
   }
   function prev() {
     // Skip apikey and model steps when going back too
@@ -681,10 +688,17 @@ export function OnboardingWizard({
       <Sparkles className="h-5 w-5 text-blue-400" />
     );
   const titleText =
-    mode === "agent" ? "Create Agent" : `Enable ${targetName || "Pack"}`;
-  const completeLabel = mode === "agent" ? "Create" : "Activate";
+    mode === "canary"
+      ? "Configure System Canary"
+      : mode === "agent"
+        ? "Create Agent"
+        : `Enable ${targetName || "Pack"}`;
+  const completeLabel =
+    mode === "canary" ? "Start Canary" : mode === "agent" ? "Create" : "Activate";
   const completeIcon =
-    mode === "agent" ? (
+    mode === "canary" ? (
+      <Power className="h-4 w-4" />
+    ) : mode === "agent" ? (
       <Server className="h-4 w-4" />
     ) : (
       <Power className="h-4 w-4" />
@@ -696,19 +710,23 @@ export function OnboardingWizard({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {titleIcon}
-            {mode === "persona" ? (
-              <>
-                Enable{" "}
-                <span className="font-mono text-blue-400">{targetName}</span>
-              </>
-            ) : (
-              "Create Agent"
-            )}
+            {mode === "canary"
+              ? "Configure System Canary"
+              : mode === "persona"
+                ? (
+                  <>
+                    Enable{" "}
+                    <span className="font-mono text-blue-400">{targetName}</span>
+                  </>
+                )
+                : "Create Agent"}
           </DialogTitle>
           <DialogDescription>
-            {mode === "agent"
-              ? "Configure a new Agent with provider, model, and skills."
-              : "Configure provider, model, skills, and channels to activate this ensemble."}
+            {mode === "canary"
+              ? "Choose a provider and model for the system health canary."
+              : mode === "agent"
+                ? "Configure a new Agent with provider, model, and skills."
+                : "Configure provider, model, skills, and channels to activate this ensemble."}
           </DialogDescription>
         </DialogHeader>
 
