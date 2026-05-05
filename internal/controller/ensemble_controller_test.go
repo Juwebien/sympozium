@@ -294,3 +294,150 @@ func TestValidateRelationshipGraph_MultipleStimulusRelationships(t *testing.T) {
 		t.Errorf("error should mention multiple stimulus, got: %v", err)
 	}
 }
+
+// ── Skill reconciliation tests ────────────────────────────────────────────────
+
+func TestBuildDesiredSkills_Basic(t *testing.T) {
+	pack := &sympoziumv1alpha1.Ensemble{
+		Spec: sympoziumv1alpha1.EnsembleSpec{
+			SkillParams: map[string]map[string]string{
+				"github-gitops": {"repo": "my-org/my-repo"},
+			},
+		},
+	}
+	persona := &sympoziumv1alpha1.AgentConfigSpec{
+		Skills: []string{"k8s-ops", "github-gitops"},
+	}
+
+	got := buildDesiredSkills(pack, persona)
+
+	// Should have k8s-ops, github-gitops (with params), and memory (auto-added).
+	if len(got) != 3 {
+		t.Fatalf("expected 3 skills, got %d: %+v", len(got), got)
+	}
+	if got[0].SkillPackRef != "k8s-ops" {
+		t.Errorf("expected first skill k8s-ops, got %s", got[0].SkillPackRef)
+	}
+	if got[1].SkillPackRef != "github-gitops" {
+		t.Errorf("expected second skill github-gitops, got %s", got[1].SkillPackRef)
+	}
+	if got[1].Params["repo"] != "my-org/my-repo" {
+		t.Errorf("expected github-gitops repo param, got %v", got[1].Params)
+	}
+	if got[2].SkillPackRef != "memory" {
+		t.Errorf("expected memory skill auto-added, got %s", got[2].SkillPackRef)
+	}
+}
+
+func TestBuildDesiredSkills_SkipsMCPBridge(t *testing.T) {
+	pack := &sympoziumv1alpha1.Ensemble{}
+	persona := &sympoziumv1alpha1.AgentConfigSpec{
+		Skills: []string{"mcp-bridge", "k8s-ops"},
+	}
+
+	got := buildDesiredSkills(pack, persona)
+
+	for _, s := range got {
+		if s.SkillPackRef == "mcp-bridge" {
+			t.Error("mcp-bridge should be filtered out")
+		}
+	}
+}
+
+func TestBuildDesiredSkills_MemoryNotDuplicated(t *testing.T) {
+	pack := &sympoziumv1alpha1.Ensemble{}
+	persona := &sympoziumv1alpha1.AgentConfigSpec{
+		Skills: []string{"memory", "k8s-ops"},
+	}
+
+	got := buildDesiredSkills(pack, persona)
+
+	memoryCount := 0
+	for _, s := range got {
+		if s.SkillPackRef == "memory" {
+			memoryCount++
+		}
+	}
+	if memoryCount != 1 {
+		t.Errorf("expected exactly 1 memory skill, got %d", memoryCount)
+	}
+}
+
+func TestBuildDesiredSkills_WebEndpoint(t *testing.T) {
+	pack := &sympoziumv1alpha1.Ensemble{}
+	persona := &sympoziumv1alpha1.AgentConfigSpec{
+		Skills: []string{"k8s-ops"},
+		WebEndpoint: &sympoziumv1alpha1.AgentConfigWebEndpoint{
+			Enabled:  true,
+			Hostname: "my-agent.example.com",
+		},
+	}
+
+	got := buildDesiredSkills(pack, persona)
+
+	var found bool
+	for _, s := range got {
+		if s.SkillPackRef == "web-endpoint" {
+			found = true
+			if s.Params["hostname"] != "my-agent.example.com" {
+				t.Errorf("expected hostname param, got %v", s.Params)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected web-endpoint skill to be included")
+	}
+}
+
+func TestSkillRefsEqual(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b []sympoziumv1alpha1.SkillRef
+		want bool
+	}{
+		{
+			name: "both nil",
+			a:    nil,
+			b:    nil,
+			want: true,
+		},
+		{
+			name: "equal with params",
+			a: []sympoziumv1alpha1.SkillRef{
+				{SkillPackRef: "k8s-ops"},
+				{SkillPackRef: "github-gitops", Params: map[string]string{"repo": "org/repo"}},
+			},
+			b: []sympoziumv1alpha1.SkillRef{
+				{SkillPackRef: "k8s-ops"},
+				{SkillPackRef: "github-gitops", Params: map[string]string{"repo": "org/repo"}},
+			},
+			want: true,
+		},
+		{
+			name: "different length",
+			a:    []sympoziumv1alpha1.SkillRef{{SkillPackRef: "k8s-ops"}},
+			b:    []sympoziumv1alpha1.SkillRef{{SkillPackRef: "k8s-ops"}, {SkillPackRef: "memory"}},
+			want: false,
+		},
+		{
+			name: "different skill",
+			a:    []sympoziumv1alpha1.SkillRef{{SkillPackRef: "k8s-ops"}},
+			b:    []sympoziumv1alpha1.SkillRef{{SkillPackRef: "github-gitops"}},
+			want: false,
+		},
+		{
+			name: "different params",
+			a:    []sympoziumv1alpha1.SkillRef{{SkillPackRef: "x", Params: map[string]string{"a": "1"}}},
+			b:    []sympoziumv1alpha1.SkillRef{{SkillPackRef: "x", Params: map[string]string{"a": "2"}}},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := skillRefsEqual(tt.a, tt.b); got != tt.want {
+				t.Errorf("skillRefsEqual() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

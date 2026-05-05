@@ -417,6 +417,13 @@ func (r *EnsembleReconciler) reconcileAgentConfig(
 			}
 		}
 
+		// Propagate skills changes from persona definition.
+		wantSkills := buildDesiredSkills(pack, persona)
+		if !skillRefsEqual(existingInst.Spec.Skills, wantSkills) {
+			existingInst.Spec.Skills = wantSkills
+			needsUpdate = true
+		}
+
 		if needsUpdate {
 			log.Info("Updating pack-level settings on existing instance", "instance", instanceName)
 			if err := r.Update(ctx, existingInst); err != nil {
@@ -887,6 +894,75 @@ func channelSetsEqual(a, b map[string]bool) bool {
 	for k := range a {
 		if !b[k] {
 			return false
+		}
+	}
+	return true
+}
+
+// buildDesiredSkills computes the desired skills list for a persona, matching
+// the logic in buildAgent. This is used to reconcile skills on existing Agents.
+func buildDesiredSkills(pack *sympoziumv1alpha1.Ensemble, persona *sympoziumv1alpha1.AgentConfigSpec) []sympoziumv1alpha1.SkillRef {
+	var skills []sympoziumv1alpha1.SkillRef
+	for _, s := range persona.Skills {
+		if s == "mcp-bridge" {
+			continue
+		}
+		ref := sympoziumv1alpha1.SkillRef{
+			SkillPackRef: s,
+		}
+		if pack.Spec.SkillParams != nil {
+			if params, ok := pack.Spec.SkillParams[s]; ok && len(params) > 0 {
+				ref.Params = params
+			}
+		}
+		skills = append(skills, ref)
+	}
+
+	// Ensure memory skill is always attached.
+	hasMemory := false
+	for _, s := range skills {
+		if s.SkillPackRef == "memory" {
+			hasMemory = true
+			break
+		}
+	}
+	if !hasMemory {
+		skills = append(skills, sympoziumv1alpha1.SkillRef{
+			SkillPackRef: "memory",
+		})
+	}
+
+	// Web endpoint skill.
+	if persona.WebEndpoint != nil && persona.WebEndpoint.Enabled {
+		params := map[string]string{}
+		if persona.WebEndpoint.Hostname != "" {
+			params["hostname"] = persona.WebEndpoint.Hostname
+		}
+		skills = append(skills, sympoziumv1alpha1.SkillRef{
+			SkillPackRef: "web-endpoint",
+			Params:       params,
+		})
+	}
+
+	return skills
+}
+
+// skillRefsEqual compares two SkillRef slices for equality.
+func skillRefsEqual(a, b []sympoziumv1alpha1.SkillRef) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].SkillPackRef != b[i].SkillPackRef || a[i].ConfigMapRef != b[i].ConfigMapRef {
+			return false
+		}
+		if len(a[i].Params) != len(b[i].Params) {
+			return false
+		}
+		for k, v := range a[i].Params {
+			if b[i].Params[k] != v {
+				return false
+			}
 		}
 	}
 	return true
