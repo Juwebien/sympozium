@@ -143,7 +143,7 @@ $(ENVTEST):
 
 test-system: envtest ## Run system tests (envtest — no cluster needed, fast)
 	KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
-	$(GOCMD) test ./test/system/ -v -count=1 -timeout 120s
+	$(GOCMD) test -tags system ./test/system/ -v -count=1 -timeout 120s
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Install controller-gen locally
