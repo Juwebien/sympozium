@@ -604,8 +604,8 @@ describe("Research Team — shared memory config", () => {
     }).then((resp) => {
       const spec = resp.body.spec;
 
-      // 5 relationships
-      expect(spec.relationships).to.have.length(5);
+      // 6 relationships (includes stimulus → lead)
+      expect(spec.relationships).to.have.length(6);
 
       // Shared memory enabled
       expect(spec.sharedMemory.enabled).to.eq(true);
@@ -649,7 +649,7 @@ describe("Research Team — shared memory config", () => {
     cy.visit(`/ensembles/${PACK}?tab=workflow`);
     // Persona canvas
     cy.contains("Persona Workflow", { timeout: 10000 }).should("be.visible");
-    cy.contains("4 personas with 5 relationships").should("be.visible");
+    cy.contains("4 personas with 6 relationships").should("be.visible");
     // Shared memory — scroll down to see it
     cy.contains("Shared Workflow Memory").scrollIntoView().should("be.visible");
     // Relationships table

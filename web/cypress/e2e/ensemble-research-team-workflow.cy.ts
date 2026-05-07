@@ -59,10 +59,13 @@ describe("Research Team — default pack with relationships", () => {
         "reviewer",
       ]);
 
-      // 5 relationships
-      expect(spec.relationships).to.have.length(5);
+      // 6 relationships (includes stimulus → lead)
+      expect(spec.relationships).to.have.length(6);
 
       // Verify relationship types
+      const stimulus = spec.relationships.filter(
+        (r: { type: string }) => r.type === "stimulus",
+      );
       const delegation = spec.relationships.filter(
         (r: { type: string }) => r.type === "delegation",
       );
@@ -72,6 +75,7 @@ describe("Research Team — default pack with relationships", () => {
       const supervision = spec.relationships.filter(
         (r: { type: string }) => r.type === "supervision",
       );
+      expect(stimulus).to.have.length(1); // research-brief→lead
       expect(delegation).to.have.length(2); // lead→researcher, researcher→writer
       expect(sequential).to.have.length(1); // writer→reviewer
       expect(supervision).to.have.length(2); // lead→writer, lead→reviewer
@@ -94,7 +98,7 @@ describe("Research Team — default pack with relationships", () => {
 
   it("shows the correct relationship count in the description", () => {
     cy.visit(`/ensembles/${PACK}?tab=workflow`);
-    cy.contains("4 personas with 5 relationships", { timeout: 10000 }).should(
+    cy.contains("4 personas with 6 relationships", { timeout: 10000 }).should(
       "be.visible",
     );
   });
@@ -146,13 +150,13 @@ describe("Research Team — default pack with relationships", () => {
         body: { relationships: updatedRels },
       }).then((patchResp) => {
         expect(patchResp.status).to.eq(200);
-        expect(patchResp.body.spec.relationships).to.have.length(6);
+        expect(patchResp.body.spec.relationships).to.have.length(7);
       });
     });
 
     // Verify the canvas shows the updated count
     cy.visit(`/ensembles/${PACK}?tab=workflow`);
-    cy.contains("4 personas with 6 relationships", { timeout: 10000 }).should(
+    cy.contains("4 personas with 7 relationships", { timeout: 10000 }).should(
       "be.visible",
     );
 
@@ -163,6 +167,11 @@ describe("Research Team — default pack with relationships", () => {
       headers: apiHeaders(),
       body: {
         relationships: [
+          {
+            source: "research-brief",
+            target: "lead",
+            type: "stimulus",
+          },
           {
             source: "researcher",
             target: "writer",
