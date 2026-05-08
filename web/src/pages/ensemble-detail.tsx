@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { formatAge } from "@/lib/utils";
+import type { InstalledAgentConfig } from "@/lib/api";
 import { EnsembleCanvas } from "@/components/ensemble-canvas";
 import {
   OnboardingWizard,
@@ -542,8 +543,8 @@ export function EnsembleDetailPage() {
           </div>
 
           {/* Installed Instances */}
-          {pack.status?.installedAgents &&
-            pack.status.installedAgents.length > 0 && (
+          {pack.status?.installedPersonas &&
+            pack.status.installedPersonas.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">
@@ -552,7 +553,7 @@ export function EnsembleDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {pack.status.installedAgents.map((ip) => (
+                    {pack.status.installedPersonas.map((ip: InstalledAgentConfig) => (
                       <Link
                         key={ip.agentName}
                         to={`/agents/${ip.agentName}`}
@@ -605,8 +606,8 @@ export function EnsembleDetailPage() {
               Agents ({pack.spec.agentConfigs?.length ?? 0})
             </h2>
             {pack.spec.agentConfigs?.map((persona, i) => {
-              const installed = pack.status?.installedAgents?.some(
-                (ip) => ip.name === persona.name,
+              const installed = pack.status?.installedPersonas?.some(
+                (ip: InstalledAgentConfig) => ip.name === persona.name,
               );
               const isEditing = editingPersona === persona.name;
               return (
