@@ -804,10 +804,63 @@ func (r *AgentRunReconciler) reconcileCompleted(ctx context.Context, log logr.Lo
 // blocking), so the main responsibility is to skip timeout enforcement while
 // the parent waits. The SpawnRouter transitions the parent back to Running
 // once the child finishes and delivers the result via IPC.
+//
+// As a safety net, we also check if all delegate children have reached a
+// terminal phase (Succeeded/Failed) but the parent is still waiting. This
+// can happen if the SpawnRouter's in-memory state was lost (e.g. controller
+// restart). In that case we fail the parent to avoid it being stuck forever.
 func (r *AgentRunReconciler) reconcileAwaitingDelegate(ctx context.Context, log logr.Logger, agentRun *sympoziumv1alpha1.AgentRun) (ctrl.Result, error) {
 	log.Info("AgentRun awaiting delegate completion",
 		"delegates", len(agentRun.Status.Delegates),
 	)
+
+	// Safety net: check if all delegate children have terminated but the
+	// SpawnRouter never delivered the result (e.g. after a controller restart).
+	if len(agentRun.Status.Delegates) > 0 {
+		allTerminal := true
+		anyFailed := false
+		for i, d := range agentRun.Status.Delegates {
+			var childRun sympoziumv1alpha1.AgentRun
+			if err := r.Get(ctx, types.NamespacedName{Name: d.ChildRunName, Namespace: agentRun.Namespace}, &childRun); err != nil {
+				continue // Child not found — may have been cleaned up.
+			}
+			// Sync delegate status from the actual child.
+			agentRun.Status.Delegates[i].Phase = childRun.Status.Phase
+			switch childRun.Status.Phase {
+			case sympoziumv1alpha1.AgentRunPhaseSucceeded, sympoziumv1alpha1.AgentRunPhaseFailed:
+				// Terminal.
+			default:
+				allTerminal = false
+			}
+			if childRun.Status.Phase == sympoziumv1alpha1.AgentRunPhaseFailed {
+				anyFailed = true
+				if agentRun.Status.Delegates[i].Error == "" {
+					agentRun.Status.Delegates[i].Error = childRun.Status.Error
+				}
+			}
+			if childRun.Status.Phase == sympoziumv1alpha1.AgentRunPhaseSucceeded {
+				if agentRun.Status.Delegates[i].Result == "" {
+					agentRun.Status.Delegates[i].Result = childRun.Status.Result
+				}
+			}
+		}
+
+		if allTerminal {
+			log.Info("All delegates terminated but parent still awaiting — recovering",
+				"anyFailed", anyFailed)
+			if anyFailed {
+				return ctrl.Result{}, r.failRun(ctx, agentRun, "delegate child run failed")
+			}
+			// All succeeded but SpawnRouter missed it — transition back to Running
+			// so the agent can pick up the result on next reconcile.
+			agentRun.Status.Phase = sympoziumv1alpha1.AgentRunPhaseRunning
+			if err := r.Status().Update(ctx, agentRun); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{Requeue: true}, nil
+		}
+	}
+
 	// Requeue periodically so the controller can react to phase transitions
 	// made by the SpawnRouter. No timeout check — the parent is blocked on
 	// a delegation tool call and the child may take several minutes.
@@ -2576,30 +2629,40 @@ func (r *AgentRunReconciler) injectRelationshipContext(ctx context.Context, agen
 }
 
 // injectSubagentsConfig adds SUBAGENTS_ENABLED, SUBAGENTS_MAX_CHILDREN, and
-// SUBAGENTS_MAX_DEPTH env vars to the agent container when the Agent's
-// SubagentsSpec is configured. This enables the spawn_subagents tool.
+// SUBAGENTS_MAX_DEPTH env vars to the agent container when the "subagents"
+// SkillPack is attached. Limits are taken from SubagentsSpec if set, otherwise
+// sensible defaults are used.
 func (r *AgentRunReconciler) injectSubagentsConfig(ctx context.Context, agentRun *sympoziumv1alpha1.AgentRun, job *batchv1.Job) {
 	if agentRun.Spec.AgentRef == "" {
 		return
 	}
 
+	// Check whether the "subagents" skill is attached to the AgentRun or
+	// the backing Agent. The skill attachment is the gate — users control
+	// access by adding/removing the SkillPack.
+	hasSkill := false
+	for _, s := range agentRun.Spec.Skills {
+		if s.SkillPackRef == "subagents" {
+			hasSkill = true
+			break
+		}
+	}
+	if !hasSkill {
+		return
+	}
+
+	// Look up the Agent for optional limit overrides.
 	var inst sympoziumv1alpha1.Agent
-	if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.AgentRef, Namespace: agentRun.Namespace}, &inst); err != nil {
-		return
-	}
-
-	sub := inst.Spec.Agents.Default.Subagents
-	if sub == nil {
-		return
-	}
-
-	maxChildren := sub.MaxChildrenPerAgent
-	if maxChildren <= 0 {
-		maxChildren = 3
-	}
-	maxDepth := sub.MaxDepth
-	if maxDepth <= 0 {
-		maxDepth = 2
+	maxChildren, maxDepth := 3, 2
+	if err := r.Get(ctx, types.NamespacedName{Name: agentRun.Spec.AgentRef, Namespace: agentRun.Namespace}, &inst); err == nil {
+		if sub := inst.Spec.Agents.Default.Subagents; sub != nil {
+			if sub.MaxChildrenPerAgent > 0 {
+				maxChildren = sub.MaxChildrenPerAgent
+			}
+			if sub.MaxDepth > 0 {
+				maxDepth = sub.MaxDepth
+			}
+		}
 	}
 
 	podSpec := &job.Spec.Template.Spec

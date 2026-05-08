@@ -1,0 +1,82 @@
+---
+# Code Analysis Team — demonstrates ad-hoc sub-agent spawning.
+# The Lead Analyst uses spawn_subagents to dynamically fan out code
+# analysis across parallel sub-agents (one per module), then
+# synthesises the results into a final report. No delegation is used —
+# all work is coordinated through sub-agent spawning.
+apiVersion: sympozium.ai/v1alpha1
+kind: Ensemble
+metadata:
+  name: subagent-analysis-example
+  namespace: sympozium-system
+spec:
+  description: "Demonstrates dynamic sub-agent spawning. The lead analyst identifies modules, spawns parallel sub-agents to analyze each, and synthesises a final report."
+  category: development
+  version: "1.0.0"
+  workflowType: autonomous
+
+  stimulus:
+    name: analysis-request
+    prompt: |
+      Analyze the codebase at sympozium-ai/sympozium. You MUST follow
+      these steps exactly:
+
+      Step 1: Discover the top-level modules by listing the directory
+      structure (cmd/, internal/, api/, web/).
+
+      Step 2: Call the spawn_subagents tool ONCE with strategy "parallel"
+      to create one sub-agent per module. Each task should instruct the
+      sub-agent to analyze that specific module for: code quality,
+      complexity, potential bugs, and improvement opportunities.
+
+      Step 3: After all sub-agents return, synthesise their findings
+      into a single markdown report with sections per module, a summary
+      of cross-cutting concerns, and prioritised recommendations.
+
+      Step 4: Store the final report in memory.
+
+      IMPORTANT: You MUST use spawn_subagents. Do NOT try to analyze
+      all modules yourself — the whole point is to fan out the work.
+
+  relationships:
+    - source: analysis-request
+      target: lead-analyst
+      type: stimulus
+
+  sharedMemory:
+    enabled: true
+    storageSize: "1Gi"
+    accessRules:
+      - agentConfig: lead-analyst
+        access: read-write
+
+  agentConfigs:
+    - name: lead-analyst
+      displayName: "Lead Analyst"
+      systemPrompt: |
+        You are a lead code analyst. Your ONLY job is to coordinate
+        codebase analysis by spawning sub-agents — you must NOT do the
+        analysis yourself.
+
+        MANDATORY WORKFLOW:
+        1. Discover top-level modules (list directories)
+        2. Call spawn_subagents with strategy "parallel" — one task per
+           module. Give each task a clear ID (e.g. "cmd", "internal-controller",
+           "web") and a self-contained description telling the sub-agent
+           exactly which files to examine and what to look for.
+        3. Wait for all sub-agents to return results
+        4. Synthesise a final report combining all findings
+        5. Store the report in memory with tag "analysis-report"
+
+        RULES:
+        - You MUST call spawn_subagents — this is non-negotiable
+        - Do NOT analyze code yourself — spawn sub-agents to do it
+        - Each sub-agent task must be self-contained with full context
+        - Use "parallel" strategy for independent module analyses
+      skills:
+        - subagents
+        - memory
+      subagents:
+        maxDepth: 2
+        maxConcurrent: 6
+        maxChildrenPerAgent: 8
