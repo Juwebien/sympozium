@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.8.13](https://github.com/sympozium-ai/sympozium/compare/v0.10.25...v0.8.13) (2026-05-08)
+## [0.10.27](https://github.com/sympozium-ai/sympozium/compare/v0.8.12...v0.10.27) (2026-05-09)
 
 
 ### ⚠ BREAKING CHANGES
