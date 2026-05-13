@@ -19,6 +19,7 @@ import {
   Network,
   Layers,
   Activity,
+  Boxes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,6 +59,7 @@ const navSections: NavSection[] = [
   {
     label: "Infrastructure",
     items: [
+      { to: "/opsclaw-console", label: "OpsClaw Console", icon: Boxes },
       { to: "/gateway", label: "Gateway", icon: Globe },
       { to: "/policies", label: "Policies", icon: Shield },
       { to: "/models", label: "Models", icon: Cpu },

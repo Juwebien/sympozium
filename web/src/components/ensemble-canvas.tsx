@@ -60,6 +60,10 @@ import {
 	StimulusDialogProvider,
 } from "@/components/canvas-primitives";
 
+type EnsembleCanvasNode = Node<
+	AgentConfigNodeData | ModelNodeData | ProviderNodeData | StimulusNodeData
+>;
+
 // ── Real-time run status updates via WebSocket ─────────────────────────────
 
 /** Invalidates the runs query when a run lifecycle event arrives over the
@@ -208,11 +212,8 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
 
 	// Use plain useState instead of useNodesState/useEdgesState to avoid
 	// the infinite-loop traps in @xyflow/react v12 when external data changes.
-	const [nodes, setNodesState] = useState(initialNodes);
+	const [nodes, setNodesState] = useState<EnsembleCanvasNode[]>(initialNodes);
 	const [edges, setEdgesState] = useState(initialEdges);
-
-	// Ref to the ReactFlow instance for one-time fitView on mount.
-	const reactFlowRef = useRef(null);
 
 	// Use refs so we can call setNodes/setEdges from callbacks without
 	// adding them to dependency arrays.
@@ -334,7 +335,12 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
 	// Handlers for ReactFlow drag/transform events (plain useState, not useNodesState).
 	const onNodesChange = useCallback(
 		(changes: NodeChange[]) =>
-			setNodesRef.current((prev) => applyNodeChanges(changes, prev)),
+			setNodesRef.current((prev) =>
+				applyNodeChanges<EnsembleCanvasNode>(
+					changes as NodeChange<EnsembleCanvasNode>[],
+					prev,
+				),
+			),
 		[],
 	);
 
@@ -437,14 +443,12 @@ export function EnsembleCanvas({ pack }: EnsembleCanvasProps) {
 							onCancel={() => setPendingConnection(null)}
 						/>
 					)}
-					<ReactFlow
-						ref={reactFlowRef}
+					<ReactFlow<EnsembleCanvasNode, Edge>
 						nodes={nodes}
 						edges={displayEdges}
 						onNodesChange={onNodesChange}
-						onNodesInit={() => {
-							// Fit view once on mount; rfDefaults has fitView: false
-							reactFlowRef.current?.fitView({ padding: 0.3 });
+						onInit={(instance) => {
+							instance.fitView({ padding: 0.3 });
 						}}
 						onEdgesChange={onEdgesChange}
 						onConnect={onConnect}

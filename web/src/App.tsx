@@ -22,6 +22,7 @@ import { SettingsPage } from "@/pages/settings";
 import { TopologyPage } from "@/pages/topology";
 import { SyntheticMembranePage } from "@/pages/synthetic-membrane";
 import { ModelDensityPage } from "@/pages/model-density";
+import { OpsClawConsolePage } from "@/pages/opsclaw-console";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="/models" element={<ModelsPage />} />
         <Route path="/models/:name" element={<ModelDetailPage />} />
         <Route path="/gateway" element={<GatewayPage />} />
+        <Route path="/opsclaw-console" element={<OpsClawConsolePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/synthetic-membrane" element={<SyntheticMembranePage />} />
       </Route>

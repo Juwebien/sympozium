@@ -78,6 +78,8 @@ import {
   EDGE_TYPES,
 } from "@/components/canvas-primitives";
 
+type BuilderNode = Node<AgentConfigNodeData | StimulusNodeData>;
+
 // ── Random agent name generator ───────────────────────────────────────────
 
 const ADJECTIVES = [
@@ -657,7 +659,7 @@ function BuilderCanvas({
     [relationships],
   );
 
-  const [nodes, setNodesState] = useState(initialNodes);
+  const [nodes, setNodesState] = useState<BuilderNode[]>(initialNodes);
   const [edges, setEdgesState] = useState(initialEdges);
 
   const setNodesRef = useRef(setNodesState);
@@ -671,8 +673,8 @@ function BuilderCanvas({
 
   // Handlers for ReactFlow drag/transform events.
   const onNodesChange = useCallback(
-    (changes: NodeChange[]) => setNodesRef.current(
-      (prev) => applyNodeChanges(changes, prev)),
+    (changes: NodeChange<BuilderNode>[]) => setNodesRef.current(
+      (prev) => applyNodeChanges<BuilderNode>(changes, prev)),
     [],
   );
   const onEdgesChange = useCallback(

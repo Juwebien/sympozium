@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
 const apiPort = process.env.API_LOCAL_PORT || "8081";
+const opsclawApiPort = process.env.OPSCLAW_API_LOCAL_PORT || "8082";
 
 export default defineConfig({
   plugins: [react()],
@@ -18,6 +19,11 @@ export default defineConfig({
     },
     proxy: {
       "/api": `http://localhost:${apiPort}`,
+      "/opsclaw-api": {
+        target: `http://localhost:${opsclawApiPort}`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/opsclaw-api/, ""),
+      },
       "/ws": {
         target: `ws://localhost:${apiPort}`,
         ws: true,

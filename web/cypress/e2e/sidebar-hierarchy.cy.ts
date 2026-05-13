@@ -11,6 +11,7 @@ describe("Sidebar — grouped navigation", () => {
 
     // All nav links should be present.
     cy.get("aside").contains("Dashboard").should("exist");
+    cy.get("aside").contains("OpsClaw Console").should("exist");
     cy.get("aside").contains("Gateway").should("exist");
     cy.get("aside").contains("Ensembles").should("exist");
     cy.get("aside").contains("Agents").should("exist");
@@ -39,6 +40,10 @@ describe("Sidebar — grouped navigation", () => {
     // Click Policies in sidebar (Infrastructure section).
     cy.get("aside").contains("a", "Policies").click();
     cy.url().should("include", "/policies");
+
+    // Click OpsClaw Console in sidebar (Infrastructure section).
+    cy.get("aside").contains("a", "OpsClaw Console").click();
+    cy.url().should("include", "/opsclaw-console");
   });
 });
 
