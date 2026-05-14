@@ -5,10 +5,11 @@ FROM alpine:3.20
 
 ARG KUBECTL_VERSION=v1.31.4
 ARG LLMFIT_VERSION=v0.9.24
+ARG RTK_VERSION=0.40.0
 ARG TARGETARCH
 
 RUN set -eux; \
-    apk add --no-cache bash curl jq ca-certificates; \
+    apk add --no-cache bash curl gcompat jq ca-certificates findutils tar; \
     adduser -D -u 1000 agent; \
     case "${TARGETARCH}" in \
       amd64) LLMFIT_ARCH="x86_64" ;; \
@@ -22,6 +23,9 @@ RUN set -eux; \
     mv /tmp/llmfit-${LLMFIT_VERSION}-${LLMFIT_ARCH}-unknown-linux-musl/llmfit /usr/local/bin/llmfit; \
     chmod +x /usr/local/bin/llmfit; \
     rm -rf /tmp/llmfit.tar.gz /tmp/llmfit-${LLMFIT_VERSION}-${LLMFIT_ARCH}-unknown-linux-musl
+
+COPY images/runtime-tools/install-rtk.sh /usr/local/bin/install-rtk.sh
+RUN RTK_VERSION="${RTK_VERSION}" TARGETARCH="${TARGETARCH}" /usr/local/bin/install-rtk.sh
 
 COPY images/skill-llmfit/tool-executor.sh /usr/local/bin/tool-executor.sh
 COPY images/skill-llmfit/llmfit-probe-json.sh /usr/local/bin/llmfit-probe-json.sh
