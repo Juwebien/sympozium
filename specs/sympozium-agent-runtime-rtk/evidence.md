@@ -157,3 +157,26 @@ Result:
 
 - Promote rebuilt images through the image catalog and GitOps digest lock.
 - Run live cluster proof after Flux applies the promoted digests.
+
+## 2026-05-14 - Post-Merge Image Publication Evidence
+
+Result:
+
+- Sympozium PR `Juwebien/sympozium#2` merged as `91cccef993a8c9c70a2697f1f729700fba0540f5`.
+- Post-merge build run `25844870398` completed successfully with 22/22 jobs green.
+- All jobs ran on the homelab ARC label `sympozium-runners`.
+- The build matrix published RTK-bearing images for `agent-runner`, `skill-k8s-ops`, `skill-github-gitops`, `skill-sre-observability`, and `skill-llmfit`, plus the other Sympozium service/runtime images in the same run.
+- The runtime-side follow-up "promote rebuilt images through the image catalog" is satisfied for this merge by the successful post-merge publication run; downstream GitOps promotion remains governed by the catalog/lock flow when these Sympozium image digests are consumed by OpsClaw deployments.
+- The workspace workflow audit found no first-party `ubuntu-latest`, `windows-latest`, `macos-latest`, or `${{ vars.RUNNER... }}` runner indirection outside ignored `node_modules` content.
+- `scripts/platform-health.sh --all-repos` returned `dirty=0` for every canonical repo after the merge and local fast-forward.
+
+Validation:
+
+```bash
+gh run view 25844870398 --repo Juwebien/sympozium --json status,conclusion,jobs
+gh api repos/Juwebien/sympozium/actions/runs/25844870398/jobs --paginate --jq '.jobs[] | [.name,.status,.conclusion,.runner_name,((.labels//[])|join("+"))] | @tsv'
+scripts/platform-health.sh --all-repos
+```
+
+Sympozium build run: https://github.com/Juwebien/sympozium/actions/runs/25844870398
+Verified-By: codex at 2026-05-14T07:05:00Z

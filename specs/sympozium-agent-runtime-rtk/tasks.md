@@ -1,51 +1,67 @@
-# Sympozium Agent Runtime RTK Tasks
+# Tasks
 
-## Task 1 - Runtime image inventory
+## Task: Install RTK in Sympozium agent runtime images
 
-- Status: Done
-- Task: Identify the Sympozium images that execute agent commands and must contain RTK.
-- Owner: runtime-platform
-- Repo area: `images/**`, `cmd/agent-runner/**`, `specs/sympozium-agent-runtime-rtk/**`
-- Acceptance command: `rg -n "execute_command|tool-executor|agent-runner" cmd images internal`
-- Evidence expected: Decision table in `evidence.md`.
-- Rollback: Mark Sympozium RTK as pending in the OpsClaw product spec.
+Owner: Codex
 
-## Task 2 - Shared RTK installer
+Repo area: `repos/sympozium/sympozium`
 
-- Status: Done
-- Task: Add a checksum-verifying install script and lock file.
-- Owner: runtime-platform
-- Repo area: `images/runtime-tools/**`
-- Acceptance command: `sh -n images/runtime-tools/install-rtk.sh`
-- Evidence expected: Version, artifact URLs, checksums, and license policy.
-- Rollback: Remove `images/runtime-tools/**`.
+Paths allowed:
 
-## Task 3 - Agent runner image
+- `images/runtime-tools/**`
+- `images/agent-runner/**`
+- `images/skill-k8s-ops/**`
+- `images/skill-github-gitops/**`
+- `images/skill-sre-observability/**`
+- `images/skill-llmfit/**`
+- `specs/sympozium-agent-runtime-rtk/**`
 
-- Status: Done
-- Task: Install RTK in `images/agent-runner/Dockerfile`.
-- Owner: runtime-platform
-- Repo area: `images/agent-runner/**`
-- Acceptance command: `docker buildx build --load --build-arg TARGETARCH=amd64 -t sympozium-agent-runner:rtk-smoke -f images/agent-runner/Dockerfile .`
-- Evidence expected: `rtk --version`, `rtk gain`, and `rtk proxy /agent-runner` dry-run smoke.
-- Rollback: Revert the image stage and return to distroless static.
+Paths forbidden:
 
-## Task 4 - Command skill sidecars
+- Kubernetes manifests outside this repo
+- OpsClaw product implementation paths
+- GitOps catalog or lock files
+- SOPS or plaintext secret files
 
-- Status: Done
-- Task: Install RTK in command-executing sidecars.
-- Owner: runtime-platform
-- Repo area: `images/skill-*`
-- Acceptance command: image builds plus `rtk proxy echo ok` smoke.
-- Evidence expected: Build and smoke output for each modified sidecar.
-- Rollback: Revert the install layer for affected sidecars.
+Acceptance command:
 
-## Task 5 - Validation and evidence
+```bash
+../../opsclaw-product/tools/specops/validate-spec.sh specs/sympozium-agent-runtime-rtk
+sh -n images/runtime-tools/install-rtk.sh
+make test-short
+```
 
-- Status: Done
-- Task: Run tests, format checks, and record evidence.
-- Owner: runtime-platform
-- Repo area: `specs/sympozium-agent-runtime-rtk/**`
-- Acceptance command: `make test-short`
-- Evidence expected: Test output, smoke commands, and any remaining GitOps promotion follow-up.
-- Rollback: Keep the branch unmerged.
+Evidence expected:
+
+- Runtime image inventory and selected RTK-bearing images.
+- RTK artifact version, checksum, and license proof.
+- Local Docker build and smoke output for `rtk --version`, `rtk gain`, and `rtk proxy`.
+- Post-merge `build.yaml` proof showing published images built on `sympozium-runners`.
+
+Rollback:
+
+- Revert the RTK install script, lock file, and Dockerfile install layers.
+- Keep OpsClaw product RTK default-install evidence marked as blocked until replacement images publish.
+
+Stop conditions:
+
+- Stop if RTK artifacts cannot be checksum-pinned.
+- Stop if RTK license or redistribution policy blocks image packaging.
+- Stop if an image requires plaintext credentials or runtime secrets to install RTK.
+- Stop if cross-architecture artifacts cannot be verified for the supported target platforms.
+
+Runner impact:
+
+- Uses the `sympozium-runners` homelab ARC label for build, test, and image publication.
+
+Image impact:
+
+- Rebuilds the Sympozium agent runner and command skill sidecar images with RTK installed by default.
+
+GitOps impact:
+
+- No direct GitOps manifest edit in this repo. Downstream consumption still goes through the normal image digest promotion and lock process.
+
+SOPS/secret impact:
+
+- None. RTK installation uses public release artifacts pinned by checksum and does not introduce secrets.
