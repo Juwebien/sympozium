@@ -47,3 +47,25 @@ Outcome: all passed locally. The Vite build completed with the existing large ch
 
 CI: not run yet.
 Image: not built in this local slice.
+
+## 2026-05-14 - Post-Merge Activation Evidence
+
+Result:
+
+- Sympozium PR `Juwebien/sympozium#2` merged as `91cccef993a8c9c70a2697f1f729700fba0540f5`.
+- Post-merge build run `25844870398` completed successfully with 22/22 jobs green.
+- All jobs ran on the homelab ARC label `sympozium-runners`, including format, test, codegen/Helm sync, build, vet, and every `build-and-push` image job.
+- The published-image matrix included the platform WebUI-adjacent components and all runtime/tooling images needed by the OpsClaw/Sympozium integration slice.
+- The workspace workflow audit found no first-party `ubuntu-latest`, `windows-latest`, `macos-latest`, or `${{ vars.RUNNER... }}` runner indirection outside ignored `node_modules` content.
+- `scripts/platform-health.sh --all-repos` returned `dirty=0` for every canonical repo after the merge and local fast-forward.
+
+Validation:
+
+```bash
+gh run view 25844870398 --repo Juwebien/sympozium --json status,conclusion,jobs
+gh api repos/Juwebien/sympozium/actions/runs/25844870398/jobs --paginate --jq '.jobs[] | [.name,.status,.conclusion,.runner_name,((.labels//[])|join("+"))] | @tsv'
+scripts/platform-health.sh --all-repos
+```
+
+Sympozium build run: https://github.com/Juwebien/sympozium/actions/runs/25844870398
+Verified-By: codex at 2026-05-14T07:05:00Z
