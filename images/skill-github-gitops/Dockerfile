@@ -1,13 +1,16 @@
 FROM alpine:3.21
 
 ARG GH_VERSION=2.65.0
+ARG RTK_VERSION=0.40.0
 ARG TARGETOS=linux
 ARG TARGETARCH
 
 RUN apk add --no-cache \
     bash \
     curl \
+    gcompat \
     git \
+    findutils \
     jq \
     openssh-client \
     ca-certificates \
@@ -28,6 +31,9 @@ RUN set -eux; \
     tar -xzf /tmp/gh.tar.gz -C /tmp; \
     install -m 0755 /tmp/gh_${GH_VERSION}_${TARGETOS}_${GH_ARCH}/bin/gh /usr/local/bin/gh; \
     rm -rf /tmp/gh.tar.gz /tmp/gh_${GH_VERSION}_${TARGETOS}_${GH_ARCH}
+
+COPY images/runtime-tools/install-rtk.sh /usr/local/bin/install-rtk.sh
+RUN RTK_VERSION="${RTK_VERSION}" TARGETARCH="${TARGETARCH}" /usr/local/bin/install-rtk.sh
 
 # Create a non-root user for the sidecar.
 RUN addgroup -g 1000 sympozium && \
