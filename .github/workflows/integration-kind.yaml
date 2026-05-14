@@ -14,7 +14,7 @@ jobs:
     runs-on: sympozium-runners
     timeout-minutes: 90
     env:
-      REGISTRY: ghcr.io/sympozium-ai/sympozium
+      REGISTRY: ghcr.io/juwebien/sympozium
       TAG: latest
       SYMPOZIUM_NAMESPACE: sympozium-system
       TEST_NAMESPACE: default
@@ -30,6 +30,20 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Install make
+        run: |
+          set -euo pipefail
+          if command -v make >/dev/null 2>&1; then
+            exit 0
+          fi
+          if command -v sudo >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends make
+          else
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends make
+          fi
 
       - name: Create Kind cluster
         uses: helm/kind-action@v1.10.0

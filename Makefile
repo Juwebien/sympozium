@@ -2,7 +2,7 @@
 # Kubernetes-native agent orchestration platform
 
 # Image registry — matches ghcr.io/<owner>/<repo>/<image>
-REGISTRY ?= ghcr.io/sympozium-ai/sympozium
+REGISTRY ?= ghcr.io/juwebien/sympozium
 TAG ?= latest
 
 # Tool versions

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  REGISTRY: ghcr.io/sympozium-ai/sympozium
+  REGISTRY: ghcr.io/juwebien/sympozium
 
 permissions:
   contents: read
@@ -75,7 +75,23 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Install native test toolchain
+        run: |
+          set -euo pipefail
+          if command -v gcc >/dev/null 2>&1; then
+            exit 0
+          fi
+          if command -v sudo >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc g++ libc6-dev
+          else
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc g++ libc6-dev
+          fi
+
       - name: Test
+        env:
+          CGO_ENABLED: "1"
         run: go test -race -short ./...
 
   codegen:
@@ -88,6 +104,20 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Install make
+        run: |
+          set -euo pipefail
+          if command -v make >/dev/null 2>&1; then
+            exit 0
+          fi
+          if command -v sudo >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends make
+          else
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends make
+          fi
 
       - name: Check generated code is up to date
         run: |
