@@ -11,7 +11,7 @@ permissions:
 jobs:
   integration-kind:
     name: Kind API integration suite
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     timeout-minutes: 90
     env:
       REGISTRY: ghcr.io/sympozium-ai/sympozium

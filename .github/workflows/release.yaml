@@ -20,7 +20,7 @@ env:
 
 jobs:
   release-cli:
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     strategy:
       matrix:
         include:
@@ -65,7 +65,7 @@ jobs:
             sympozium-*.sha256
 
   release-images:
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     strategy:
       matrix:
         image:
@@ -126,7 +126,7 @@ jobs:
   release-helm-chart:
     name: Sync Helm chart
     needs: [release-images]
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     permissions:
       contents: write
     steps:
@@ -158,7 +158,7 @@ jobs:
   publish-helm-chart:
     name: Publish Helm chart package
     needs: release-helm-chart
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - uses: actions/checkout@v4
         with:
@@ -189,7 +189,7 @@ jobs:
   update-homebrew:
     name: Update Homebrew tap
     needs: release-cli
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - name: Checkout tap
         uses: actions/checkout@v4

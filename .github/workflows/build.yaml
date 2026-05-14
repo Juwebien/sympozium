@@ -16,7 +16,7 @@ permissions:
 jobs:
   fmt:
     name: Format
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +38,7 @@ jobs:
 
   vet:
     name: Vet
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - uses: actions/checkout@v4
 
@@ -52,7 +52,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +66,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +80,7 @@ jobs:
 
   codegen:
     name: Codegen & Helm sync
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     steps:
       - uses: actions/checkout@v4
 
@@ -102,7 +102,7 @@ jobs:
         run: make helm-sync-check
 
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: sympozium-runners
     needs: [fmt, vet, build, test, codegen]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
